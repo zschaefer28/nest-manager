@@ -17,6 +17,7 @@
 var http = require('http');
 var path = require('path');
 var request = require('request');
+var request2 = require('request');
 
 var express = require('express');
 var bodyParser = require('body-parser');
@@ -86,7 +87,7 @@ app.post('/stream', function(req, res) {
         };
         console.log(data);
 
-        request(options, function(error, response, body) {
+        request2(options, function(error, response, body) {
             if (!error && response.statusCode == 200) {
                 console.log(body.id);
             }
