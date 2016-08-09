@@ -22,24 +22,15 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var session = require('express-session');
 var EventSource = require('eventsource');
-var mdns = require('mdns');
+//var mdns = require('mdns');
 
 var SUPER_SECRET_KEY = 'bmVzdG1hbmdlcnRvbmVzdG8NCg==';
 
 var NEST_API_URL = 'https://developer-api.nest.com';
 var app = express();
 
-var ad = mdns.createAdvertisement(mdns.tcp('Nest-Event-Srvc'), 3000, ({ name: 'Nest Web Manager' }));
-ad.start();
-
-//var Server = require("upnpserver");
-
-//var server = new Server({ name: 'nestWebService', dlnaSupport: false }, [
-//'/',
-//{ path: '/' },
-//]);
-
-//server.start();
+//var ad = mdns.createAdvertisement(mdns.tcp('Nest-Event-Srvc'), 3000, ({ name: 'Nest Web Manager' }));
+//ad.start();
 
 app.post('/stream', function(req, res) {
     var token = req.headers.token;
@@ -89,6 +80,13 @@ app.post('/stream', function(req, res) {
             console.error('An unknown error occurred: ', e);
         }
     }, false);
+});
+
+app.post('/cmd', function(req, res) {
+    var exitCmd = req.headers.exitCmd;
+    console.log('Cmd: ' + exitCmd);
+    //var source = new EventSource(NEST_API_URL + '?auth=' + token);
+    server.close();
 });
 
 
