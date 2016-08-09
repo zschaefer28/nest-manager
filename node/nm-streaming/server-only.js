@@ -40,42 +40,71 @@ app.post('/stream', function(req, res) {
     var streamPort = req.headers.port;
     var stToken = req.headers.stToken;
     console.log('ST_Token: ' + stToken);
-    var source = new EventSource(NEST_API_URL + '?auth=' + token);
+    var devSource = new EventSource(NEST_API_URL + '/devices?auth=' + token);
+    var strSource = new EventSource(NEST_API_URL + '/structures?auth=' + token);
 
-    source.addEventListener('put', function(e) {
-        var data = e.data;
+
+    strSource.addEventListener('put', function(e) {
+        var data = JSON.parse(e.data);
         var options = {
-            uri: streamPath + '/receiveEventData?access_token=' + stToken,
+            uri: streamPath + '/receiveStructData?access_token=' + stToken,
             method: 'POST',
             body: data
         };
-        //var camera_data = data.data.devices.cameras;
-        //var tstat_data = data.data.devices.thermostats;
-        //var prot_data = data.data.devices.protects;
-        //console.log(tstat_data);
-        //console.log(prot_data);
-        //console.log(camera_data);
         console.log(data);
 
         request(options, function(error, response, body) {
             if (!error && response.statusCode == 200) {
-                console.log(body.id) // Print the shortened url.
+                console.log(body.id);
             }
         });
     });
 
-    source.addEventListener('open', function(e) {
-        console.log('Connection opened!');
-        res.send('Connected');
+    strSource.addEventListener('open', function(e) {
+        console.log('Structure Connection opened!');
+        res.send('Structure Connected');
     });
 
-    source.addEventListener('auth_revoked', function(e) {
+    strSource.addEventListener('auth_revoked', function(e) {
         console.log('Authentication token was revoked.');
     });
 
-    source.addEventListener('error', function(e) {
+    strSource.addEventListener('error', function(e) {
         if (e.readyState == EventSource.CLOSED) {
-            console.error('Connection was closed! ', e);
+            console.error('Structure Connection was closed! ', e);
+        } else {
+            console.error('StructureAn unknown error occurred: ', e);
+        }
+    }, false);
+
+    devSource.addEventListener('put', function(e) {
+        var data = JSON.parse(e.data);
+        var options = {
+            uri: streamPath + '/receiveDeviceData?access_token=' + stToken,
+            method: 'POST',
+            body: data
+        };
+        console.log(data);
+
+        request(options, function(error, response, body) {
+            if (!error && response.statusCode == 200) {
+                console.log(body.id);
+            }
+        });
+    });
+
+    devSource.addEventListener('open', function(e) {
+        console.log('Device Connection opened!');
+        res.send('Device Stream Connected');
+    });
+
+    devSource.addEventListener('auth_revoked', function(e) {
+        console.log('Authentication token was revoked.');
+    });
+
+    devSource.addEventListener('error', function(e) {
+        if (e.readyState == EventSource.CLOSED) {
+            console.error('Device Connection was closed! ', e);
         } else {
             console.error('An unknown error occurred: ', e);
         }

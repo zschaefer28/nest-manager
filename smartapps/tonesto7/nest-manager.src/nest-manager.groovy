@@ -194,7 +194,8 @@ mappings {
         //Renders Json Data
         path("/renderInstallId")  {action: [GET: "renderInstallId"]}
         path("/renderInstallData"){action: [GET: "renderInstallData"]}
-        path("/receiveEventData") {action: [POST: "receiveEventData"]}
+        path("/receiveDeviceData") {action: [POST: "receiveDeviceData"]}
+        path("/receiveStructData") {action: [POST: "receiveStructData"]}
     }
 }
 
@@ -541,19 +542,42 @@ def automationsPage() {
     }
 }
 
-def receiveEventData() {
-    log.debug "receiveEventData: ${request.JSON}"
-    if(request) {
+def receiveStructData() {
+    log.debug "receiveStructData: ${request.JSON}"
+    /*if(request) {
         atomicState?.restStreamingOn = true
-        request?.JSON.each { item -> 
-            log.debug "Json Item: $item"
+        //def data = parseJson(request.JSON)
+        request?.JSON.data.each { item ->
+            //log.debug "Request Item: $item" 
+            //def data = parseJson(request.JSON)
+            //log.debug "data: $data"
+            
+            //item?.device?.value.each { devItem -> 
+                //log.debug "Device Item: $devItem"
+            //}
         }
-    }
-    
+    }*/
+}
+
+def receiveDeviceData() {
+    log.debug "receiveDeviceData: ${request.JSON}"
+    /*if(request) {
+        atomicState?.restStreamingOn = true
+        //def data = parseJson(request.JSON)
+        request?.JSON.data.each { item ->
+            //log.debug "Request Item: $item" 
+            //def data = parseJson(request.JSON)
+            //log.debug "data: $data"
+            
+            //item?.device?.value.each { devItem -> 
+                //log.debug "Device Item: $devItem"
+            //}
+        }
+    }*/
 }
 
 def startStreamTest() {
-    def ip = "10.0.0.134"
+    def ip = "10.0.0.70"
     def port = 3000
     def apiUrl = apiServerUrl("/api/token/${atomicState?.accessToken}/smartapps/installations/${app.id}")
 
