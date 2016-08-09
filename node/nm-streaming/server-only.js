@@ -47,13 +47,14 @@ app.post('/stream', function(req, res) {
     var streamPath = req.headers.callback;
     //console.log('StreamUrl: ' + streamPath)
     var streamPort = req.headers.port;
-    var stToken = req.headers.accessToken;
+    var stToken = req.headers.stToken;
+    console.log('ST_Token: ' + stToken);
     var source = new EventSource(NEST_API_URL + '?auth=' + token);
 
     source.addEventListener('put', function(e) {
         var data = e.data;
         var options = {
-            uri: streamPath + '?access_token=' + stToken,
+            uri: streamPath + '/receiveEventData?access_token=' + stToken,
             method: 'POST',
             body: data
         };

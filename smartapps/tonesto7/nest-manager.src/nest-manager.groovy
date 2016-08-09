@@ -540,13 +540,13 @@ def automationsPage() {
 }
 
 def receiveEventData() {
-    log.debug "receiveEventData: ${}"
+    //log.debug "receiveEventData: ${request.JSON}"
 }
 
 def startStreamTest() {
     def ip = "10.0.0.134"
     def port = 3000
-    def apiUrl = apiServerUrl("/api/token/${atomicState?.accessToken}/smartapps/installations/${app.id}/receiveEventData")
+    def apiUrl = apiServerUrl("/api/token/${atomicState?.accessToken}/smartapps/installations/${app.id}")
 
     try {
         def hubAction = new physicalgraph.device.HubAction(
@@ -555,7 +555,7 @@ def startStreamTest() {
                 "HOST": "${ip}:${port}",
                 "token": "${atomicState?.authToken}",
                 "callback": "${apiUrl}",
-                "accessToken": "${atomicState?.accessToken}"
+                "stToken": "${atomicState?.accessToken}"
             ],
             path: "/stream",
             body: ""
