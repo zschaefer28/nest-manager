@@ -16,6 +16,7 @@
 
 var http = require('http');
 var path = require('path');
+var request = require('request');
 
 var express = require('express');
 var bodyParser = require('body-parser');
@@ -28,31 +29,46 @@ var SUPER_SECRET_KEY = 'bmVzdG1hbmdlcnRvbmVzdG8NCg==';
 var NEST_API_URL = 'https://developer-api.nest.com';
 var app = express();
 
-var ad = mdns.createAdvertisement(mdns.tcp('Nest-Event-Srvc'), 4321, ({ name: 'Nest Web Manager' }));
+var ad = mdns.createAdvertisement(mdns.tcp('Nest-Event-Srvc'), 3000, ({ name: 'Nest Web Manager' }));
 ad.start();
 
-var Server = require("upnpserver");
+//var Server = require("upnpserver");
 
-var server = new Server({ name: 'nestWebService', dlnaSupport: false }, [
-    '/',
-    { path: '/' },
-]);
+//var server = new Server({ name: 'nestWebService', dlnaSupport: false }, [
+//'/',
+//{ path: '/' },
+//]);
 
-server.start();
+//server.start();
 
 app.post('/stream', function(req, res) {
     var token = req.headers.token;
+    //console.log('AuthToken: ' + token)
+    var streamPath = req.headers.callback;
+    //console.log('StreamUrl: ' + streamPath)
+    var streamPort = req.headers.port;
     var source = new EventSource(NEST_API_URL + '?auth=' + token);
 
     source.addEventListener('put', function(e) {
-        var data = JSON.parse(e.data);
-        var camera_data = data.data.devices.cameras;
-        var tstat_data = data.data.devices.thermostats;
-        var prot_data = data.data.devices.protects;
-        console.log(tstat_data);
-        console.log(prot_data);
-        console.log(camera_data);
-        //console.log(data);
+        var data = e.data;
+        var options = {
+            uri: streamPath,
+            method: 'POST',
+            json: data
+        };
+        //var camera_data = data.data.devices.cameras;
+        //var tstat_data = data.data.devices.thermostats;
+        //var prot_data = data.data.devices.protects;
+        //console.log(tstat_data);
+        //console.log(prot_data);
+        //console.log(camera_data);
+        console.log(data);
+
+        request(options, function(error, response, body) {
+            if (!error && response.statusCode == 200) {
+                console.log(body.id) // Print the shortened url.
+            }
+        });
     });
 
     source.addEventListener('open', function(e) {
@@ -71,7 +87,7 @@ app.post('/stream', function(req, res) {
             console.error('An unknown error occurred: ', e);
         }
     }, false);
-})
+});
 
 
 app.use(bodyParser.json());

@@ -13,6 +13,7 @@
         "express-session": "^1.11.3",
         "mdns": "^2.3.3",
         "openurl": "^1.1.0",
-        "upnpserver": "^2.1.3"
+        "upnpserver": "^2.1.3",
+        "request": "^2.74.0"
     }
 }
