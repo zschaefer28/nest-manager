@@ -47,14 +47,15 @@ app.post('/stream', function(req, res) {
     var streamPath = req.headers.callback;
     //console.log('StreamUrl: ' + streamPath)
     var streamPort = req.headers.port;
+    var stToken = req.headers.accessToken;
     var source = new EventSource(NEST_API_URL + '?auth=' + token);
 
     source.addEventListener('put', function(e) {
         var data = e.data;
         var options = {
-            uri: streamPath,
+            uri: streamPath + '?access_token=' + stToken,
             method: 'POST',
-            json: data
+            body: data
         };
         //var camera_data = data.data.devices.cameras;
         //var tstat_data = data.data.devices.thermostats;
