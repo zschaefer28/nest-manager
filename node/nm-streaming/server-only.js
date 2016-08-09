@@ -28,8 +28,17 @@ var SUPER_SECRET_KEY = 'bmVzdG1hbmdlcnRvbmVzdG8NCg==';
 var NEST_API_URL = 'https://developer-api.nest.com';
 var app = express();
 
-var ad = mdns.createAdvertisement(mdns.tcp('http'), 4321, ({ name: 'Nest Web Manager' }));
+var ad = mdns.createAdvertisement(mdns.tcp('Nest-Event-Srvc'), 4321, ({ name: 'Nest Web Manager' }));
 ad.start();
+
+var Server = require("upnpserver");
+
+var server = new Server({ name: 'nestWebService', dlnaSupport: false }, [
+    '/',
+    { path: '/' },
+]);
+
+server.start();
 
 app.post('/stream', function(req, res) {
     var token = req.headers.token;
@@ -62,7 +71,7 @@ app.post('/stream', function(req, res) {
             console.error('An unknown error occurred: ', e);
         }
     }, false);
-});
+})
 
 
 app.use(bodyParser.json());
