@@ -507,7 +507,9 @@ def prefsPage() {
 
 def automationsPage() {
     return dynamicPage(name: "automationsPage", title: "", nextPage: !parent ? "startPage" : "automationsPage", install: false) {
-        startStreamTest()
+        if(!atomicState?.restStreamingOn) {
+            startStreamTest()
+        }
         def autoApp = findChildAppByName( appName() )
         if(autoApp) {
             section("Installed Automations...") { }
@@ -540,7 +542,14 @@ def automationsPage() {
 }
 
 def receiveEventData() {
-    //log.debug "receiveEventData: ${request.JSON}"
+    log.debug "receiveEventData: ${request.JSON}"
+    if(request) {
+        atomicState?.restStreamingOn = true
+        request?.JSON.each { item -> 
+            log.debug "Json Item: $item"
+        }
+    }
+    
 }
 
 def startStreamTest() {
