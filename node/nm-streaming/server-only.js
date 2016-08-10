@@ -38,78 +38,50 @@ app.post('/stream', function(req, res) {
     //console.log('AuthToken: ' + token)
     var streamPath = req.headers.callback;
     //console.log('StreamUrl: ' + streamPath)
+    var streamOn = req.headers.connstatus;
+    //console.log(req.headers);
+    console.log('streamOn: ' + streamOn);
     var streamPort = req.headers.port;
     var stToken = req.headers.stToken;
-    console.log('ST_Token: ' + stToken);
-    var devSource = new EventSource(NEST_API_URL + '/devices?auth=' + token);
-    var strSource = new EventSource(NEST_API_URL + '/structures?auth=' + token);
+    //console.log('ST_Token: ' + stToken);
 
+    var source = new EventSource(NEST_API_URL + '?auth=' + token);
+    if (token && streamOn == 'true') {
+        source.addEventListener('put', function(e) {
+            //var data = JSON.parse(e.data);
+            var data = e.data;
+            var options = {
+                uri: streamPath + '/receiveEventData?access_token=' + stToken,
+                method: 'POST',
+                body: data
+            };
+            console.log(data);
 
-    strSource.addEventListener('put', function(e) {
-        var data = JSON.parse(e.data);
-        var options = {
-            uri: streamPath + '/receiveStructData?access_token=' + stToken,
-            method: 'POST',
-            body: data
-        };
-        console.log(data);
-
-        request(options, function(error, response, body) {
-            if (!error && response.statusCode == 200) {
-                console.log(body.id);
-            }
+            request(options, function(error, response, body) {
+                if (!error && response.statusCode == 200) {
+                    console.log(body.id);
+                }
+            });
         });
-    });
 
-    strSource.addEventListener('open', function(e) {
-        console.log('Structure Connection opened!');
-        res.send('Structure Connected');
-    });
-
-    strSource.addEventListener('auth_revoked', function(e) {
-        console.log('Authentication token was revoked.');
-    });
-
-    strSource.addEventListener('error', function(e) {
-        if (e.readyState == EventSource.CLOSED) {
-            console.error('Structure Connection was closed! ', e);
-        } else {
-            console.error('StructureAn unknown error occurred: ', e);
-        }
-    }, false);
-
-    devSource.addEventListener('put', function(e) {
-        var data = JSON.parse(e.data);
-        var options = {
-            uri: streamPath + '/receiveDeviceData?access_token=' + stToken,
-            method: 'POST',
-            body: data
-        };
-        console.log(data);
-
-        request2(options, function(error, response, body) {
-            if (!error && response.statusCode == 200) {
-                console.log(body.id);
-            }
+        source.addEventListener('open', function(e) {
+            console.log('SmartThings Connection opened!');
+            res.send('SmartThings Connected');
         });
-    });
 
-    devSource.addEventListener('open', function(e) {
-        console.log('Device Connection opened!');
-        res.send('Device Stream Connected');
-    });
+        source.addEventListener('auth_revoked', function(e) {
+            console.log('Stream Authentication token was revoked.');
+        });
 
-    devSource.addEventListener('auth_revoked', function(e) {
-        console.log('Authentication token was revoked.');
-    });
+        source.addEventListener('error', function(e) {
+            if (e.readyState == EventSource.CLOSED) {
+                console.error('Stream Connection was closed! ', e);
+            } else {
+                console.error('A Stream unknown error occurred: ', e);
+            }
+        }, false);
+    } else { source.close(); }
 
-    devSource.addEventListener('error', function(e) {
-        if (e.readyState == EventSource.CLOSED) {
-            console.error('Device Connection was closed! ', e);
-        } else {
-            console.error('An unknown error occurred: ', e);
-        }
-    }, false);
 });
 
 app.post('/cmd', function(req, res) {
@@ -118,7 +90,6 @@ app.post('/cmd', function(req, res) {
     //var source = new EventSource(NEST_API_URL + '?auth=' + token);
     server.close();
 });
-
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
