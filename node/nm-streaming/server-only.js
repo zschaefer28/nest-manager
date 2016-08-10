@@ -128,11 +128,27 @@ app.use(session({
     saveUninitialized: false
 }));
 
+function getIPAddress() {
+    var interfaces = require('os').networkInterfaces();
+    for (var devName in interfaces) {
+        var iface = interfaces[devName];
+
+        for (var i = 0; i < iface.length; i++) {
+            var alias = iface[i];
+            if (alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal)
+                return alias.address;
+        }
+    }
+
+    return '0.0.0.0';
+}
+
+var address = getIPAddress();
 
 var port = process.env.PORT || 3000;
 app.set('port', port);
 
 var server = http.createServer(app);
 server.listen(port);
-console.info('Server is Running on Port: ' + port);
+console.info('Server is Running on (' + address + ') Port: ' + port);
 console.info('Send a Post Command to http://localhost:' + port + '/stream with this Body (token: "your_auth_token") to Start the Stream');

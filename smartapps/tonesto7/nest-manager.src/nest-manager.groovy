@@ -508,6 +508,7 @@ def prefsPage() {
 
 def automationsPage() {
     return dynamicPage(name: "automationsPage", title: "", nextPage: !parent ? "startPage" : "automationsPage", install: false) {
+        atomicState?.restStreamingOn = false
         if(!atomicState?.restStreamingOn) {
             startStreamTest()
         }
@@ -544,10 +545,10 @@ def automationsPage() {
 
 def receiveStructData() {
     log.debug "receiveStructData: ${request.JSON}"
-    /*if(request) {
+    if(request) {
         atomicState?.restStreamingOn = true
         //def data = parseJson(request.JSON)
-        request?.JSON.data.each { item ->
+        //request?.JSON.data.each { item ->
             //log.debug "Request Item: $item" 
             //def data = parseJson(request.JSON)
             //log.debug "data: $data"
@@ -555,16 +556,16 @@ def receiveStructData() {
             //item?.device?.value.each { devItem -> 
                 //log.debug "Device Item: $devItem"
             //}
-        }
-    }*/
+        //}
+    }
 }
 
 def receiveDeviceData() {
     log.debug "receiveDeviceData: ${request.JSON}"
-    /*if(request) {
+    if(request) {
         atomicState?.restStreamingOn = true
         //def data = parseJson(request.JSON)
-        request?.JSON.data.each { item ->
+        //request?.JSON.data.each { item ->
             //log.debug "Request Item: $item" 
             //def data = parseJson(request.JSON)
             //log.debug "data: $data"
@@ -572,12 +573,13 @@ def receiveDeviceData() {
             //item?.device?.value.each { devItem -> 
                 //log.debug "Device Item: $devItem"
             //}
-        }
-    }*/
+        //}
+    }
 }
 
 def startStreamTest() {
-    def ip = "10.0.0.70"
+    log.debug "startStreamTest"
+    def ip = "10.0.0.134"
     def port = 3000
     def apiUrl = apiServerUrl("/api/token/${atomicState?.accessToken}/smartapps/installations/${app.id}")
 
@@ -808,6 +810,7 @@ def initManagerApp() {
     //If analytics are enabled this will send non-user identifiable data to firebase server
     if (optInAppAnalytics) { runIn(4, "sendInstallData", [overwrite: true]) }
     runIn(20, "stateCleanup", [overwrite: true])
+    atomicState?.restStreamingOn = false
 }
 
 def uninstManagerApp() {
@@ -3284,6 +3287,13 @@ def stateCleanup() {
         state.remove("recentSendCmd13")
         state.remove("recentSendCmd14")
         state.remove("recentSendCmd15")
+    }
+    state?.each {
+        //log.debug "item: ${it}" 
+        if(it.key.startsWith("old")) {
+            //log.debug "it: ${it.key}"
+            state.remove("${it.key}")
+        }
     }
 }
 
