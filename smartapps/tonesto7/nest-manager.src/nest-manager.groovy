@@ -5532,10 +5532,7 @@ private remSenCheck() {
         scheduleAutomationEval(schChkVal)
         LogAction("Remote Sensor: Too Soon to Evaluate Actions...Scheduling Re-Evaluation in (${schChkVal} seconds)", "info", true)
     } 
-    else { 
-        remSenEvtEval()
-        remSenTstatFanSwitchCheck()
-    } 
+    else { remSenEvtEval() } 
 }
 
 def getLastRemSenEvalSec() { return !atomicState?.lastRemSenEval ? 100000 : GetTimeDiffSeconds(atomicState?.lastRemSenEval).toInteger() }
