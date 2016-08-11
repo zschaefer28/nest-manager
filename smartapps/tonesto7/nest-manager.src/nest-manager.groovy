@@ -160,6 +160,7 @@ preferences {
     page(name: "uninstallPage")
     page(name: "custWeatherPage")
     page(name: "automationsPage")
+    page(name: "automationKickStartPage")
     page(name: "automationGlobalPrefsPage")
     page(name: "automationStatisticsPage")
         
@@ -275,8 +276,8 @@ def authPage() {
 def mainPage() {
     //log.trace "mainPage"
 
-    startStreamTest(true)
-    atomicState?.restStreamingOn = false
+    //startStreamTest(true)
+    //atomicState?.restStreamingOn = false
 
     def setupComplete = (!atomicState?.newSetupComplete || !atomicState.isInstalled) ? false : true
     return dynamicPage(name: "mainPage", title: "Main Page", nextPage: (!setupComplete ? "reviewSetupPage" : null), install: setupComplete, uninstall: false) {
@@ -370,8 +371,6 @@ def mainPage() {
             }
         }
     }
-    startStreamTest(true)
-    atomicState?.restStreamingOn = false
 }
 
 def deviceSelectPage() {
@@ -518,7 +517,7 @@ def automationsPage() {
     return dynamicPage(name: "automationsPage", title: "", nextPage: !parent ? "startPage" : "automationsPage", install: false) {
         //atomicState?.restStreamingOn = false
         if(!atomicState?.restStreamingOn) {
-            startStreamTest()
+            //startStreamTest()
         }
         def autoApp = findChildAppByName( appName() )
         if(autoApp) {
@@ -547,6 +546,25 @@ def automationsPage() {
             //descStr += "${(locDesiredCoolTemp || locDesiredHeatTemp) ? "\n\n" : ""}${getSafetyValuesDesc()}" ?: ""
             def prefDesc = (descStr != "") ? "${descStr}\n\nTap to Modify..." : "Tap to Configure..."
             href "automationGlobalPrefsPage", title: "Global Automation Preferences", description: prefDesc, state: (descStr != "" ? "complete" : null), image: getAppImg("global_prefs_icon.png")
+        }
+        section("Automation Statistics:") {
+            href "automationKickStartPage", title: "Repair All Automations", description: "Tap to call the Update() action on each automation.\nTap to Begin...", image: getAppImg("reset_icon.png")
+        }
+    }
+}
+
+def automationKickStartPage() {
+    dynamicPage(name: "automationKickStartPage", title: "This Page is running Update() on all of your installed Automations", nextPage: "automationsPage", install: false, uninstall: false) {
+        def cApps = getChildApps()
+        section("Running Update All Automations:") {
+            if(cApps) {
+                cApps?.sort()?.each { chld ->
+                    chld?.update()
+                    paragraph "${chld?.label}\n\nUpdate() Completed Successfully!!!", state: "complete"
+                }
+            } else {
+                paragraph "No Automations Found..."
+            }
         }
     }
 }
@@ -4495,6 +4513,7 @@ def mainAutoPage(params) {
                     remSenDescStr += remSenRuleType ? "Rule-Type: ${getEnumValue(remSenRuleEnum(), remSenRuleType)}" : ""
                     remSenDescStr += (remSenEvalModes || remSenMotion || remSenSwitches) ? "\n\nRule Evaluation Triggers:" : ""
                     remSenDescStr += remSenTempDiffDegrees ? ("\n • Temp Threshold: (${remSenTempDiffDegrees}°${atomicState?.tempUnit})") : ""
+                    remSenDescStr += remSenTstatTempChgVal ? ("\n • Change Temp: (${remSenTstatTempChgVal}°${atomicState?.tempUnit})") : ""
                     remSenDescStr += remSenMotion ? ("\n • Motion Sensors: (${remSenMotion?.size()})${remSenMotionModes ? "\n└ Mode Filters: ${remSenMotionModes ? "(${remSenMotionModes.size()})" : "(0)"}" : ""}\n└ Status: ${isMotionActive(remSenMotion) ? "(Motion)" : "(No Motion)"}") : ""
                     remSenDescStr += remSenSwitches ? ("\n • Switches: (${remSenSwitches?.size()})\n└ Trigger Type: (${getEnumValue(switchEnumVals(), remSenSwitchOpt)})") : ""
                     remSenDescStr += remSenEvalModes ? "\n • Mode Filters: (${remSenEvalModes.size()})\n└ Status: ${isInMode(remSenEvalModes) ? "Eval Allowed" : "Eval Blocked"}" : ""
@@ -5508,10 +5527,12 @@ def getUseNightSensor() {
 
 def getRemSenUseNightTimeOk() {
     def pName = getAutoType()
-    if(remSenUseTimeForMode && settings["${pName}NightStartTime"] && settings["${pName}NightStopTime"] && !remSenUseSunAsMode) {
+    if(remSensorDayModes && remSensorNightModes && remremSenUseTimeForMode && settings["${pName}NightStartTime"] && settings["${pName}NightStopTime"] && !remSenUseSunAsMode) {
         return timeOfDayIsBetween(settings?."${pName}NightStartTime", settings?."${pName}NightStopTime", new Date(), getTimeZone()) ?: false
-    }
+    } 
+    return false
 }
+
 
 def getDeviceTempAvg(items) {
     def tmpAvg = []
