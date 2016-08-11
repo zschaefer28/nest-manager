@@ -465,8 +465,10 @@ def reviewSetupPage() {
                 href url: getAppEndpointUrl("renderInstallData"), style:"embedded", title:"View the Data that will be Shared with the Developer", description: "Tap to view Data...", required:false, image: getAppImg("view_icon.png")
             }
         }
-        section(" ") {
-            href "infoPage", title: "Help, Info and Instructions", description: "Tap to view...", image: getAppImg("info.png")
+        if(parent?.showHelp()) {
+            section(" ") {
+                href "infoPage", title: "Help, Info and Instructions", description: "Tap to view...", image: getAppImg("info.png")
+            }
         }
     }
 }
@@ -547,7 +549,7 @@ def automationsPage() {
             def prefDesc = (descStr != "") ? "${descStr}\n\nTap to Modify..." : "Tap to Configure..."
             href "automationGlobalPrefsPage", title: "Global Automation Preferences", description: prefDesc, state: (descStr != "" ? "complete" : null), image: getAppImg("global_prefs_icon.png")
         }
-        section("Automation Statistics:") {
+        section("Automation Repair:") {
             href "automationKickStartPage", title: "Repair All Automations", description: "Tap to call the Update() action on each automation.\nTap to Begin...", image: getAppImg("reset_icon.png")
         }
     }
@@ -681,6 +683,22 @@ def automationStatisticsPage() {
                         paragraph "${str}", state: "complete", image: getAutoIcon(autoType)
                     }
                 }
+            }
+        }
+    }
+}
+
+def automationKickStartPage() {
+    dynamicPage(name: "automationKickStartPage", title: "This Page is running Update() on all of your installed Automations", nextPage: "automationsPage", install: false, uninstall: false) {
+        def cApps = getChildApps()
+        section("Running Update All Automations:") {
+            if(cApps) {
+                cApps?.sort()?.each { chld ->
+                    chld?.update()
+                    paragraph "${chld?.label}\n\nUpdate() Completed Successfully!!!", state: "complete"
+                }
+            } else {
+                paragraph "No Automations Found..."
             }
         }
     }
@@ -2181,6 +2199,7 @@ def getWebFileData() {
                 atomicState?.lastWebUpdDt = getDtNow()
                 updateHandler()
                 broadcastCheck()
+                helpHandler()
             }
             LogTrace("getWebFileData Resp: ${resp?.data}")
             result = true
@@ -2203,6 +2222,12 @@ def broadcastCheck() {
             sendMsg(atomicState?.appData?.broadcast?.type.toString().capitalize(), atomicState?.appData?.broadcast?.message.toString(), null, null, null, true)
             atomicState?.lastBroadcastId = atomicState?.appData?.broadcast?.msgId
         }
+    }
+}
+
+def helpHandler() {
+    if(atomicState?.appData?.help) {
+        atomicState.showHelp = atomicState?.appData?.help?.showHelp == "false" ? false : true
     }
 }
 
@@ -3400,6 +3425,8 @@ def getLocationModes() {
 }
 
 def getAutoType() { return !parent ? "" : atomicState?.automationType }
+
+def getShowHelp() { return atomicState?.showHelp == false ? false : true }
 
 def getTimeZone() { 
     def tz = null
@@ -5267,8 +5294,10 @@ def remSensorPage() {
                 }
             }
         }
-        section("Help:") {
-            href url:"${getAutoHelpPageUrl()}", style:"embedded", required:false, title:"Help and Instructions...", description:"", image: getAppImg("info.png")
+        if(parent?.showHelp()) {
+            section("Help:") {
+                href url:"${getAutoHelpPageUrl()}", style:"embedded", required:false, title:"Help and Instructions...", description:"", image: getAppImg("info.png")
+            }
         }
     }
 }
@@ -6550,8 +6579,10 @@ def extTempPage() {
                         state: (getNotificationOptionsConf() ? "complete" : null), image: getAppImg("notification_icon.png")
             }
         }
-        section("Help and Instructions:") {
-            href url:"${getAutoHelpPageUrl()}", style:"embedded", required:false, title:"Help and Instructions...", description:"", image: getAppImg("info.png")
+        if(parent?.showHelp()) {
+            section("Help and Instructions:") {
+                href url:"${getAutoHelpPageUrl()}", style:"embedded", required:false, title:"Help and Instructions...", description:"", image: getAppImg("info.png")
+            }
         }
     }
 }
@@ -6969,8 +7000,10 @@ def contactWatchPage() {
                         state: (getNotifConfigDesc() ? "complete" : null), image: getAppImg("notification_icon.png")
             }
         }
-        section("Help:") {
-            href url:"${getAutoHelpPageUrl()}", style:"embedded", required:false, title:"Help and Instructions...", description:"", image: getAppImg("info.png")
+        if(parent?.showHelp()) {
+            section("Help:") {
+                href url:"${getAutoHelpPageUrl()}", style:"embedded", required:false, title:"Help and Instructions...", description:"", image: getAppImg("info.png")
+            }
         }
     }
 }
@@ -7250,8 +7283,10 @@ def leakWatchPage() {
                         state: (getNotificationOptionsConf() ? "complete" : null), image: getAppImg("notification_icon.png")
             }
         }
-        section("Help:") {
-            href url:"${getAutoHelpPageUrl()}", style:"embedded", required:false, title:"Help and Instructions...", description:"", image: getAppImg("info.png")
+        if(parent?.showHelp()) {
+            section("Help:") {
+                href url:"${getAutoHelpPageUrl()}", style:"embedded", required:false, title:"Help and Instructions...", description:"", image: getAppImg("info.png")
+            }
         }
     }
 }
@@ -7531,8 +7566,10 @@ def nestModePresPage() {
                         state: (getNotifConfigDesc() ? "complete" : null), image: getAppImg("notification_icon.png")
             }
         }
-        section("Help:") {
-            href url:"${getAutoHelpPageUrl()}", style:"embedded", required:false, title:"Help and Instructions...", description:"", image: getAppImg("info.png")
+        if(parent?.showHelp()) {
+            section("Help:") {
+                href url:"${getAutoHelpPageUrl()}", style:"embedded", required:false, title:"Help and Instructions...", description:"", image: getAppImg("info.png")
+            }
         }
     }
 }
@@ -7764,9 +7801,10 @@ def tstatModePage() {
                 }
             }
         }
-
-        section("Help:") {
-            href url:"${getAutoHelpPageUrl()}", style:"embedded", required:false, title:"Help and Instructions...", description:"", image: getAppImg("info.png")
+        if(parent?.showHelp()) {
+            section("Help:") {
+                href url:"${getAutoHelpPageUrl()}", style:"embedded", required:false, title:"Help and Instructions...", description:"", image: getAppImg("info.png")
+            }
         }
     }
 }
