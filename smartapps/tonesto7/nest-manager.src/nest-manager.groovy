@@ -859,7 +859,7 @@ def uninstManagerApp() {
         }
     } catch (ex) {
         LogAction("uninstManagerApp Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "uninstManagerApp")
+        sendExceptionData(ex.message, "uninstManagerApp")
     }
 }
 
@@ -1155,7 +1155,7 @@ def getApiData(type = null) {
             if(type == "str") { atomicState.needStrPoll = true }
             else if(type == "dev") { atomicState?.needDevPoll = true }
         }
-        sendExceptionData(ex, "getApiData")
+        sendExceptionData(ex.message, "getApiData")
     }
     return result
 }
@@ -1306,7 +1306,7 @@ def updateChildData(force = false) {
     }
     catch (ex) {
         LogAction("updateChildData Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "updateChildData")
+        sendExceptionData(ex.message, "updateChildData")
         atomicState?.lastChildUpdDt = null
         return
     }
@@ -1359,7 +1359,7 @@ def apiIssueEvent(issue, cmd = null) {
         //log.debug "listOut: $list"
     } catch (ex) {
         LogAction("apiIssueEvent Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "apiIssueEvent")
+        sendExceptionData(ex.message, "apiIssueEvent")
     }
 }
 
@@ -1458,7 +1458,7 @@ def sendEvtUpdateToDevice(typeId, type, obj, objVal) {
         }
     } catch (ex) {
         LogAction("sendEvtUpdateToDevice Exception: ${ex}", "errorS", true)
-        sendExceptionData(ex, "sendEvtUpdateToDevice")
+        sendExceptionData(ex.message, "sendEvtUpdateToDevice")
     }
 }
 
@@ -1472,7 +1472,7 @@ def setCamStreaming(child, streamOn) {
     }
     catch (ex) {
         LogAction("setCamStreaming Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "setCamStreaming")
+        sendExceptionData(ex.message, "setCamStreaming")
         if(childDebug) { child?.log("setCamStreaming Exception: ${ex}", "error") }
         return false
     }
@@ -1493,7 +1493,7 @@ def setStructureAway(child, value) {
     }
     catch (ex) {
         LogAction("setStructureAway Exception: ${ex}", "debug", true)
-        sendExceptionData(ex, "setStructureAway")
+        sendExceptionData(ex.message, "setStructureAway")
         if (childDebug && child) { child?.log("setStructureAway Exception: ${ex}", "error") }
         return false
     }
@@ -1509,7 +1509,7 @@ def setTstatLabel(child, label) {
     }
     catch (ex) {
         LogAction("setTstatLabel Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "setTstatLabel")
+        sendExceptionData(ex.message, "setTstatLabel")
         if(childDebug) { child?.log("setTstatLabel Exception: ${ex}", "error") }
         return false
     }
@@ -1525,7 +1525,7 @@ def setFanMode(child, fanOn) {
     }
     catch (ex) {
         LogAction("setFanMode Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "setFanMode")
+        sendExceptionData(ex.message, "setFanMode")
         if(childDebug) { child?.log("setFanMode Exception: ${ex}", "error") }
         return false
     }
@@ -1539,7 +1539,7 @@ def setHvacMode(child, mode) {
     }
     catch (ex) {
         LogAction("setHvacMode Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "setHvacMode")
+        sendExceptionData(ex.message, "setHvacMode")
         if(childDebug && child) { child?.log("setHvacMode Received: ${devId} (${mode})", "debug") }
         return false
     }
@@ -1559,7 +1559,7 @@ def setTargetTemp(child, unit, temp) {
     }
     catch (ex) {
         LogAction("setTargetTemp Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "setTargetTemp")
+        sendExceptionData(ex.message, "setTargetTemp")
         if(childDebug && child) { child?.log("setTargetTemp Exception: ${ex}", "error") }
         return false
     }
@@ -1579,7 +1579,7 @@ def setTargetTempLow(child, unit, temp) {
     }
     catch (ex) {
         LogAction("setTargetTempLow Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "setTargetTempLow")
+        sendExceptionData(ex.message, "setTargetTempLow")
         if(childDebug && child) { child?.log("setTargetTempLow Exception: ${ex}", "error") }
         return false
     }
@@ -1599,7 +1599,7 @@ def setTargetTempHigh(child, unit, temp) {
     }
     catch (ex) {
         LogAction("setTargetTempHigh Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "setTargetTempHigh")
+        sendExceptionData(ex.message, "setTargetTempHigh")
         if(childDebug && child) { child?.log("setTargetTempHigh Exception: ${ex}", "error") }
         return false
     }
@@ -1641,7 +1641,7 @@ def sendNestApiCmd(cmdTypeId, cmdType, cmdObj, cmdObjVal, childId) {
     }
     catch (ex) {
         LogAction("sendNestApiCmd Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "sendNestApiCmd")
+        sendExceptionData(ex.message, "sendNestApiCmd")
         if(childDebug && childDev) { childDev?.log("sendNestApiCmd Exception: ${ex}", "error") }
         return false
     }
@@ -1816,7 +1816,7 @@ void workQueue() {
     }
     catch (ex) {
         LogAction("workQueue Exception Error: ${ex}", "error", true)
-        sendExceptionData(ex, "workQueue")
+        sendExceptionData(ex.message, "workQueue")
         cmdProcState(false)
         atomicState.needDevPoll = true
         atomicState.needStrPoll = true
@@ -1881,7 +1881,7 @@ def procNestApiCmd(uri, typeId, type, obj, objVal, qnum, redir = false) {
     }
     catch (ex) {
         LogAction("procNestApiCmd Exception: ${ex} | ($type | $obj:$objVal)", "error", true)
-        sendExceptionData(ex, "procNestApiCmd")
+        sendExceptionData(ex.message, "procNestApiCmd")
         apiIssueEvent(true)
         atomicState?.lastCmdSentStatus = "failed"
     }
@@ -1896,7 +1896,7 @@ def increaseCmdCnt() {
         if(cmdCnt) { atomicState?.apiCommandCnt = cmdCnt?.toInteger() }
     } catch (ex) {
         LogAction("increaseCmdCnt Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "increaseCmdCnt")
+        sendExceptionData(ex.message, "increaseCmdCnt")
     }
 }
 
@@ -1930,7 +1930,7 @@ def missedPollNotify() {
         }
     } catch (ex) { 
         LogAction("missedPollNotify Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "missedPollNotify")
+        sendExceptionData(ex.message, "missedPollNotify")
     }
 }
 
@@ -1955,7 +1955,7 @@ def appUpdateNotify() {
         }
     } catch (ex) { 
         LogAction("appUpdateNotify Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "appUpdateNotify")
+        sendExceptionData(ex.message, "appUpdateNotify")
     }
 }
 
@@ -2012,7 +2012,7 @@ def sendMsg(msgType, msg, people = null, sms = null, push = null, brdcast = null
         }
     } catch (ex) { 
         LogAction("sendMsg Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "sendMsg")
+        sendExceptionData(ex.message, "sendMsg")
     }
 }
 
@@ -2100,7 +2100,7 @@ def getWeatherConditions(force = false) {
         }
         catch (ex) {
             LogAction("getWeatherConditions Exception: ${ex}", "error", true)
-            sendExceptionData(ex, "getWeatherConditions")
+            sendExceptionData(ex.message, "getWeatherConditions")
             return false
         }
     } else { return false }
@@ -2174,7 +2174,7 @@ def getWebFileData() {
         } else {
             LogAction("getWebFileData Exception: ${ex}", "error", true)
         }
-        sendExceptionData(ex, "getWebFileData")
+        sendExceptionData(ex.message, "getWebFileData")
     }
     return result
 }
@@ -2230,7 +2230,7 @@ def isCodeUpdateAvailable(newVer, curVer, type) {
         return result
     } catch (ex) {
         LogAction("isCodeUpdateAvailable Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "isCodeUpdateAvailable")
+        sendExceptionData(ex.message, "isCodeUpdateAvailable")
     }
 }
 
@@ -2312,7 +2312,7 @@ def getNestStructures() {
 
     } catch (ex) { 
         LogAction("getNestStructures Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "getNestStructures")
+        sendExceptionData(ex.message, "getNestStructures")
     }
     return struct
 }
@@ -2716,7 +2716,7 @@ def addRemoveDevices(uninst = null) {
             LogAction("addRemoveDevices Exception | $msg", "warn", true)
         }
         else { LogAction("addRemoveDevices Exception: ${ex}", "error", true) }
-        sendExceptionData(ex, "addRemoveDevices")
+        sendExceptionData(ex.message, "addRemoveDevices")
         retVal = false
     }
     return retVal
@@ -2895,7 +2895,7 @@ def deviceHandlerTest() {
             LogAction("Device Handlers are missing: ${getThermostatChildName()}, ${getPresenceChildName()}, and ${getProtectChildName()}, Verify the Device Handlers are installed and Published via the IDE", "error", true)
         } else { 
             LogAction("deviceHandlerTest Exception: ${ex}", "error", true)
-            sendExceptionData(ex, "deviceHandlerTest")
+            sendExceptionData(ex.message, "deviceHandlerTest")
         }
         atomicState.devHandlersTested = false
         return false
@@ -2915,7 +2915,7 @@ def removeTestDevs() {
         }
     } catch (ex) {
         LogAction("deviceHandlerTest Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "removeTestDevs")
+        sendExceptionData(ex.message, "removeTestDevs")
     }
 }
 
@@ -2947,7 +2947,7 @@ def getEndpointUrl() {
         }
     } catch (ex) { 
         LogAction("getEndpointUrl Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "getEndpointUrl")
+        sendExceptionData(ex.message, "getEndpointUrl")
     }
 }
 
@@ -2960,7 +2960,7 @@ def getAccessToken() {
         def msg = "Error: OAuth is not Enabled for the Nest Manager application!!!.  Please click remove and Enable Oauth under the SmartApp App Settings in the IDE..."
         sendPush(msg)
         LogAction("getAccessToken Exception | $msg", "warn", true)
-        sendExceptionData(ex, "getAccessToken")
+        sendExceptionData(ex.message, "getAccessToken")
         return false
     }
 }
@@ -3021,7 +3021,7 @@ def callback() {
     }
     catch (ex) {
         LogAction("Callback Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "callback")
+        sendExceptionData(ex.message, "callback")
     }
 }
 
@@ -3042,7 +3042,7 @@ def revokeNestToken() {
     }
     catch (ex) {
         LogAction("revokeNestToken Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "revokeNestToken")
+        sendExceptionData(ex.message, "revokeNestToken")
         return false
     }
 }
@@ -3194,7 +3194,7 @@ def LogAction(msg, type = "debug", showAlways = false) {
         else if (isDbg && !showAlways) { Logger(msg, type) }
     } catch (ex) { 
         log.error("LogAction Exception: ${ex}")
-        sendExceptionData(ex, "LogAction")
+        sendExceptionData(ex.message, "LogAction")
     }
 }
 
@@ -3248,7 +3248,7 @@ def setStateVar(frc = false) {
         }
     } catch (ex) { 
         LogAction("setStateVar Exception: ${ex}", "error", true) 
-        sendExceptionData(ex, "setStateVar")        
+        sendExceptionData(ex.message, "setStateVar")        
     }
 }
 
@@ -3413,7 +3413,7 @@ def GetTimeDiffSeconds(lastDate) {
     }
     catch (ex) {
         LogAction("GetTimeDiffSeconds Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "GetTimeDiffSeconds")
+        sendExceptionData(ex.message, "GetTimeDiffSeconds")
         return 10000
     }
 }
@@ -3427,7 +3427,7 @@ def daysOk(days) {
         } else { return true }
     } catch (ex) { 
         LogAction("daysOk() Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "daysOk")
+        sendExceptionData(ex.message, "daysOk")
     }
 }
 
@@ -3451,7 +3451,7 @@ def quietTimeOk() {
         } else { return true }
     } catch (ex) { 
         LogAction("timeOk Exception: ${ex}", "error", true) 
-        sendExceptionData(ex, "quietTimeOk")    
+        sendExceptionData(ex.message, "quietTimeOk")    
     }
 }
 
@@ -3476,7 +3476,7 @@ def notificationTimeOk() {
         } else { return true }
     } catch (ex) { 
         LogAction("notificationTimeOk Exception: ${ex}", "error", true) 
-        sendExceptionData(ex, "notificationTimeOk")    
+        sendExceptionData(ex.message, "notificationTimeOk")    
     }
 }
 
@@ -4273,7 +4273,7 @@ def createInstallDataJson() {
                 
     } catch (ex) { 
         LogAction("createInstallDataJson: Exception: ${ex}", "error", true) 
-        sendExceptionData(ex, "createInstallDataJson")
+        sendExceptionData(ex.message, "createInstallDataJson")
     }
 }
 
@@ -4307,15 +4307,16 @@ def removeInstallData() {
 def sendExceptionData(exMsg, methodName, isChild = false, autoType = null) {
     try {
         def exCnt = 0
+        def exString = "${exMsg}"
         exCnt = atomicState?.appExceptionCnt ? atomicState?.appExceptionCnt + 1 : 1
         atomicState?.appExceptionCnt = exCnt ?: 1
         if (optInSendExceptions) {
             def appType = isChild && autoType ? "automationApp/${autoType}" : "managerApp" 
             def exData
             if(isChild) {
-                exData = ["methodName":methodName, "automationType":autoType, "appVersion":(appVersion() ?: "Not Available"),"errorMsg":exMsg.toString(), "errorDt":getDtNow().toString()]
+                exData = ["methodName":methodName, "automationType":autoType, "appVersion":(appVersion() ?: "Not Available"),"errorMsg":exString, "errorDt":getDtNow().toString()]
             } else {
-                exData = ["methodName":methodName, "appVersion":(appVersion() ?: "Not Available"),"errorMsg":exMsg.toString(), "errorDt":getDtNow().toString()]
+                exData = ["methodName":methodName, "appVersion":(appVersion() ?: "Not Available"),"errorMsg":exString, "errorDt":getDtNow().toString()]
             }
             def results = new groovy.json.JsonOutput().toJson(exData)
             sendFirebaseExceptionData(results, "errorData/${appType}/${methodName}.json")
@@ -4328,10 +4329,11 @@ def sendExceptionData(exMsg, methodName, isChild = false, autoType = null) {
 def sendChildExceptionData(devType, devVer, exMsg, methodName) {
     try {
         def exCnt = 0
+        def exString = "${exMsg}"
         exCnt = atomicState?.childExceptionCnt ? atomicState?.childExceptionCnt + 1 : 1
         atomicState?.childExceptionCnt = exCnt ?: 1
         if (optInSendExceptions) {
-            def exData = ["deviceType":devType, "devVersion":(devVer ?: "Not Available"), "methodName":methodName, "errorMsg":exMsg.toString(), "errorDt":getDtNow().toString()]
+            def exData = ["deviceType":devType, "devVersion":(devVer ?: "Not Available"), "methodName":methodName, "errorMsg":exString, "errorDt":getDtNow().toString()]
             def results = new groovy.json.JsonOutput().toJson(exData)
             sendFirebaseExceptionData(results, "errorData/${devType}/${methodName}.json")
         }
@@ -4366,7 +4368,7 @@ def sendFirebaseData(data, pathVal) {
             LogAction("sendFirebaseData: 'HttpResponseException' Exception: ${ex}", "error", true)
         }
         else { LogAction("sendFirebaseData: Exception: ${ex}", "error", true) }
-        sendExceptionData(ex, "sendFirebaseData")
+        sendExceptionData(ex.message, "sendFirebaseData")
     }
     return result
 }
@@ -4414,7 +4416,7 @@ def removeFirebaseData(pathVal) {
             LogAction("removeFirebaseData: Response: ${ex.message}", "info", true)
         } else {
             LogAction("removeFirebaseData: Exception: ${ex}", "error", true)
-            sendExceptionData(ex, "removeFirebaseData")
+            sendExceptionData(ex.message, "removeFirebaseData")
             result = false
         }
     }
@@ -4526,6 +4528,7 @@ def mainAutoPage(params) {
                         nightModeDesc += (remSensorNight && remSensorNightModes) ? "\n• Night Modes: (${remSensorNightModes.size()})" : ""
                         nightModeDesc += (remSensorNight && (remSenNightHeatTemp || remSenNightCoolTemp)) ? "\n• Desired Temps: (H: ${remSenNightHeatTemp ?: 0}°${atomicState?.tempUnit}/C: ${remSenNightCoolTemp ?: 0}°${atomicState?.tempUnit})" : ""
                     remSenDescStr += remSensorNight ? "${nightModeDesc}" : ""
+                    remSenDescStr += getRemSenTstatFanSwitchDesc() ? "\n\n${getRemSenTstatFanSwitchDesc()}" : ""
                     def remSenDesc = (isRemSenConfigured() ? "${remSenDescStr}\n\nTap to Modify..." : null)
                     href "remSensorPage", title: "Remote Sensors Config...", description: remSenDesc ? remSenDesc : "Tap to Configure...", state: (remSenDesc ? "complete" : null), image: getAppImg("remote_sensor_icon.png")
                 }
@@ -5214,6 +5217,9 @@ def remSensorPage() {
                         }
                     }
                 }
+                section("Turn On a Fan/Switch While your Thermostat is Running:") {
+                    href "remSenTstatFanSwitchPage", title: "Control a Fan/Switch when Thermostat in Running?", description: getRemSenTstatFanSwitchDesc() ?: "", state: (getRemSenTstatFanSwitchDesc() ? "complete" : null), image: getAppImg("fan_ventilation_icon.png")
+                }
                 if(remSenTstat && (remSensorDay || remSensorNight)) {
                     if(remSenRuleType in ["Circ", "Heat_Circ", "Cool_Circ", "Heat_Cool_Circ"]) {
                         section("Fan Settings:") {
@@ -5248,6 +5254,69 @@ def remSensorPage() {
     }
 }
 
+def remSenTstatFanSwitchPage() {
+    dynamicPage(name: "remSenTstatFanSwitchPage", uninstall: false) {
+        section("Configure External Fans/Switches\n(3-Speed Fans Supported)") {
+            input "remSenTstatFanSwitches", "capability.switch", title: "Select the Switches?", required: false, submitOnChange: true, multiple: true,
+                    image: getAppImg("fan_ventilation_icon.png")
+            if(remSenTstatFanSwitches) {
+                paragraph "${getRemSenTstatFanSwitchDesc(false)}", state: getRemSenTstatFanSwitchDesc() ? "complete" : null, image: getAppImg("blank_icon.png")
+            }
+        }
+        if(remSenTstatFanSwitches) {
+            atomicState?.remSenTstatFanSwitchSpeedEnabled = getRemSenTstatFanSwitchesSpdChk() ? true : false
+            section("Fan Event Triggers") {
+                paragraph "These are all event based triggers and will not occur until the Thermostat device sends the event.  Depending on your configured Poll time it may take 1 minute or more",
+                        image: getAppImg("instruct_icon.png")
+                input(name: "remSenTstatFanSwitchTriggerType", type: "enum", title: "Control Switches When?", defaultValue: 1, metadata: [values:switchRunEnum()],  
+                    submitOnChange: true, image: getAppImg("${remSenTstatFanSwitchTriggerType == 1 ? "thermostat" : "home_fan"}_icon.png"))
+                input(name: "remSenTstatFanSwitchHvacModeFilter", type: "enum", title: "Thermostat Mode Triggers?", defaultValue: "any", metadata: [values:fanModeTrigEnum()],  
+                        submitOnChange: true, image: getAppImg("mode_icon.png"))
+            }
+            if(atomicState?.remSenTstatFanSwitchSpeedEnabled) {
+                section("Fan Speed Options") {
+                    input(name: "remSenTstatFanSwitchSpeedCtrl", type: "bool", title: "Enable Speed Control?", defaultValue: (atomicState?.remSenTstatFanSwitchSpeedEnabled ? true : false), submitOnChange: true, image: getAppImg("speed_knob_icon.png"))
+                    if(remSenTstatFanSwitchSpeedCtrl) {
+                        input "remSenTstatFanSwitchLowSpeed", "decimal", title: "Low Speed Threshold (°${atomicState?.tempUnit})", required: true, defaultValue: 1.0, submitOnChange: true, image: getAppImg("fan_low_speed.png")
+                        input "remSenTstatFanSwitchMedSpeed", "decimal", title: "Medium Speed Threshold (°${atomicState?.tempUnit})", required: true, defaultValue: 2.0, submitOnChange: true, image: getAppImg("fan_med_speed.png")
+                        input "remSenTstatFanSwitchHighSpeed", "decimal", title: "High Speed Threshold (°${atomicState?.tempUnit})", required: true, defaultValue: 4.0, submitOnChange: true, image: getAppImg("fan_high_speed.png")
+                    }
+                }
+            }
+        }
+    }
+}
+
+def getRemSenTstatFanSwitchDesc(showOpt = true) {
+    def swDesc = ""
+    def swCnt = 0
+    if(showOpt) {
+        swDesc += (remSenTstatFanSwitchSpeedCtrl || remSenTstatFanSwitchTriggerType || remSenTstatFanSwitchHvacModeFilter) ? "Fan Switch Config:" : ""
+    }
+    swDesc += remSenTstatFanSwitches ? "${showOpt ? "\n" : ""}  • Fan Switches:" : ""
+    def rmSwCnt = remSenTstatFanSwitches?.size() ?: 0
+    remSenTstatFanSwitches?.each { sw ->
+        swCnt = swCnt+1
+        swDesc += "${swCnt >= 1 ? "${swCnt == rmSwCnt ? "\n └" : "\n ├"}" : "\n └"} ${sw?.label}: (${sw?.currentSwitch?.toString().capitalize()})${checkFanSpeedSupport(sw) ? "(3Spd)" : ""}"
+    }
+    if(showOpt) {
+        swDesc += (remSenTstatFanSwitchSpeedCtrl || remSenTstatFanSwitchTriggerType || remSenTstatFanSwitchHvacModeFilter) ? "\n\nFan Triggers:" : ""
+        swDesc += (remSenTstatFanSwitches && remSenTstatFanSwitchSpeedCtrl) ? "\n  • 3-Speed Fan Support: (Active)" : ""
+        swDesc += (remSenTstatFanSwitches && remSenTstatFanSwitchTriggerType) ? "\n  • Fan Trigger: (${getEnumValue(switchRunEnum(), remSenTstatFanSwitchTriggerType)})" : ""
+        swDesc += (remSenTstatFanSwitches && remSenTstatFanSwitchHvacModeFilter) ? "\n  • Hvac Mode Filter: (${getEnumValue(fanModeTrigEnum(), remSenTstatFanSwitchHvacModeFilter)})" : ""
+    }
+    return (swDesc == "") ? null : "${swDesc}"
+}
+
+def getRemSenTstatFanSwitchesSpdChk() {
+    def devCnt = 0
+    if(remSenTstatFanSwitches) {
+        remSenTstatFanSwitches?.each { sw ->
+            if(checkFanSpeedSupport(sw)) { devCnt = devCnt+1 }
+        }
+    }
+    return (devCnt >= 1) ? true : false
+}
 
 //Requirements Section
 def remSenCoolTempsReq() { return (remSenRuleType in [ "Cool", "Heat_Cool", "Cool_Circ", "Heat_Cool_Circ" ]) ? true : false }
@@ -5523,6 +5592,92 @@ def getRemSenReqSetpointTemp() {
     return temp
 }
 
+def remSenTstatFanSwitchCheck() {
+    //LogAction("RemoteSensor Event | Fan Switch Check", "trace", false)
+    try {
+        if(disableAutomation) { return }
+        if(!remSenTstatFanSwitches) { return }
+
+        //def execTime = now()
+        def curTstatTemp = getDeviceTemp(remSenTstat).toDouble()
+        def curTstatOperState = remSenTstat?.currentThermostatOperatingState.toString()
+        def curCoolSetpoint = getTstatSetpoint(remSenTstat, "cool")
+        def curHeatSetpoint = getTstatSetpoint(remSenTstat, "heat")
+        def curTstatFanMode = remSenTstat?.currentThermostatFanMode.toString()
+        def hvacFanOn = (curTstatFanMode == "on" || curTstatFanMode == "circulate") ? true : false 
+        def hvacMode = remSenTstat ? remSenTstat?.currentThermostatMode.toString() : null
+        def reqSenHeatSetPoint = getRemSenHeatSetTemp()
+        def reqSenCoolSetPoint = getRemSenCoolSetTemp()
+        def remSenReqSetPoint = getRemSenReqSetpointTemp()
+        def curSenTemp = (remSensorDay || remSensorNight) ? getRemoteSenTemp().toDouble() : null
+        def tempDiff = Math.abs(remSenReqSetPoint - curSenTemp)
+
+        LogAction("remSenTstatFanSwitchCheck: Remote Sensor Temp: ${curSenTemp}", "info", false)  
+        LogAction("remSenTstatFanSwitchCheck: Thermostat Info - ( Temperature: (${curTstatTemp}) | HeatSetpoint: (${curHeatSetpoint}) | CoolSetpoint: (${curCoolSetpoint}) | HvacMode: (${hvacMode}) | OperatingState: (${curTstatOperState}) | FanMode: (${curTstatFanMode}) )", "info", false)   
+        LogAction("remSenTstatFanSwitchCheck: Desired Temps - Heat: ${reqSenHeatSetPoint} | Cool: ${reqSenCoolSetPoint}", "info", false)  
+            
+        if(remSenTstatFanSwitches && (remSenTstatFanSwitchTriggerType.toInteger() in [1, 2])) {
+            if(remSenTstatFanSwitchHvacModeFilter != "any" && (remSenTstatFanSwitchHvacModeFilter != hvacMode)) {
+                LogAction("remSenTstatFanSwitchCheck: Evaluating turn fans off Because Thermostat Mode does not Match the required Mode to Run Fans", "info", true)
+                hvacFanOn = false  // force off of fans
+            }
+        }
+
+        if(remSenTstatFanSwitches && (remSenTstatFanSwitchTriggerType.toInteger() in [1, 2])) {
+            if(hvacFanOn) {
+                if(remSenTstatFanSwitches) {
+                    remSenTstatFanSwitches.each { sw ->
+                        def swOn = (sw?.currentSwitch.toString() == "on") ? true : false
+                        if(!swOn) {
+                            if(checkFanSpeedSupport(sw) && atomicState?.remSenTstatFanSwitchSpeedEnabled && remSenTstatFanSwitchHighSpeed && remSenTstatFanSwitchMedSpeed && remSenTstatFanSwitchLowSpeed) {
+                                if(tempDiff < remSenTstatFanSwitchLowSpeed.toDouble()) {
+                                    sw.off()
+                                    LogAction("remSenTstatFanSwitchCheck: Temp Difference (${tempDiff}°${atomicState?.tempUnit}) is BELOW the Low Speed Threshold of ($remSenTstatFanSwitchLowSpeed) | Turning '${sw.label}' Fan Switch (OFF)", "info", true)
+                                    storeLastAction("Turned Fan $sw Off", getDtNow())
+                                }
+                                else if(tempDiff >= remSenTstatFanSwitchLowSpeed.toDouble() && tempDiff < remSenTstatFanSwitchMedSpeed.toDouble()) {
+                                    sw.lowSpeed()
+                                    LogAction("remSenTstatFanSwitchCheck: Temp Difference (${tempDiff}°${atomicState?.tempUnit}) is ABOVE the Low Speed Threshold of ($remSenTstatFanSwitchLowSpeed) | Turning '${sw.label}' Fan Switch on (LOW SPEED)", "info", true)
+                                    storeLastAction("Set Fan $sw to Low Speed", getDtNow())
+                                }
+                                else if(tempDiff >= remSenTstatFanSwitchMedSpeed.toDouble() && tempDiff < remSenTstatFanSwitchHighSpeed.toDouble()) {
+                                    sw.medSpeed()
+                                    LogAction("remSenTstatFanSwitchCheck: Temp Difference (${tempDiff}°${atomicState?.tempUnit}) is ABOVE the Medium Speed Threshold of ($remSenTstatFanSwitchMedSpeed) | Turning '${sw.label}' Fan Switch on (MEDIUM SPEED)", "info", true)
+                                    storeLastAction("Set Fan $sw to Medium Speed", getDtNow())
+                                }
+                                else if(tempDiff >= remSenTstatFanSwitchHighSpeed.toDouble()) {
+                                    sw.highSpeed()
+                                    LogAction("remSenTstatFanSwitchCheck: Temp Difference (${tempDiff}°${atomicState?.tempUnit}) is ABOVE the High Speed Threshold of ($remSenTstatFanSwitchHighSpeed) | Turning '${sw.label}' Fan Switch on (HIGH SPEED)", "info", true)
+                                    storeLastAction("Set Fan $sw to High Speed", getDtNow())
+                                }
+                            } else {
+                                LogAction("remSenTstatFanSwitchCheck: Thermostat (${remSenTstat?.displayName}) Fan is (${swOn ? "ON" : "OFF"}) | Turning '${sw.label}' Switch (ON)", "info", true)
+                                storeLastAction("Turned On ($remSenTstatFanSwitches)", getDtNow())
+                                sw.on()
+                            }
+                        }
+                    }
+                }
+            }
+            else {
+                remSenTstatFanSwitches.each { sw ->
+                    def swOn = (sw?.currentSwitch.toString() == "on") ? true : false
+                    if(swOn) {
+                        LogAction("remSenTstatFanSwitchCheck: Thermostat (${remSenTstat?.displayName}) Fan is (${swOn ? "ON" : "OFF"}) | Turning '${sw?.label}' Switch (OFF)", "info", true)
+                        storeLastAction("Turned Off ($remSenTstatFanSwitches)", getDtNow())
+                        sw.off()
+
+                    }
+                }
+            }
+        }
+        //storeExecutionHistory((now()-execTime), "remSenTstatFanSwitchCheck")
+    } catch (ex) {
+        LogAction("remSenTstatFanSwitchCheck Exception: (${ex})", "error", true)
+        parent?.sendExceptionData(ex, "remSenTstatFanSwitchCheck", true, getAutoType())
+    }
+}
+
 private remSenCheck() {
     //LogAction("remSenCheck.....", "trace", false)
     if(disableAutomation) { return }
@@ -5532,7 +5687,10 @@ private remSenCheck() {
         scheduleAutomationEval(schChkVal)
         LogAction("Remote Sensor: Too Soon to Evaluate Actions...Scheduling Re-Evaluation in (${schChkVal} seconds)", "info", true)
     } 
-    else { remSenEvtEval() } 
+    else { 
+        remSenEvtEval()
+        remSenTstatFanSwitchCheck()
+    } 
 }
 
 def getLastRemSenEvalSec() { return !atomicState?.lastRemSenEval ? 100000 : GetTimeDiffSeconds(atomicState?.lastRemSenEval).toInteger() }
@@ -5807,7 +5965,7 @@ private remSenEvtEval() {
         storeExecutionHistory((now() - execTime), "remSenEvtEval")
     } catch (ex) {
         LogAction("remSenEvtEval Exception: ${ex}", "error", true)
-        parent?.sendExceptionData(ex, "remSenEvtEval", true, getAutoType())
+        parent?.sendExceptionData(ex.message, "remSenEvtEval", true, getAutoType())
     }
 }
 
@@ -6227,7 +6385,7 @@ def fanCtrlCheck() {
             }
         }
 
-        if(fanCtrlFanSwitches && (fanCtrlFanFanSwitchTriggerType.toInteger() in [1, 2])) {
+        if(fanCtrlFanSwitches && (fanCtrlFanSwitchTriggerType.toInteger() in [1, 2])) {
             if(hvacFanOn) {
                 if(fanCtrlFanSwitches) {
                     fanCtrlFanSwitches.each { sw ->
@@ -6278,7 +6436,7 @@ def fanCtrlCheck() {
         storeExecutionHistory((now()-execTime), "fanCtrlCheck")
     } catch (ex) {
         LogAction("fanCtrlCheck Exception: (${ex})", "error", true)
-        parent?.sendExceptionData(ex, "fanCtrlCheck", true, getAutoType())
+        parent?.sendExceptionData(ex.message, "fanCtrlCheck", true, getAutoType())
     }
 }
 
@@ -6512,7 +6670,7 @@ def extTmpTempOk() {
         return retval
     } catch (ex) { 
         LogAction("getExtTmpTempOk Exception: ${ex}", "error", true)
-        parent?.sendExceptionData(ex, "extTmpTempOk", true, getAutoType())
+        parent?.sendExceptionData(ex.message, "extTmpTempOk", true, getAutoType())
     }
 }
 
@@ -6642,7 +6800,7 @@ def extTmpTempCheck(cTimeOut = false) {
         }
     } catch (ex) {
         LogAction("extTmpTempCheck Exception: (${ex})", "error", true)
-        parent?.sendExceptionData(ex, "extTmpTempCheck", true, getAutoType())
+        parent?.sendExceptionData(ex.message, "extTmpTempCheck", true, getAutoType())
     }
 }
 
@@ -6960,7 +7118,7 @@ def conWatCheck(cTimeOut = false) {
         }
     } catch (ex) {
         LogAction("conWatCheck Exception: (${ex})", "error", true)
-        parent?.sendExceptionData(ex, "conWatCheck", true, getAutoType())
+        parent?.sendExceptionData(ex.message, "conWatCheck", true, getAutoType())
     }
 }
 
@@ -7216,7 +7374,7 @@ def leakWatCheck() {
         }
     } catch (ex) {
         LogAction("leakWatCheck Exception: (${ex})", "error", true)
-        parent?.sendExceptionData(ex, "leakWatCheck", true, getAutoType())
+        parent?.sendExceptionData(ex.message, "leakWatCheck", true, getAutoType())
     }
 }
 
@@ -7534,7 +7692,7 @@ def checkNestMode() {
         }
     } catch (ex) { 
         LogAction("checkNestMode Exception: (${ex})", "error", true)
-        parent?.sendExceptionData(ex, "checkNestMode", true, getAutoType())
+        parent?.sendExceptionData(ex.message, "checkNestMode", true, getAutoType())
     }
 }
 
@@ -7825,7 +7983,7 @@ def checkTstatMode() {
         storeExecutionHistory((now() - execTime), "checkTstaMode")
     } catch (ex) { 
         LogAction("checkTstaMode Exception: (${ex})", "error", true)
-        parent?.sendExceptionData(ex, "checkTstatMode", true, getAutoType())
+        parent?.sendExceptionData(ex.message, "checkTstatMode", true, getAutoType())
     }
 }
 
@@ -7871,7 +8029,7 @@ def storeExecutionHistory(val, method = null) {
         if(list) { atomicState?.evalExecutionHistory = list }
     } catch (ex) {
         LogAction("storeExecutionHistory Exception: ${ex}", "error", true)
-        sendExceptionData(ex, "storeExecutionHistory")
+        sendExceptionData(ex.message, "storeExecutionHistory")
     }
 }
 
@@ -8121,7 +8279,7 @@ def voiceNotifString(phrase) {
         if (phrase.toLowerCase().contains("%ondelay%")) { phrase = phrase.toLowerCase().replace('%ondelay%', getEnumValue(longTimeSecEnum(), settings?."${getAutoType()}OnDelay").toString()) }
     } catch (ex) {
         LogAction("voiceNotifString Exception: ${ex}", "error", true)
-        parent?.sendExceptionData(ex, "voiceNotifString", true, getAutoType())
+        parent?.sendExceptionData(ex.message, "voiceNotifString", true, getAutoType())
     }
     return phrase
 }
@@ -8351,7 +8509,7 @@ def autoScheduleOk(autoType) {
         return (modeOk && dayOk && timeOk) ? true : false
     } catch (ex) { 
         LogAction("${autoType}-autoScheduleOk Exception: ${ex}", "error", true)
-        parent?.sendExceptionData(ex, "${autoType}-autoScheduleOk", true, getAutoType())
+        parent?.sendExceptionData(ex.message, "${autoType}-autoScheduleOk", true, getAutoType())
     }
 }
 
@@ -8472,7 +8630,7 @@ def sendEventAlarmAction(evtNum) {
         }
     } catch (ex) {
         LogAction("sendEventAlarmAction Exception: ($evtNum) - (${ex})", "error", true)
-        parent?.sendExceptionData(ex, "sendEventAlarmAction", true, getAutoType())
+        parent?.sendExceptionData(ex.message, "sendEventAlarmAction", true, getAutoType())
     }
    return resval
 }
@@ -8715,7 +8873,7 @@ def setTstatMode(tstat, mode) {
     }
     catch (ex) { 
         LogAction("setTstatMode() Exception | ${ex}", "error", true)
-        parent?.sendExceptionData(ex, "setTstatMode", true, getAutoType())
+        parent?.sendExceptionData(ex.message, "setTstatMode", true, getAutoType())
     }
     return result
 }
@@ -8735,7 +8893,7 @@ def setMultipleTstatMode(tstats, mode) {
         }
     } catch (ex) { 
         LogAction("setMultipleTstatMode() Exception | ${ex}", "error", true)
-        parent?.sendExceptionData(ex, "setMultipleTstatMode", true, getAutoType())
+        parent?.sendExceptionData(ex.message, "setMultipleTstatMode", true, getAutoType())
     }
     return result
 }
@@ -8898,7 +9056,7 @@ void sendTTS(txt) {
         }
     } catch (ex) {
         LogAction("sendTTS Exception: (${ex})", "error", true)
-        parent?.sendExceptionData(ex, "sendTTS", true, getAutoType())
+        parent?.sendExceptionData(ex.message, "sendTTS", true, getAutoType())
     }
 }
 
