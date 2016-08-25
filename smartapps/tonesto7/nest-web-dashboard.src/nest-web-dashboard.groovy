@@ -89,7 +89,7 @@ def updated() {
 		log.debug "Updated with settings: ${settings}"
 		initialize()
 		sendNotificationEvent("${textAppName()} has updated settings...")
-		atomicState?.lastUpdatedDt = getDtNow()
+		//atomicState?.lastUpdatedDt = getDtNow()
 }
 
 def uninstalled() {
