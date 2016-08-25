@@ -7,43 +7,30 @@
     },
     "versions": {
         "app": {
-            "type": "rel",
-            "ver": "2.5.9"
+            "ver": "3.1.0"
         },
         "thermostat": {
-            "type": "rel",
-            "ver": "2.5.6"
+            "ver": "3.1.0"
         },
         "protect": {
-            "type": "rel",
-            "ver": "2.5.4"
+            "ver": "3.0.2"
         },
         "camera": {
-            "type": "rel",
-            "ver": "0.0.2"
+            "ver": "1.0.3"
         },
         "presence": {
-            "type": "rel",
-            "ver": "2.5.1"
+            "ver": "3.0.1"
         },
         "weather": {
-            "type": "rel",
-            "ver": "2.5.6"
-        },
-        "minDevVersions": {
-            "thermostat": 300,
-            "protect": 300,
-            "presence": 300,
-            "weather": 300,
-            "camera": 012
+            "ver": "3.1.0"
         }
     },
     "token": {
         "tokenNum": 1
     },
     "broadcast": {
-        "msgId": "48vm9GiNju",
-        "message": "Nest Manager Broadcast: Please remember that after updating your code to v2.5 that you must update the device handler code as well.",
+        "msgId": "eavl9D2vry",
+        "message": "Nest Manager Broadcast: Version 3.0 is now available.  Please make sure to update the SmartApp and Devices...",
         "type": "info"
     },
     "updater": {
@@ -51,36 +38,45 @@
         "updateMsg": "",
         "updateDesc": "",
         "updateType": "std",
-        "setupVersion": 1,
+        "setupVersion": 2,
         "versions": {
             "app": {
-                "type": "rel",
-                "ver": "2.5.9"
+                "ver": "3.1.0"
             },
             "thermostat": {
-                "type": "rel",
-                "ver": "2.5.3"
+                "ver": "3.1.0"
+            },
+            "vthermostat": {
+                "ver": "3.1.0"
             },
             "protect": {
-                "type": "rel",
-                "ver": "2.5.4"
+                "ver": "3.1.0"
             },
             "camera": {
-                "type": "rel",
-                "ver": "0.0.2"
+                "ver": "1.1.0"
             },
             "presence": {
-                "type": "rel",
-                "ver": "2.5.1"
+                "ver": "3.1.0"
             },
             "weather": {
-                "type": "rel",
-                "ver": "2.5.3"
+                "ver": "3.1.0"
+            },
+            "webDash": {
+                "ver": "1.0.0"
             }
         }
     },
     "css": {
         "cssVer": 1,
-        "cssUrl": "https://cdn.rawgit.com/desertblade/ST-HTMLTile-Framework/master/css/smartthings.css"
+        "cssUrl": "https://raw.githubusercontent.com/desertblade/ST-HTMLTile-Framework/master/css/smartthings.css"
+    },
+    "html": {
+        "cssVer": 1,
+        "cssUrl": "https://raw.githubusercontent.com/desertblade/ST-HTMLTile-Framework/master/css/smartthings.css",
+        "chartJsVer": 1,
+        "chartJsUrl": "https://www.gstatic.com/charts/loader.js"
+    },
+    "database": {
+        "disableExceptions": true
     }
 }
