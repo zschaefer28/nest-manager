@@ -715,6 +715,7 @@ def initialize() {
 		//initAutoApp()
 	}
 	else {
+		if(!atomicState?.dateInstalled) { atomicState?.dateInstalled = getDtNow() }
 		initWatchdogApp()
 		initManagerApp()
 	}
@@ -750,6 +751,7 @@ def initManagerApp() {
 	if(settings?.thermostats || settings?.protects || settings?.cameras || settings?.presDevice || settings?.weatherDevice) {
 		atomicState?.isInstalled = true
 	} else { atomicState.isInstalled = false }
+	atomicState?.dateModified = getDtNow()
 	subscriber()
 	setPollingState()
 	//If analytics are enabled this will send non-user identifiable data to firebase server
@@ -4693,9 +4695,10 @@ def createInstallDataJson() {
 		def cltType = !mobileClientType ? "Not Configured" : mobileClientType?.toString()
 		def appErrCnt = !atomicState?.appExceptionCnt ? 0 : atomicState?.appExceptionCnt
 		def devErrCnt = !atomicState?.childExceptionCnt ? 0 : atomicState?.childExceptionCnt
+		def instDate = atomicState?.dateInstalled ?: "Not Set"
 		def data = [
 			"guid":atomicState?.installationId, "versions":versions, "thermostats":tstatCnt, "vThermostats":vStatCnt, "protects":protCnt, "vthermostats":vStatCnt, "cameras":camCnt, "appErrorCnt":appErrCnt, "devErrorCnt":devErrCnt,
-			"automations":automations, "timeZone":tz, "apiCmdCnt":apiCmdCnt, "stateUsage":"${getStateSizePerc()}%", "mobileClient":cltType, "datetime":getDtNow()?.toString()
+			"automations":automations, "timeZone":tz, "apiCmdCnt":apiCmdCnt, "stateUsage":"${getStateSizePerc()}%", "mobileClient":cltType, "datetime":getDtNow()?.toString(), "dateInstalled":instDate?.toString()
 		]
 		def resultJson = new groovy.json.JsonOutput().toJson(data)
 		return resultJson

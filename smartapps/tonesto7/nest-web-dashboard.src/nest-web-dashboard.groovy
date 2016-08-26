@@ -241,13 +241,46 @@ def initializeEndpoint() {
 		try {
 			def accessToken = createAccessToken()
 			if (accessToken) {
-				atomicState?.endpoint = apiServerUrl("/api/token/${accessToken}/smartapps/installations/${app.id}/")
+				def apiUrl = apiServerUrl("/api/token/${accessToken}/smartapps/installations/${app.id}/")
+				def url = getShortenedURL(apiUrl) ?: apiUrl
+				if(url) {
+					atomicState?.endpoint = url
+				}
 			}
 		} catch(e) {
 			atomicState?.endpoint = null
 		}
 	}
 	return atomicState?.endpoint
+}
+
+def getShortenedURL(addr) {
+	return null
+	/*def params = [ uri: "" ]
+	def result = false
+	try {
+		httpGet(params) { resp ->
+			if(resp.data) {
+				LogAction("Getting Latest Data from appParams.json File...", "info", true)
+				atomicState?.appData = resp?.data
+				atomicState?.lastWebUpdDt = getDtNow()
+				updateHandler()
+				broadcastCheck()
+				helpHandler()
+			}
+			LogTrace("getWebFileData Resp: ${resp?.data}")
+			result = true
+		}
+	}
+	catch (ex) {
+		if(ex instanceof groovyx.net.http.HttpResponseException) {
+			   log.warn  "appParams.json file not found..."
+		} else {
+			log.error "getWebFileData Exception:", ex
+		}
+		sendExceptionData(ex.message, "getWebFileData")
+	}
+	return result*/
 }
 
 def api_deviceData() {
