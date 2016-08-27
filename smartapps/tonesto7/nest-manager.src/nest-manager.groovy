@@ -44,6 +44,7 @@ def appVerInfo() {
 	str += "V3.1.0 (August 25th, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
 	str += "\n • ADDED: Remote sensor automation virtual thermostat"
+	str += "\n • UPDATED: Analytics to support the new virtual thermostat."
 	str += "\n • ADDED: Lot and Lot's of bugfixes"
 
 	str += "\n\nV3.0.2 (August 17th, 2016):"
@@ -843,6 +844,7 @@ def getInstAutoTypesDesc() {
 	def nModeCnt = 0
 	def tModeCnt = 0
 	def watchDogCnt = 0
+	def webDashCnt = 0
 	def disCnt = 0
 	childApps?.each { a ->
 		def type = a?.getAutomationType()
@@ -873,6 +875,9 @@ def getInstAutoTypesDesc() {
 					break
 				case "watchDog":
 					watchDogCnt = watchDogCnt+1
+					break
+				case "webDash":
+					webDashCnt = webDashCnt+1
 					break
 			}
 		}
@@ -2308,7 +2313,7 @@ def getHtmlInfo() {
 }
 
 def allowDbException() {
-	if(atomicState?.appData?.database?.disableExceptions) {
+	if(atomicState?.appData?.database?.disableExceptions != null) {
 		return atomicState?.appData?.database?.disableExceptions == true ? false : true
 	} else {
 		if(getWebFileData()) {
@@ -4681,14 +4686,14 @@ def createInstallDataJson() {
 		def cdVer = atomicState?.camDevVer ?: "Not Installed"
 		def pdVer = atomicState?.presDevVer ?: "Not Installed"
 		def wdVer = atomicState?.weatDevVer ?: "Not Installed"
-		def vTsVer = atomicState?.vtDevVer ?: "Not Installed"
-		def dashAppVer = atomicState?.dashAppVer ?: "Not Installed"
-		def versions = ["apps":["manager":appVersion()?.toString(), "dashApp":dashAppVer], "devices":["thermostat":tsVer, "vThermostat":vTsVer, "protect":ptVer, "camera":cdVer, "presence":pdVer, "weather":wdVer]]
+		def vtsVer = atomicState?.vtDevVer ?: "Not Installed"
+		def dashVer = atomicState?.dashVer ?: "Not Installed"
+		def versions = ["apps":["manager":appVersion()?.toString(), "dash":dashVer], "devices":["thermostat":tsVer, "vthermostat":vtsVer, "protect":ptVer, "camera":cdVer, "presence":pdVer, "weather":wdVer]]
 
 		def tstatCnt = atomicState?.thermostats?.size() ?: 0
 		def protCnt = atomicState?.protects?.size() ?: 0
 		def camCnt = atomicState?.cameras?.size() ?: 0
-		def vStatCnt = atomicState?.vThermostats?.size() ?: 0
+		def vstatCnt = atomicState?.vThermostats?.size() ?: 0
 		def automations = !atomicState?.installedAutomations ? "No Automations Installed" : atomicState?.installedAutomations
 		def tz = getTimeZone()?.ID?.toString()
 		def apiCmdCnt = !atomicState?.apiCommandCnt ? 0 : atomicState?.apiCommandCnt
@@ -4697,8 +4702,8 @@ def createInstallDataJson() {
 		def devErrCnt = !atomicState?.childExceptionCnt ? 0 : atomicState?.childExceptionCnt
 		def instDate = atomicState?.dateInstalled ?: "Not Set"
 		def data = [
-			"guid":atomicState?.installationId, "versions":versions, "thermostats":tstatCnt, "vThermostats":vStatCnt, "protects":protCnt, "vthermostats":vStatCnt, "cameras":camCnt, "appErrorCnt":appErrCnt, "devErrorCnt":devErrCnt,
-			"automations":automations, "timeZone":tz, "apiCmdCnt":apiCmdCnt, "stateUsage":"${getStateSizePerc()}%", "mobileClient":cltType, "datetime":getDtNow()?.toString(), "dateInstalled":instDate?.toString()
+			"guid":atomicState?.installationId, "versions":versions, "thermostats":tstatCnt, "protects":protCnt, "vthermostats":vstatCnt, "cameras":camCnt, "appErrorCnt":appErrCnt, "devErrorCnt":devErrCnt,
+			"automations":automations, "timeZone":tz, "apiCmdCnt":apiCmdCnt, "stateUsage":"${getStateSizePerc()}%", "mobileClient":cltType, "datetime":getDtNow()?.toString()
 		]
 		def resultJson = new groovy.json.JsonOutput().toJson(data)
 		return resultJson
