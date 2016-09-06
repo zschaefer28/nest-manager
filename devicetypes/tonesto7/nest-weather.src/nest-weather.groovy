@@ -1386,7 +1386,7 @@ def getWeatherHTML() {
                   <div class="container">
                   <h4>Current Weather Conditions</h4>
                   <h3><a href="#openModal">${state?.walert}</a></h3>
-                  <h1 class="bottomBorder"> ${state?.curWeather?.current_observation?.display_location.full} </h1>
+                  <h1 class="bottomBorder"> ${state?.curWeather?.current_observation?.display_location?.full} </h1>
                       <div class="row">
                           <div class="six columns">
                               <b>Feels Like:</b> ${getFeelslike()} <br>
@@ -1445,6 +1445,18 @@ def getWeatherHTML() {
         log.error "getWeatherHTML Exception:", ex
         exceptionDataHandler(ex.message, "getWeatherHTML")
     }
+}
+
+def hideChartHtml() {
+    def data = """
+        <h4 style="font-size: 22px; font-weight: bold; text-align: center; background: #00a1db; color: #f5f5f5;">Event History</h4>
+        <br></br>
+        <div class="centerText">
+          <p>Waiting for more data to be collected</p>
+          <p>This may take at least 24 hours</p>
+        </div>
+    """
+    return data
 }
 
 private def textDevName()  { return "Nest Weather${appDevName()}" }
