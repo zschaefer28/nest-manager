@@ -36,8 +36,8 @@ definition(
 	appSetting "clientSecret"
 }
 
-def appVersion() { "3.1.1" }
-def appVerDate() { "9-1-2016" }
+def appVersion() { "3.2.0" }
+def appVerDate() { "9-6-2016" }
 def appVerInfo() {
 	def str = ""
 
@@ -229,9 +229,9 @@ def mainPage() {
 	return dynamicPage(name: "mainPage", title: "Main Page", nextPage: (!setupComplete ? "reviewSetupPage" : null), refreshInterval: rfrshDash, install: setupComplete, uninstall: false) {
 		section("") {
 			href "changeLogPage", title: "", description: "${appInfoDesc()}", image: getAppImg("nest_manager%402x.png", true)
-			/*if(settings?.enableDashboard && atomicState?.dashboardInstalled && atomicState?.dashboardUrl) {
+			if(settings?.enableDashboard && atomicState?.dashboardInstalled && atomicState?.dashboardUrl) {
 				href "", title: "Nest Manager Dashboard", style: "external", url: "${atomicState?.dashboardUrl}dashboard", image: getAppImg("dashboard_icon.png"), required: false
-			}*/
+			}
 			if(atomicState?.appData && !appDevType() && isAppUpdateAvail()) {
 				href url: stIdeLink(), style:"external", required: false, title:"An Update is Available for ${appName()}!!!",
 						description:"Current: v${appVersion()} | New: ${atomicState?.appData?.updater?.versions?.app?.ver}\n\nTap to Open the IDE in your Mobile Browser...", state: "complete", image: getAppImg("update_icon.png")
@@ -273,7 +273,7 @@ def mainPage() {
 					href "nestInfoPage", title: "API | Diagnostics | Testing...", description: "Tap to view info...", image: getAppImg("api_diag_icon.png")
 				}
 			}
-			/*section("Web Dashboard:") {
+			section("Web Dashboard:") {
 				def dashAct = (settings?.enableDashboard && atomicState?.dashboardInstalled && atomicState?.dashboardUrl) ? true : false
 				def dashDesc = dashAct ? "Dashboard is (Active)\nTurn off to Remove" : "Toggle to Install.."
 				input "enableDashboard", "bool", title: "Enable Web Dashboard", submitOnChange: true, defaultValue: false, required: false, description: dashDesc, state: dashAct ? "complete" : null,
@@ -287,7 +287,7 @@ def mainPage() {
 					removeDashboardApp()
 					atomicState?.dashSetup = false
 				}
-			}*/
+			}
 			section("  ") {
 				href "uninstallPage", title: "Uninstall this App", description: "Tap to Remove...", image: getAppImg("uninstall_icon.png")
 			}
