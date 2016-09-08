@@ -7,10 +7,10 @@
     },
     "versions": {
         "app": {
-            "ver": "3.1.0"
+            "ver": "3.1.2"
         },
         "thermostat": {
-            "ver": "3.1.0"
+            "ver": "3.1.1"
         },
         "protect": {
             "ver": "3.1.0"
@@ -22,7 +22,7 @@
             "ver": "3.1.0"
         },
         "weather": {
-            "ver": "3.1.0"
+            "ver": "3.1.1"
         }
     },
     "token": {
@@ -41,13 +41,13 @@
         "setupVersion": 2,
         "versions": {
             "app": {
-                "ver": "3.1.1"
+                "ver": "3.1.2"
             },
             "thermostat": {
-                "ver": "3.1.0"
+                "ver": "3.1.1"
             },
             "vthermostat": {
-                "ver": "3.1.0"
+                "ver": "3.1.1"
             },
             "protect": {
                 "ver": "3.1.0"
@@ -59,7 +59,7 @@
                 "ver": "3.1.0"
             },
             "weather": {
-                "ver": "3.1.0"
+                "ver": "3.1.1"
             },
             "webDash": {
                 "ver": "1.0.0"
