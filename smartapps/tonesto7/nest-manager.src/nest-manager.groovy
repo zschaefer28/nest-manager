@@ -37,9 +37,16 @@ definition(
 }
 
 def appVersion() { "3.2.0" }
-def appVerDate() { "9-6-2016" }
+def appVerDate() { "9-12-2016" }
 def appVerInfo() {
 	def str = ""
+
+	str += "V3.1.3 (September 12th, 2016):"
+	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
+	str += "\n • ADDED: Ask Alexa (@MichaelS) Support. Automations now have the ability to Add/Remove notifications from Nest Manager to the Ask Alexa Message Queue..."
+
+	str += "\n\nV3.1.2 (September 6th, 2016):"
+	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
 
 	str += "V3.1.1 (September 1st, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
@@ -5598,7 +5605,7 @@ def watchDogAlarmActions(dev, dni, actType) {
 			sendNofificationMsg("Warning", evtNotifMsg)
 		}
 		if (allowSpeech) {
-			sendEventVoiceNotifications(voiceNotifString(evtVoiceMsg))
+			sendEventVoiceNotifications(voiceNotifString(evtVoiceMsg), "nmWatDogEvt_${app?.id}", true, "nmWatDogEvt_${app?.id}")
 		}
 		if (allowAlarm) {
 			scheduleAlarmOn()
@@ -7251,7 +7258,7 @@ def extTmpTempCheck(cTimeOut = false) {
 								if(allowNotif) {
 									if(!timeOut && safetyOk) {
 										sendEventPushNotifications("Restoring '${extTmpTstat?.label}' to '${lastMode.toUpperCase()}' Mode because External Temp has been above the Threshold for (${getEnumValue(longTimeSecEnum(), extTmpOnDelay)})...", "Info")
-										if(speakOnRestore) { sendEventVoiceNotifications(voiceNotifString(atomicState?."${getAutoType()}OnVoiceMsg")) }
+										if(speakOnRestore) { sendEventVoiceNotifications(voiceNotifString(atomicState?."${getAutoType()}OnVoiceMsg"), "nmExtTmpOn_${app?.id}", true, "nmExtTmpOff_${app?.id}") }
 									}
 								}
 								return
@@ -7295,7 +7302,7 @@ def extTmpTempCheck(cTimeOut = false) {
 							}
 							if(allowNotif) {
 								sendEventPushNotifications("${extTmpTstat?.label} has been turned 'Off' because External Temp is at the temp threshold for (${getEnumValue(longTimeSecEnum(), extTmpOffDelay)})!!!", "Info")
-								if (allowSpeech) { sendEventVoiceNotifications(voiceNotifString(atomicState?."${getAutoType()}OffVoiceMsg")) }
+								if (allowSpeech) { sendEventVoiceNotifications(voiceNotifString(atomicState?."${getAutoType()}OffVoiceMsg"), "nmExtTmpOff_${app?.id}", true, "nmExtTmpOn_${app?.id}") }
 							}
 						} else { LogAction("extTmpTempCheck(): Error turning themostat Off", "warn", true) }
 					} else { scheduleAutomationEval(30) }
@@ -7553,7 +7560,7 @@ def conWatCheck(cTimeOut = false) {
 								if(allowNotif) {
 									if(!timeOut && safetyOk) {
 										sendEventPushNotifications("Restoring '${conWatTstat?.label}' to '${lastMode?.toString().toUpperCase()}' Mode because ALL contacts have been 'Closed' again for (${getEnumValue(longTimeSecEnum(), conWatOnDelay)})...", "Info")
-										if(speakOnRestore) { sendEventVoiceNotifications(voiceNotifString(atomicState?."${getAutoType()}OnVoiceMsg")) }
+										if(speakOnRestore) { sendEventVoiceNotifications(voiceNotifString(atomicState?."${getAutoType()}OnVoiceMsg"), "nmConWatOn_${app?.id}", true, "nmConWatOff_${app?.id}") }
 									}
 								}
 							} else { LogAction("conWatCheck() | There was Problem Restoring the Last Mode to ($lastMode)", "error", true) }
@@ -7598,7 +7605,7 @@ def conWatCheck(cTimeOut = false) {
 
 							if(allowNotif) {
 								sendEventPushNotifications("'${conWatTstat.label}' has been turned 'OFF' because${openCtDesc}has been Opened for (${getEnumValue(longTimeSecEnum(), conWatOffDelay)})...", "Info")
-								if (allowSpeech) { sendEventVoiceNotifications(voiceNotifString(atomicState?."${getAutoType()}OffVoiceMsg")) }
+								if (allowSpeech) { sendEventVoiceNotifications(voiceNotifString(atomicState?."${getAutoType()}OffVoiceMsg"), "nmConWatOff_${app?.id}", true, "nmConWatOn_${app?.id}") }
 							}
 						} else { LogAction("conWatCheck(): Error turning themostat Off", "warn", true) }
 					} else {
@@ -7798,7 +7805,7 @@ def leakWatCheck() {
 								if(allowNotif) {
 									if(safetyOk) {
 										sendEventPushNotifications("Restoring '${leakWatTstat?.label}' to '${lastMode?.toString().toUpperCase()}' Mode because ALL leak sensors have been 'Dry' again for (${getEnumValue(longTimeSecEnum(), leakWatOnDelay)})...", "Info")
-										if(speakOnRestore) { sendEventVoiceNotifications(voiceNotifString("Restoring ${leakWatTstat} to ${lastMode?.toString().toUpperCase()} Mode because ALL leak sensors have been Dry again for (${getEnumValue(longTimeSecEnum(), leakWatOnDelay)})")) }
+										if(speakOnRestore) { sendEventVoiceNotifications(voiceNotifString("Restoring ${leakWatTstat} to ${lastMode?.toString().toUpperCase()} Mode because ALL leak sensors have been Dry again for (${getEnumValue(longTimeSecEnum(), leakWatOnDelay)})"), "nmLeakWatOn_${app?.id}", true, "nmLeakWatOff_${app?.id}") }
 									}
 								}
 							} else { LogAction("leakWatCheck() | There was problem restoring the last mode to ${lastMode}...", "error", true) }
@@ -7844,7 +7851,7 @@ def leakWatCheck() {
 						LogAction("leakWatCheck: '${leakWatTstat.label}' has been turned 'OFF' because${wetCtDesc}has reported it's WET...", "warn", true)
 						if(allowNotif) {
 							sendEventPushNotifications("'${leakWatTstat.label}' has been turned 'OFF' because${wetCtDesc}has reported it's WET...", "Info")
-							if (allowSpeech) { sendEventVoiceNotifications(voiceNotifString("${leakWatTstat} has been turned OFF because${wetCtDesc}has reported it's WET...")) }
+							if (allowSpeech) { sendEventVoiceNotifications(voiceNotifString("${leakWatTstat} has been turned OFF because${wetCtDesc}has reported it's WET..."), "nmLeakWatOff_${app?.id}", true, "nmLeakWatOn_${app?.id}") }
 						}
 					} else { LogAction("leakWatCheck(): Error turning themostat Off", "warn", true) }
 				} else {
@@ -7960,11 +7967,6 @@ def nestModePresPage() {
 			}
 		}
 		if(((nModeHomeModes && nModeAwayModes) && !nModePresSensor) || nModePresSensor) {
-			/*
-			section("Notifications:") {
-				href "setRecipientsPage", title: "(Optional) Select Recipients", description: getNotifConfigDesc(), params: [pName: "${pName}"], state: (getNotificationOptionsConf() ? "complete" : null),
-						image: getAppImg("recipient_icon.png")
-			}*/
 			section(getDmtSectionDesc(nModePrefix())) {
 				def pageDesc = getDayModeTimeDesc(pName)
 				href "setDayModeTimePage", title: "Configure Days, Times, or Modes", description: pageDesc, params: [pName: "${pName}"], state: (pageDesc ? "complete" : null),
@@ -9037,7 +9039,7 @@ def sendEventPushNotifications(message, type) {
 	}
 }
 
-def sendEventVoiceNotifications(vMsg) {
+def sendEventVoiceNotifications(vMsg, msgId=null, rmAAMsg=false, rmMsgId) {
 	def allowNotif = settings?."${getAutoType()}NotificationsOn" ? true : false
 	def allowSpeech = allowNotif && settings?."${getAutoType()}AllowSpeechNotif" ? true : false
 	def speakOnRestore = allowSpeech && settings?."${getAutoType()}SpeechOnRestore" ? true : false
@@ -9045,16 +9047,28 @@ def sendEventVoiceNotifications(vMsg) {
 		if(settings["${pName}SpeechDevices"] || settings["${pName}SpeechMediaPlayer"]) {
 			sendTTS(vMsg)
 		}
-		if (settings["${pName}SendToAskAlexaQueue"]) {
-			sendEventToAskAlexaQueue(vMsg)
+		if(settings["${pName}SendToAskAlexaQueue"]) {
+			if(rmMsgId != null && rmAAMsg == true) {
+				removeAskAlexaQueueMsg(rmMsgId)
+			}
+			else if (vMsg && msgId != null) {
+				addAskAlexaQueueMsg(vMsg, msgId
+			}
 		}
 	}
 }
 
-def sendEventToAskAlexaQueue(vMsg) {
+def addAskAlexaQueueMsg(vMsg, msgId) {
 	if(parent?.getAskAlexaQueueEnabled() == true) {
-		LogAction("sendEventToAskAlexaQueue: Sending Message this Message to the Ask Alexa Queue ($vMsg)", "info", true)
-		sendLocationEvent(name: "AskAlexaMsgQueue", value: "${app?.label}", isStateChange: true, descriptionText: "${vMsg}")
+		LogAction("addAskAlexaQueueMsg: Adding this Message to the Ask Alexa Queue: ($vMsg)|${msgId}", "info", true)
+		sendLocationEvent(name: "AskAlexaMsgQueue", value: "${app?.label}", isStateChange: true, descriptionText: "${vMsg}", unit: "${msgId}")
+	}
+}
+
+def removeAskAlexaQueueMsg(msgId) {
+	if(parent?.getAskAlexaQueueEnabled() == true) {
+		LogAction("removeAskAlexaQueueMsg: Removing Message ID (${msgId}) from the Ask Alexa Queue", "info", true)
+		sendLocationEvent(name: "AskAlexaMsgQueueDelete", value: "${app?.label}", isStateChange: true, unit: msgId)
 	}
 }
 
