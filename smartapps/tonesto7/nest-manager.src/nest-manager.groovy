@@ -37,14 +37,18 @@ definition(
 }
 
 def appVersion() { "3.2.0" }
-def appVerDate() { "9-6-2016" }
+def appVerDate() { "9-16-2016" }
 def appVerInfo() {
 	def str = ""
 
-	str += "V3.1.2 (September 6th, 2016):"
+	str += "V3.2.0 (September 16th, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
-	str += "\n • ADDED: Ask Alexa (@MichaelS) Support (Not Enabled Yet). Automations now have the ability to send notifications to the Ask Alexa Message Queue..."
-	str += "\n • FIXED: nMODE and tMODE automations only run once per ST MODE change."
+	str += "\n • UPDATED: First Commit of Automation Refactor (@E_sch)..."
+
+	str += "\n\nV3.1.3 (September 12th, 2016):"
+	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
+	str += "\n • ADDED: Ask Alexa (@MichaelS) Support. Automations now have the ability to Add/Remove notifications from Nest Manager to the Ask Alexa Message Queue..."
+	str += "\n • FIXED: Found quite a few minor bugs that I fixed, and cleaned up unnecessary code and consolodated so some others to save some space..."
 
 	str += "\n\nV3.1.1 (September 1st, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
@@ -242,18 +246,24 @@ def mainPage() {
 				href url: stIdeLink(), style:"external", required: false, title:"An Update is Available for ${appName()}!!!",
 						description:"Current: v${appVersion()} | New: ${atomicState?.appData?.updater?.versions?.app?.ver}\n\nTap to Open the IDE in your Mobile Browser...", state: "complete", image: getAppImg("update_icon.png")
 			}
-			if(atomicState?.isInstalled) {
+		}
+		if(atomicState?.isInstalled) {
+			section("Location & Devices:") {
 				def devDesc = getDevicesDesc() ? "Nest Location: (${locationPresence().toString().capitalize()})\n\nCurrent Devices: ${getDevicesDesc()}\n\nTap to Modify..." : "Tap to Configure..."
 				href "deviceSelectPage", title: "Location & Devices", description: devDesc, state: "complete", image: getAppImg("thermostat_icon.png")
 			}
-			if(!atomicState?.isInstalled) {
-				doDevs()
-			}
-			if(atomicState?.isInstalled && atomicState?.structures && (atomicState?.thermostats || atomicState?.protects || atomicState?.cameras)) {
-				def autoDesc = isAutoAppInst() ? "${getInstAutoTypesDesc()}\n\nTap to Modify..." : null
+		}
+		if(!atomicState?.isInstalled) {
+			doDevs()
+		}
+		if(atomicState?.isInstalled && atomicState?.structures && (atomicState?.thermostats || atomicState?.protects || atomicState?.cameras)) {
+			def autoDesc = getInstAutoTypesDesc() ? "${getInstAutoTypesDesc()}\n\nTap to Modify..." : null
+			section("Automations:") {
 				href "automationsPage", title: "Automations...", description: (autoDesc ? autoDesc : "Tap to Configure..."), state: (autoDesc ? "complete" : null), image: getAppImg("automation_icon.png")
 			}
-			if(atomicState?.isInstalled) {
+		}
+		if(atomicState?.isInstalled) {
+			section("Preferences:") {
 				def descStr = ""
 				def sz = descStr.size()
 				descStr += getAppNotifConfDesc() ?: ""
@@ -264,15 +274,16 @@ def mainPage() {
 				if(descStr.size() != sz) { descStr += "\n\n"; sz = descStr.size() }
 				def prefDesc = (descStr != "") ? "Tap to Modify..." : "Tap to Configure..."
 				href "prefsPage", title: "Preferences", description: prefDesc, state: (descStr ? "complete" : ""), image: getAppImg("settings_icon.png")
-
+			}
+			section("Help and Instructions") {
 				href "infoPage", title: "Help, Info and Instructions", description: "Tap to view...", image: getAppImg("info.png")
-
-				if(atomicState?.isInstalled && atomicState?.structures && (atomicState?.thermostats || atomicState?.protects || atomicState?.weatherDevice)) {
-
+			}
+			if(atomicState?.isInstalled && atomicState?.structures && (atomicState?.thermostats || atomicState?.protects || atomicState?.weatherDevice)) {
+				section("Diagnostics/Info:") {
 					href "nestInfoPage", title: "API | Diagnostics | Testing...", description: "Tap to view info...", image: getAppImg("api_diag_icon.png")
-
 				}
-
+			}
+			section("Web Dashboard:") {
 				def dashAct = (settings?.enableDashboard && atomicState?.dashboardInstalled && atomicState?.dashboardUrl) ? true : false
 				def dashDesc = dashAct ? "Dashboard is (Active)\nTurn off to Remove" : "Toggle to Install.."
 				input "enableDashboard", "bool", title: "Enable Web Dashboard", submitOnChange: true, defaultValue: false, required: false, description: dashDesc, state: dashAct ? "complete" : null,
@@ -286,6 +297,8 @@ def mainPage() {
 					removeDashboardApp()
 					atomicState?.dashSetup = false
 				}
+			}
+			section("  ") {
 				href "uninstallPage", title: "Uninstall this App", description: "Tap to Remove...", image: getAppImg("uninstall_icon.png")
 			}
 		}
@@ -296,15 +309,17 @@ def doDevs() {
 	def structs = getNestStructures()
 	def structDesc = !structs?.size() ? "No Locations Found" : "Found (${structs?.size()}) Locations..."
 	LogAction("${structDesc} (${structs})", "info", false)
-	section("") {
-		if(atomicState?.thermostats || atomicState?.protects || atomicState?.vThermostats || atomicState?.cameras || atomicState?.presDevice || atomicState?.weatherDevice ) {  // if devices are configured, you cannot change the structure until they are removed
+	if (atomicState?.thermostats || atomicState?.protects || atomicState?.vThermostats || atomicState?.cameras || atomicState?.presDevice || atomicState?.weatherDevice ) {  // if devices are configured, you cannot change the structure until they are removed
+		section("Your Location:") {
 			 paragraph "Location: ${structs[atomicState?.structures]}\n\n(Remove All Devices to Change!)", image: getAppImg("nest_structure_icon.png")
-		} else {
-			input(name: "structures", title:"Nest Locations", type: "enum", required: true, description: "Select your Location", multiple: false, submitOnChange: true, metadata: [values:structs],
+		}
+	} else {
+		section("Select your Location:") {
+			input(name: "structures", title:"Nest Locations", type: "enum", required: true, multiple: false, submitOnChange: true, metadata: [values:structs],
 					image: getAppImg("nest_structure_icon.png"))
 		}
 	}
-	if(settings?.structures) {
+	if (settings?.structures) {
 		atomicState.structures = settings?.structures ?: null
 
 		def stats = getNestThermostats()
@@ -319,7 +334,7 @@ def doDevs() {
 		def camDesc = cams.size() ? "Found (${cams.size()}) Cameras..." : "No Cameras"
 		LogAction("${camDesc} (${cams})", "info", false)
 
-		section(title:"Select your Devices:") {
+		section("Select your Devices:") {
 			if(!stats?.size() && !coSmokes.size() && !cams?.size()) { paragraph "No Devices were found..." }
 			if(stats?.size() > 0) {
 				input(name: "thermostats", title:"Nest Thermostats", type: "enum", required: false, multiple: true, submitOnChange: true, metadata: [values:stats],
@@ -444,31 +459,36 @@ def prefsPage() {
 def automationsPage() {
 	return dynamicPage(name: "automationsPage", title: "Installed Automations", nextPage: !parent ? "" : "automationsPage", install: false) {
 		def autoApp = findChildAppByName( appName() )
-		section("") {
-	    		if(autoApp) { ;
-			} else {
+
+		if(autoApp) {
+
+		} else {
+			section("") {
 				paragraph "You haven't created any Automations yet!!!\nTap Create New Automation to get Started..."
 			}
-
+		}
+		section("Add a new Automation:") {
 			app(name: "autoApp", appName: appName(), namespace: "tonesto7", multiple: true, title: "Create New Automation...", image: getAppImg("automation_icon.png"))
 			def rText = "NOTICE:\nAutomations is still in BETA!!!\n" +
 						"We are not responsible for any damages caused by using this SmartApp.\n\n	       USE AT YOUR OWN RISK!!!"
 			paragraph "${rText}"//, required: true, state: null
-
-			if(isAutoAppInst()) {
+		}
+		if(isAutoAppInst()) {
+			section("Automation Statistics:") {
 				href "automationStatisticsPage", title: "View Automation Statistics", description: "", image: getAppImg("app_analytics_icon.png")
 			}
-
-			def descStr = ""
-			descStr += (settings?.locDesiredCoolTemp || settings?.locDesiredHeatTemp) ? "Comfort Settings:" : ""
-			descStr += settings?.locDesiredHeatTemp ? "\n • Desired Heat Temp: (${settings?.locDesiredHeatTemp}°${getTemperatureScale()})" : ""
-			descStr += settings?.locDesiredCoolTemp ? "\n • Desired Cool Temp: (${settings?.locDesiredCoolTemp}°${getTemperatureScale()})" : ""
-			descStr += (settings?.locDesiredComfortDewpointMax) ? "${(settings?.locDesiredCoolTemp || settings?.locDesiredHeatTemp) ? "\n\n" : ""}Dew Point:" : ""
-			descStr += settings?.locDesiredComfortDewpointMax ? "\n • Max Dew Point: (${settings?.locDesiredComfortDewpointMax}${getTemperatureScale()})" : ""
-			descStr += "${(settings?.locDesiredCoolTemp || settings?.locDesiredHeatTemp) ? "\n\n" : ""}${getSafetyValuesDesc()}" ?: ""
-			def prefDesc = (descStr != "") ? "${descStr}Tap to Modify..." : "Tap to Configure..."
-			href "automationGlobalPrefsPage", title: "Global Automation Preferences", description: prefDesc, state: (descStr != "" ? "complete" : null), image: getAppImg("global_prefs_icon.png")
-			href "automationKickStartPage", title: "Re-Initialize All Automations", description: "Tap to call the Update() action on each automation.\nTap to Begin...", image: getAppImg("reset_icon.png")
+			section("Advanced Options:", hideable: true, hidden: false) {
+				def descStr = ""
+				descStr += (settings?.locDesiredCoolTemp || settings?.locDesiredHeatTemp) ? "Comfort Settings:" : ""
+				descStr += settings?.locDesiredHeatTemp ? "\n • Desired Heat Temp: (${settings?.locDesiredHeatTemp}°${getTemperatureScale()})" : ""
+				descStr += settings?.locDesiredCoolTemp ? "\n • Desired Cool Temp: (${settings?.locDesiredCoolTemp}°${getTemperatureScale()})" : ""
+				descStr += (settings?.locDesiredComfortDewpointMax) ? "${(settings?.locDesiredCoolTemp || settings?.locDesiredHeatTemp) ? "\n\n" : ""}Dew Point:" : ""
+				descStr += settings?.locDesiredComfortDewpointMax ? "\n • Max Dew Point: (${settings?.locDesiredComfortDewpointMax}${getTemperatureScale()})" : ""
+				descStr += "${(settings?.locDesiredCoolTemp || settings?.locDesiredHeatTemp) ? "\n\n" : ""}${getSafetyValuesDesc()}" ?: ""
+				def prefDesc = (descStr != "") ? "${descStr}\n\nTap to Modify..." : "Tap to Configure..."
+				href "automationGlobalPrefsPage", title: "Global Automation Preferences", description: prefDesc, state: (descStr != "" ? "complete" : null), image: getAppImg("global_prefs_icon.png")
+				href "automationKickStartPage", title: "Re-Initialize All Automations", description: "Tap to call the Update() action on each automation.\nTap to Begin...", image: getAppImg("reset_icon.png")
+			}
 		}
 	}
 }
@@ -479,7 +499,7 @@ def automationStatisticsPage() {
 		if(cApps) {
 			cApps?.sort()?.each { chld ->
 				def autoType = chld?.getAutomationType()
-				section("") {
+				section(" ") {
 					paragraph "${chld?.label}", state: "complete", image: getAutoIcon(autoType)
 					def data = chld?.getAutomationStats()
 					def tf = new SimpleDateFormat("M/d/yyyy - h:mm a")
@@ -555,7 +575,7 @@ def automationGlobalPrefsPage() {
 						def dev = getChildDevice(ts?.key)
 						def canHeat = dev?.currentState("canHeat")?.stringValue == "false" ? false : true
 						def canCool = dev?.currentState("canCool")?.stringValue == "false" ? false : true
-		
+
 						def defmin
 						def defmax
 						def safeTemp = getSafetyTemps(dev)
@@ -564,9 +584,9 @@ def automationGlobalPrefsPage() {
 							defmax = safeTemp.max
 						}
 						def dew_max = getComfortDewpoint(dev)
-		
+
 		/*
-		 TODO 
+		 TODO
 		      need to check / default to current setting in dth
 		      should have method in dth to set safety temps (today they are sent from nest manager polls..)
 		      should have method in dth to clear safety temps
@@ -575,8 +595,8 @@ def automationGlobalPrefsPage() {
 						def str = ""
 						paragraph title:"${dev?.displayName}", ""
 						str +=  "Safety Values:"
-						str +=  safeTemp ? "\n• Safefy Temps:\n	  └ Min: ${safeTemp.min}°${getTemperatureScale()}/Max: ${safeTemp.max}°${getTemperatureScale()}" : "Not Set"
-						str +=  dew_max ?  "\n• Comfort Max Dewpoint:\n  └Max: ${dew_max}°${getTemperatureScale()}" : "Not Set"
+						str +=  safeTemp ? "\n• Safefy Temps:\n	  └ Min: ${safeTemp.min}°${getTemperatureScale()}/Max: ${safeTemp.max}°${getTemperatureScale()}" : "\n• Safefy Temps: (Not Set)"
+						str +=  dew_max ?  "\n• Comfort Max Dewpoint:\n  └Max: ${dew_max}°${getTemperatureScale()}" : "\n• Comfort Max Dewpoint: (Not Set)"
 						paragraph "${str}", state: "complete", image: getAppImg("instruct_icon.png")
 						if(canHeat) {
 							input "${dev?.deviceNetworkId}_safety_temp_min", "decimal", title: "Min. Temp Desired °(${getTemperatureScale()})", description: "Range within ${tempRangeValues()}",
@@ -633,7 +653,7 @@ def safetyValuesPage() {
 				}
 				def dew_max = getComfortDewpoint(dev)
 
- TODO 
+ TODO
       need to check / default to current setting in dth
       should have method in dth to set safety temps (today they are sent from nest manager polls..)
       should have method in dth to clear safety temps
@@ -982,7 +1002,7 @@ def getInstAutoTypesDesc() {
 	atomicState?.installedAutomations = ["remoteSensor":remSenCnt, "contact":conWatCnt, "leak":leakWatCnt, "fanCtrl":fanCtrlCnt, "externalTemp":extTmpCnt, "nestMode":nModeCnt, "tstatMode":tModeCnt, "watchDog":watchDogCnt, "schMot":schMotCnt, "webDash":dashCnt]
 
 	def str = ""
-	str += "Installed Automations:"
+	str += (watchDogCnt > 0 || remSenCnt > 0 || fanCtrlCnt > 0 || conWatCnt > 0 || leakWatCnt > 0 || extTmpCnt > 0 || nModeCnt > 0 || tModeCnt > 0 || schMotCnt > 0 || disCnt > 0) ? "Installed Automations:" : ""
 	str += (watchDogCnt > 0) ? "\n• Watchdog (Active)" : ""
 	str += (remSenCnt > 0) ? "\n• Remote Sensor ($remSenCnt)" : ""
 	str += (fanCtrlCnt > 0) ? "\n• Fan Control ($fanCtrlCnt)" : ""
@@ -993,7 +1013,7 @@ def getInstAutoTypesDesc() {
 	str += (tModeCnt > 0) ? "\n• Tstat Modes ($tModeCnt)" : ""
 	str += (schMotCnt > 0) ? "\n• Thermostat ($schMotCnt)" : ""
 	str += (disCnt > 0) ? "\n\nDisabled Automations ($disCnt)" : ""
-	return str
+	return (str != "") ? str : null
 }
 
 def subscriber() {
@@ -4997,11 +5017,11 @@ def selectAutoPage() {
 			def thereIsChoice = !parent.automationNestModeEnabled(null)
 			if(thereIsChoice) {
 				section("Set Nest Presence Based on ST Modes, Presence Sensor, or Switches:") {
-					href "mainAutoPage", title: "Nest Mode Automations", description: "", params: [autoType: "nMode"], image: getAppImg("mode_automation_icon.png")
+					href "mainAutoPage", title: "Nest Mode Automations", description: "A description goes here", params: [autoType: "nMode"], image: getAppImg("mode_automation_icon.png")
 				}
 			}
 			section("Thermostat Automations") {
-				href "mainAutoPage", title: "Thermostat Automations", description: "", params: [autoType: "schMot"], image: getAppImg("mode_setpoints_icon.png")
+				href "mainAutoPage", title: "Thermostat Automations", description: "A description goes here", params: [autoType: "schMot"], image: getAppImg("mode_setpoints_icon.png")
 			}
 /*
 			section("Set Thermostats Setpoints Based on ST Modes:") {
@@ -5267,8 +5287,8 @@ def mainAutoPage(params) {
 				}
 
 //ERS
-				if(atomicState?.isInstalled && 
-					(isRemSenConfigured() || isExtTmpConfigured() || isConWatConfigured() || 
+				if(atomicState?.isInstalled &&
+					(isRemSenConfigured() || isExtTmpConfigured() || isConWatConfigured() ||
 						isNestModesConfigured() || isTstatModesConfigured() || isWatchdogConfigured() || isFanCtrlConfigured() || isSchMotConfigured())) {
 
 					//paragraph title:"Enable/Disable this Automation", ""
@@ -5365,15 +5385,15 @@ def initAutoApp() {
 						ttc: settings["${sLbl}restrictionTimeToCustom"],
 						tto: settings["${sLbl}restrictionTimeToOffset"],
 						w: settings["${sLbl}restrictionDOW"],
-		       				s1: buildDeviceNameList(settings["${sLbl}restrictionSwitchOn"], "and"),
-		       				s0: buildDeviceNameList(settings["${sLbl}restrictionSwitchOff"], "and"),
+		       			s1: buildDeviceNameList(settings["${sLbl}restrictionSwitchOn"], "and"),
+		       			s0: buildDeviceNameList(settings["${sLbl}restrictionSwitchOff"], "and"),
 						ctemp: settings["${sLbl}CoolTemp"],
 						htemp: settings["${sLbl}HeatTemp"],
 						hvacm: settings["${sLbl}HvacMode"],
 						delayOn: settings["${sLbl}DelayValOn"],
 						delayOff: settings["${sLbl}DelayValOff"],
-		       				m0: buildDeviceNameList(settings["${sLbl}Motion"], "and"),
-		       				sen0: buildDeviceNameList(settings["${sLbl}remSensor"], "and"),
+		       			m0: buildDeviceNameList(settings["${sLbl}Motion"], "and"),
+		       			sen0: buildDeviceNameList(settings["${sLbl}remSensor"], "and"),
 						mctemp: settings["${sLbl}MCoolTemp"],
 						mhtemp: settings["${sLbl}MHeatTemp"],
 						mhvacm: settings["${sLbl}MHvacMode"],
@@ -5633,7 +5653,7 @@ def subscribeToEvents() {
 			subscribe(schMotTstat, "safetyTempExceeded", automationSafetyTempEvt)
 			subscribe(location, "sunset", automationSunEvtHandler)
 			subscribe(location, "sunrise", automationSunEvtHandler)
-			subscribe(location, "mode", automationSTModeEvt, [filterEvents: false]) 
+			subscribe(location, "mode", automationSTModeEvt, [filterEvents: false])
 		}
 	}
 	//watchDog Subscriptions
@@ -6878,7 +6898,7 @@ def getFanSwitchDesc(showOpt = true) {
 	settings?."${pName}FanSwitches"?.each { sw ->
 		swCnt = swCnt+1
 		swDesc += "${swCnt >= 1 ? "${swCnt == rmSwCnt ? "\n └" : "\n ├"}" : "\n └"} ${sw?.label}: (${sw?.currentSwitch?.toString().capitalize()})"
-		swDesc += "${checkFanSpeedSupport(sw) ? "\n   └ 3Spd (${sw?.currentValue("currentSpeed").toString()})" : ""}"
+		swDesc += "${checkFanSpeedSupport(sw) ? "\n   └ 3Spd (${sw?.currentValue("currentState").toString()})" : ""}"
 	}
 	if(showOpt) {
 		swDesc += (settings?."${pName}FanSwitches" && (settings?."${pName}FanSwitchSpeedCtrl" || settings?."${pName}FanSwitchTriggerType" || settings?."${pName}FanSwitchHvacModeFilter")) ? "\n\nFan Triggers:" : ""
@@ -7013,7 +7033,7 @@ def doFanOperation(tempDiff) {
 			hvacFanOn = false  // force off of fans
 		}
 
-		settings?."${pName}FanSwitches".each { sw ->
+		settings?."${pName}FanSwitches"?.each { sw ->
 			def swOn = (sw?.currentSwitch.toString() == "on") ? true : false
 			if(hvacFanOn) {
 				if(!swOn) {
@@ -7022,7 +7042,7 @@ def doFanOperation(tempDiff) {
 					storeLastAction("Turned On $sw)", getDtNow())
 				}
 				if(checkFanSpeedSupport(sw)) {
-					def speed = sw?.currentValue("currentSpeed") ?: null
+					def speed = sw?.currentValue("currentState") ?: null
 					if(settings?."${pName}FanSwitchSpeedCtrl" && settings?."${pName}FanSwitchHighSpeed" && settings?."${pName}FanSwitchMedSpeed" && settings?."${pName}FanSwitchLowSpeed") {
 						if(tempDiff < settings?."${pName}FanSwitchMedSpeed".toDouble()) {
 							if(speed != "LOW") {
@@ -7481,7 +7501,7 @@ def extTmpTempCheck(cTimeOut = false) {
 									if(!timeOut && safetyOk) {
 										sendEventPushNotifications(rmsg, "Info", pName)
 										if(speakOnRestore) { sendEventVoiceNotifications(voiceNotifString(atomicState?."${pName}OnVoiceMsg", pName), pName, "nmExtTmpOn_${app?.id}", true, "nmExtTmpOff_${app?.id}") }
-									} else if(needAlarm) {	
+									} else if(needAlarm) {
 										sendEventPushNotifications(rmsg, "Warning", pName)
 										if(allowAlarm) { scheduleAlarmOn(pName) }
 									}
@@ -7777,7 +7797,7 @@ def conWatCheck(cTimeOut = false) {
 									if(!timeOut && safetyOk) {
 										sendEventPushNotifications(rmsg, "Info", pName)
 										if(speakOnRestore) { sendEventVoiceNotifications(voiceNotifString(atomicState?."${pName}OnVoiceMsg",pName), pName, "nmConWatOn_${app?.id}", true, "nmConWatOff_${app?.id}") }
-									} else if(needAlarm) {	
+									} else if(needAlarm) {
 										sendEventPushNotifications(rmsg, "Warning", pName)
 										if(allowAlarm) { scheduleAlarmOn(pName) }
 									}
@@ -8141,7 +8161,7 @@ def nestModePresPage() {
 		if(!nModeHomeModes && !nModeAwayModes && !nModeSwitch) {
 			section("(Optional) Set Nest Presence using Presence Sensor:") {
 				//paragraph "Choose a Presence Sensor(s) to use to set your Nest to Home/Away", image: getAppImg("instruct_icon")
-				input "nModePresSensor", "capability.presenceSensor", title: "Select a Presence Sensor", multiple: true, submitOnChange: true, required: false,
+				input "nModePresSensor", "capability.presenceSensor", title: "Select a Presence Sensor", description: "\n\n${nModePresenceDesc()}", multiple: true, submitOnChange: true, required: false,
 						image: getAppImg("presence_icon.png")
 				if(nModePresSensor) {
 					if(nModePresSensor.size() > 1) {
@@ -8433,7 +8453,7 @@ def tstatModePage() {
 
 /*
   Data structure
-     
+
     Thermostats
 	schedulelist [ sched1, sched2, sched3 ]
 
@@ -8655,7 +8675,7 @@ private checkRestriction(cnt) {
 	def act = settings["${sLbl}SchedActive"]
 	if(act) {
 		def apprestrict = atomicState?."sched${cnt}restrictions"
-	
+
 		if (apprestrict.m && apprestrict.m.size() && !(location.mode in apprestrict.m)) {
 			restriction = "a mode mismatch"
 		} else if (apprestrict.w && apprestrict.w.size() && !(getDayOfWeekName() in apprestrict.w)) {
@@ -9224,7 +9244,7 @@ def schMotModePage() {
 					//input "${getAutoType()}UseSafetyTemps", "bool", title: "Restore When Safety Temps are Exceeded?", defaultValue: true, submitOnChange: true, image: getAppImg("switch_icon.png")
 //TODO this is only configured in parent as this page is a parent only page
 					href "safetyValuesPage", title: "Configure Safety Values?", description: (getSafetyValuesDesc() ? "${getSafetyValuesDesc()}\n\nTap to Modify..." : " Tap to configure..."),
-						state: (getSafetyValuesDesc() ? "complete" : null), image: getAppImg("thermostat_icon.png") 
+						state: (getSafetyValuesDesc() ? "complete" : null), image: getAppImg("thermostat_icon.png")
 					}
 */
 
@@ -9691,7 +9711,7 @@ def voiceNotifString(phrase, pName) {
 def getNotificationOptionsConf(pName) {
 	LogAction("getNotificationOptionsConf pName: $pName", "trace", false)
 	def res = (settings?."${pName}NotificationsOn" &&
-			(getRecipientDesc(pName) || 
+			(getRecipientDesc(pName) ||
 			(settings?."${pName}AllowSpeechNotif" && (settings?."${pName}SpeechDevices" || settings?."${pName}SpeechMediaPlayer")) ||
 			(settings?."${pName}AllowAlarmNofif" && settings?."${pName}AlarmDevices")
 		) ) ? true : false
@@ -10199,7 +10219,8 @@ def checkFanSpeedSupport(dev) {
 	devData.each { cmd ->
 		if(cmd.name in req) { devCnt = devCnt+1 }
 	}
-	def speed = dev?.currentValue("currentSpeed") ?: null
+	def speed = dev?.currentValue("currentState") ?: null
+	log.debug "checkFanSpeedSupport (speed: $speed | devCnt: $devCnt)"
 	return (speed && devCnt == 3) ? true : false
 }
 
@@ -10242,7 +10263,7 @@ def getComfortHumidity(tstat) {
 }
 
 def getComfortDewpoint(tstat) {
-	def maxDew = tstat?.currentValue("comfortDewpointMax")?.toString().replaceAll("\\[|\\]", "").toDouble() ?: 0.0
+	def maxDew = tstat?.currentState("comfortDewpointMax")?.doubleValue ?: 0.0
 	if(maxDew) {
 		//return ["min":minDew, "max":maxDew]
 		return maxDew.toDouble()
