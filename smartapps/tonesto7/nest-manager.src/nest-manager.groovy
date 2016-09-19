@@ -1,7 +1,7 @@
 /********************************************************************************************
 |    Application Name: Nest Manager and Automations                                         |
-|    Author: Anthony S. (@tonesto7),                                                        |
-|    Contributors: Ben W. (@desertblade) | Eric S. (@E_sch)                                 |
+|    Author: Anthony S. (@tonesto7), Eric S. (@E_sch)                                       |
+|    Contributors: Ben W. (@desertblade)						                            |
 |                                                                                           |
 |*******************************************************************************************|
 |    There maybe portions of the code that may resemble code from other apps in the         |
@@ -36,14 +36,14 @@ definition(
 	appSetting "clientSecret"
 }
 
-def appVersion() { "3.2.0" }
-def appVerDate() { "9-16-2016" }
+def appVersion() { "3.3.0" }
+def appVerDate() { "9-19-2016" }
 def appVerInfo() {
 	def str = ""
 
-	str += "V3.2.0 (September 16th, 2016):"
+	str += "V3.3.0 (September 19th, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
-	str += "\n • UPDATED: First Commit of Automation Refactor (@E_sch)..."
+	str += "\n • UPDATED: Automation Refactor with Schedules (ALPHA)..."
 
 	str += "\n\nV3.1.3 (September 12th, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
@@ -239,9 +239,9 @@ def mainPage() {
 	return dynamicPage(name: "mainPage", title: "Main Page", nextPage: (!setupComplete ? "reviewSetupPage" : null), refreshInterval: rfrshDash, install: setupComplete, uninstall: false) {
 		section("") {
 			href "changeLogPage", title: "", description: "${appInfoDesc()}", image: getAppImg("nest_manager%402x.png", true)
-			if(settings?.enableDashboard && atomicState?.dashboardInstalled && atomicState?.dashboardUrl) {
-				href "", title: "Nest Manager Dashboard", style: "external", url: "${atomicState?.dashboardUrl}dashboard", image: getAppImg("dashboard_icon.png"), required: false
-			}
+			//if(settings?.enableDashboard && atomicState?.dashboardInstalled && atomicState?.dashboardUrl) {
+			//	href "", title: "Nest Manager Dashboard", style: "external", url: "${atomicState?.dashboardUrl}dashboard", image: getAppImg("dashboard_icon.png"), required: false
+			//}
 			if(atomicState?.appData && !appDevType() && isAppUpdateAvail()) {
 				href url: stIdeLink(), style:"external", required: false, title:"An Update is Available for ${appName()}!!!",
 						description:"Current: v${appVersion()} | New: ${atomicState?.appData?.updater?.versions?.app?.ver}\n\nTap to Open the IDE in your Mobile Browser...", state: "complete", image: getAppImg("update_icon.png")
@@ -283,7 +283,7 @@ def mainPage() {
 					href "nestInfoPage", title: "API | Diagnostics | Testing...", description: "Tap to view info...", image: getAppImg("api_diag_icon.png")
 				}
 			}
-			section("Web Dashboard:") {
+			/*section("Web Dashboard:") {
 				def dashAct = (settings?.enableDashboard && atomicState?.dashboardInstalled && atomicState?.dashboardUrl) ? true : false
 				def dashDesc = dashAct ? "Dashboard is (Active)\nTurn off to Remove" : "Toggle to Install.."
 				input "enableDashboard", "bool", title: "Enable Web Dashboard", submitOnChange: true, defaultValue: false, required: false, description: dashDesc, state: dashAct ? "complete" : null,
@@ -297,7 +297,7 @@ def mainPage() {
 					removeDashboardApp()
 					atomicState?.dashSetup = false
 				}
-			}
+			}*/
 			section("  ") {
 				href "uninstallPage", title: "Uninstall this App", description: "Tap to Remove...", image: getAppImg("uninstall_icon.png")
 			}
@@ -4612,6 +4612,7 @@ def childDevDataPage() {
 	}
 }
 
+// This is part of the dashboard and needs to remain
 /*
 def getDevIdsByType(type) {
 	def results = []
@@ -4822,7 +4823,7 @@ def api_childAppData(params) {
 		return null
 	}
 }
-*/
+/*
 
 /******************************************************************************
 *					Firebase Analytics Functions		  	  *
@@ -8442,7 +8443,7 @@ def tstatModePage() {
 				def str = ""
 				str += "• Temperature: (${getDeviceTemp(ts)}°${getTemperatureScale()})"
 				str += "\n• Setpoints: (H: ${canHeat ? "${getTstatSetpoint(ts, "heat")}°${getTemperatureScale()}" : "NA"}/C: ${canCool ? "${getTstatSetpoint(ts, "cool")}°${getTemperatureScale()}" : "NA"})"
-				paragraph title: "${ts?.displayName} Schedules and Setpoints:", "${str}", image: getAppImg("instruct_icon.png")
+				paragraph title: "${ts?.displayName}\nSchedules and Setpoints:", "${str}", image: getAppImg("instruct_icon.png")
 			}
 /*
 				def tstatDesc = (settings?."${getTstatModeInputName(ts)}" ? "Configured Modes:${getTstatModeDesc(ts)}" : "")
@@ -8497,13 +8498,14 @@ def editSchedule(cnt) {
 	def canCool = atomicState?.schMotTstatCanCool
 
 	def act = settings["${sLbl}SchedActive"]
-	input "${sLbl}SchedActive", "bool", title: "Schedule Active", required: true, default: true, submitOnChange: true
+	input "${sLbl}SchedActive", "bool", title: "Schedule Active", required: true, default: true, submitOnChange: true, image: getAppImg("switch_on_icon.png")
 	if(act) {
 		input "${sLbl}name", "text", title: "Schedule Name", required: true, multiple: false
-		input "${sLbl}restrictionMode", "mode", title: "Only execute in these modes", description: "Any location mode", required: false, multiple: true
-		input "${sLbl}restrictionDOW", "enum", options: timeDayOfWeekOptions(), title: "Only execute on these days", description: "Any week day", required: false, multiple: true
+		input "${sLbl}restrictionMode", "mode", title: "Only execute in these modes", description: "Any location mode", required: false, multiple: true, image: getAppImg("mode_icon.png")
+		input "${sLbl}restrictionDOW", "enum", options: timeDayOfWeekOptions(), title: "Only execute on these days", description: "Any week day", required: false, multiple: true, image: getAppImg("day_calendar_icon.png")
 		def timeFrom = settings["${sLbl}restrictionTimeFrom"]
-		input "${sLbl}restrictionTimeFrom", "enum", title: (timeFrom ? "Only execute if time is between" : "Only execute during this time"), options: timeComparisonOptionValues(), required: false, multiple: false, submitOnChange: true
+		input "${sLbl}restrictionTimeFrom", "enum", title: (timeFrom ? "Only execute if time is between" : "Only execute during this time"), options: timeComparisonOptionValues(), required: false, multiple: false, submitOnChange: true,
+				image: getAppImg("start_time_icon.png")
 		if (timeFrom) {
 			if (timeFrom.contains("custom")) {
 				input "${sLbl}restrictionTimeFromCustom", "time", title: "Custom time", required: true, multiple: false
@@ -8511,7 +8513,7 @@ def editSchedule(cnt) {
 				input "${sLbl}restrictionTimeFromOffset", "number", title: "Offset (+/- minutes)", range: "*..*", required: true, multiple: false, defaultValue: 0
 			}
 			def timeTo = settings["${sLbl}restrictionTimeTo"]
-			input "${sLbl}restrictionTimeTo", "enum", title: "And", options: timeComparisonOptionValues(), required: true, multiple: false, submitOnChange: true
+			input "${sLbl}restrictionTimeTo", "enum", title: "And", options: timeComparisonOptionValues(), required: true, multiple: false, submitOnChange: true, image: getAppImg("stop_time_icon.png")
 			if (timeTo && (timeTo.contains("custom"))) {
 				input "${sLbl}restrictionTimeToCustom", "time", title: "Custom time", required: true, multiple: false
 			} else {
@@ -9161,7 +9163,7 @@ def schMotModePage() {
 				def safetyTemps = getSafetyTemps(ts)
 			       	str +=  safetyTemps ? "\n• Safefy Temps: \n     └ Min: ${safetyTemps.min}°${getTemperatureScale()}/Max: ${safetyTemps.max}°${getTemperatureScale()}" : ""
 			       	str +=  "\n• Thermostat is ${ts.currentNestType}"
-				paragraph "${str}", state: (str != "" ? "complete" : null), image: getAppImg("instruct_icon.png")
+				paragraph "${str}", title: "Thermostat Status", state: (str != "" ? "complete" : null), image: getAppImg("instruct_icon.png")
 
 				if(!tStatPhys) {      // if virtual thermostat, check if physical thermostat is in mirror list
 					def mylist = [ deviceNetworkId:"${ts.deviceNetworkId.toString().replaceFirst("v", "")}" ]
@@ -9201,8 +9203,7 @@ def schMotModePage() {
 
 		if(schMotTstat && !dupTstat) {
 			section {
-				paragraph title: "Choose Automations", ""
-
+				paragraph " ", title: "Choose an Automation:", required: false
 /*
 				input (name: "schMotNestPresence", type: "bool", title: "Set Nest Home / Away based on ST Mode, Presence Sensor, or Switch?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("mode_automation_icon.png"))
 				if(schMotNestPresence) {
@@ -9344,8 +9345,7 @@ def schMotModePage() {
 				}
 			}
 			showUpdateSchedule()
-			section {
-				paragraph title: "Settings", ""
+			section("Settings:") {
 				input "schMotWaitVal", "enum", title: "Minimum Wait Time between Evaluations?", required: false, defaultValue: 60, metadata: [values:[30:"30 Seconds", 60:"60 Seconds"]], image: getAppImg("delay_time_icon.png")
 			}
 		}
@@ -9405,7 +9405,7 @@ def schMotCheck() {
 			if(isExtTmpConfigured()) {
 				if(extTmpUseWeather) {
 					getExtConditions()
-		       		}
+				}
 				extTmpTempCheck()
 			}
 		}
