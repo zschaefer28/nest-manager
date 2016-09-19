@@ -2111,7 +2111,7 @@ def getLastUpdMsgSec() { return !atomicState?.lastUpdMsgDt ? 100000 : GetTimeDif
 def getLastMisPollMsgSec() { return !atomicState?.lastMisPollMsgDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastMisPollMsgDt).toInteger() }
 def getRecipientsSize() { return !settings.recipients ? 0 : settings?.recipients.size() }
 
-//ERS
+//TODO this is parent only method,  need to figure out what quiet times mean for automation notifications, alarms, voice
 def getOk2Notify() { return (daysOk(settings?.quietDays) && notificationTimeOk() && modesOk(settings?.quietModes)) }
 def isMissedPoll() { return (getLastDevicePollSec() > atomicState?.misPollNotifyWaitVal.toInteger()) ? true : false }
 
@@ -2169,6 +2169,7 @@ def updateHandler() {
 	}
 }
 
+// parent only method
 def sendMsg(msgType, msg, people = null, sms = null, push = null, brdcast = null) {
 	//log.trace "sendMsg..."
 	try {
@@ -3995,6 +3996,7 @@ def getNotifSchedDesc() {
 	return (notifDesc != "") ? "${notifDesc}" : null
 }
 
+// Parent only method
 def setNotificationTimePage() {
 	dynamicPage(name: "setNotificationTimePage", title: "Prevent Notifications\nDuring these Days, Times or Modes", uninstall: false) {
 		def timeReq = (settings["qStartTime"] || settings["qStopTime"]) ? true : false
@@ -5013,7 +5015,6 @@ def selectAutoPage() {
 	//log.trace "selectAutoPage()..."
 	if(!atomicState?.automationType) {
 		return dynamicPage(name: "selectAutoPage", title: "Choose an Automation Type...", uninstall: false, install: false, nextPage: null) {
-//ERS
 			def thereIsChoice = !parent.automationNestModeEnabled(null)
 			if(thereIsChoice) {
 				section("Set Nest Presence Based on ST Modes, Presence Sensor, or Switches:") {
@@ -5023,7 +5024,7 @@ def selectAutoPage() {
 			section("Thermostat Automations") {
 				href "mainAutoPage", title: "Thermostat Automations", description: "A description goes here", params: [autoType: "schMot"], image: getAppImg("mode_setpoints_icon.png")
 			}
-/*
+/* TODO cleanup
 			section("Set Thermostats Setpoints Based on ST Modes:") {
 				href "mainAutoPage", title: "Thermostat Mode Automations", description: "", params: [autoType: "tMode"], image: getAppImg("mode_setpoints_icon.png")
 			}
@@ -5211,7 +5212,7 @@ def mainAutoPage(params) {
 					def nModeDesc = isNestModesConfigured() ? "${nDesc}" : null
 					href "nestModePresPage", title: "Nest Mode Automation Config", description: nModeDesc ?: "Tap to Configure...", state: (nModeDesc ? "complete" : null), image: getAppImg("mode_automation_icon.png")
 				}
-/*
+/* TODO cleanup
 				if(autoType == "tMode" && !atomicState?.disableAutomation) {
 					paragraph title:"Set Multiple Thermostat Temps based on ST Modes:", ""
 					def tDesc = ""
@@ -5224,7 +5225,6 @@ def mainAutoPage(params) {
 				}
 
 */
-//ERS
 				if(autoType == "schMot" && !atomicState?.disableAutomation) {
 					//paragraph title:"Thermostat Automation:", ""
 					def sDesc = ""
@@ -5249,7 +5249,7 @@ def mainAutoPage(params) {
 					if(schMotOperateFan) {
 						sDesc += "\n• Control Fans with HVAC"
 					}
-/*
+/* TODO cleanup (this is in schedules)
 					sDesc += (schMotDelay && schMotDelayVal) ? "\nDelay: ${getEnumValue(longTimeSecEnum(), schMotDelayVal)}" : ""
 					sDesc += schMotMotion ? ("\n • Motion Sensors: (${schMotMotion?.size()})${schMotMotionModes ? "\n└ Mode Filters: ${schMotMotionModes ? "(${schMotMotionModes.size()})" : "(0)"}" : ""}\n└ Status: ${isMotionActive(schMotMotion) ? "(Motion)" : "(No Motion)"}") : ""
 */
@@ -5257,7 +5257,7 @@ def mainAutoPage(params) {
 					def sModeDesc = isSchMotConfigured() ? "${sDesc}" : null
 					href "schMotModePage", title: "Thermostat Automation Config", description: sModeDesc ?: "Tap to Configure...", state: (sModeDesc ? "complete" : null), image: getAppImg("mode_setpoints_icon.png")
 				}
-/*
+/* TODO cleanup
 				if(autoType == "leakWat" && !atomicState?.disableAutomation) {
 					paragraph title:"Turn Thermostat Off if Water Leak is Detected:", ""
 					def leakDesc = ""
@@ -5286,7 +5286,6 @@ def mainAutoPage(params) {
 					href "watchDogPage", title: "Nest Location Watchdog...", description: watDogDesc ?: "Tap to Configure...", state: (watDogDesc ? "complete" : null), image: getAppImg("watchdog_icon.png")
 				}
 
-//ERS
 				if(atomicState?.isInstalled &&
 					(isRemSenConfigured() || isExtTmpConfigured() || isConWatConfigured() ||
 						isNestModesConfigured() || isTstatModesConfigured() || isWatchdogConfigured() || isFanCtrlConfigured() || isSchMotConfigured())) {
@@ -5493,16 +5492,17 @@ def getStateVal(var) {
 }
 
 def automationsInst() {
+	atomicState.isNestModesConfigured = isNestModesConfigured() ? true : false
+	atomicState.isSchMotConfigured = isSchMotConfigured() ? true : false
+	atomicState.isWatchdogConfigured = isWatchdogConfigured() ? true : false
+
 	atomicState.isRemSenConfigured = isRemSenConfigured() ? true : false
 	atomicState.isFanCtrlConfigured = isFanCtrlConfigured() ? true : false
 	atomicState.isExtTmpConfigured = isExtTmpConfigured() ? true : false
 	atomicState.isConWatConfigured = isConWatConfigured() ? true : false
 	atomicState.isLeakWatConfigured = isLeakWatConfigured() ? true : false
-	atomicState.isNestModesConfigured = isNestModesConfigured() ? true : false
 	atomicState.isTstatModesConfigured = isTstatModesConfigured() ? true : false
-//ERS
-	atomicState.isSchMotConfigured = isSchMotConfigured() ? true : false
-	atomicState.isWatchdogConfigured = isWatchdogConfigured() ? true : false
+
 	atomicState?.isInstalled = true
 }
 
@@ -5527,7 +5527,6 @@ def subscribeToEvents() {
 		}
 	}
 
-//ERS
 	//ST Thermostat Motion
 	if(autoType == "schMot") {
 		def needThermTemp
@@ -7499,7 +7498,7 @@ def extTmpTempCheck(cTimeOut = false) {
 //ERS
 								if(allowNotif) {
 									if(!timeOut && safetyOk) {
-										sendEventPushNotifications(rmsg, "Info", pName)
+										sendEventPushNotifications(rmsg, "Info", pName)  // this uses parent and honors quiet times others do NOT
 										if(speakOnRestore) { sendEventVoiceNotifications(voiceNotifString(atomicState?."${pName}OnVoiceMsg", pName), pName, "nmExtTmpOn_${app?.id}", true, "nmExtTmpOff_${app?.id}") }
 									} else if(needAlarm) {
 										sendEventPushNotifications(rmsg, "Warning", pName)
@@ -7549,7 +7548,7 @@ def extTmpTempCheck(cTimeOut = false) {
 							LogAction(rmsg, "info", true)
 //ERS
 							if(allowNotif) {
-								sendEventPushNotifications(rmsg, "Info", pName)
+								sendEventPushNotifications(rmsg, "Info", pName) // this uses parent and honors quiet times, others do NOT
 								if(allowSpeech) { sendEventVoiceNotifications(voiceNotifString(atomicState?."${pName}OffVoiceMsg",pName), pName, "nmExtTmpOff_${app?.id}", true, "nmExtTmpOn_${app?.id}") }
 								if(allowAlarm) { scheduleAlarmOn(pName) }
 							}
@@ -7844,7 +7843,7 @@ def conWatCheck(cTimeOut = false) {
 							LogAction(rmsg, "info", true)
 //ERS
 							if(allowNotif) {
-								sendEventPushNotifications(rmsg, "Info", pName)
+								sendEventPushNotifications(rmsg, "Info", pName) // this uses parent and honors quiet times, others do NOT
 								if(allowSpeech) { sendEventVoiceNotifications(voiceNotifString(atomicState?."${pName}OffVoiceMsg",pName), pName, "nmConWatOff_${app?.id}", true, "nmConWatOn_${app?.id}") }
 								if(allowAlarm) { scheduleAlarmOn(pName) }
 							}
@@ -8024,7 +8023,7 @@ def leakWatCheck() {
 //ERS
 								if(allowNotif) {
 									if(safetyOk) {
-										sendEventPushNotifications(rmsg, "Info", pName)
+										sendEventPushNotifications(rmsg, "Info", pName) // this uses parent and honors quiet times, others do NOT
 										if(speakOnRestore) { sendEventVoiceNotifications(voiceNotifString(atomicState?."${pName}OnVoiceMsg", pName), pName, "nmLeakWatOn_${app?.id}", true, "nmLeakWatOff_${app?.id}") }
 									} else if(needAlarm) {
 										sendEventPushNotifications(rmsg, "Warning", pName)
@@ -8075,7 +8074,7 @@ def leakWatCheck() {
 						LogAction(rmsg, "warn", true)
 //ERS
 						if(allowNotif) {
-							sendEventPushNotifications(rmsg, "Warning", pName)
+							sendEventPushNotifications(rmsg, "Info", pName) // this uses parent and honors quiet times, others do NOT
 							if(allowSpeech) { sendEventVoiceNotifications(voiceNotifString(atomicState?."${pName}OffVoiceMsg",pName), pName, "nmLeakWatOff_${app?.id}", true, "nmLeakWatOn_${app?.id}") }
 							if(allowAlarm) { scheduleAlarmOn(pName) }
 						}
@@ -9131,7 +9130,6 @@ def setTstatTempCheck() {
 	}
 }
 
-//ERS
 /********************************************************************************
 |       MASTER AUTOMATION FOR THERMOSTATS
 *********************************************************************************/
@@ -9513,7 +9511,10 @@ def setNotificationPage(params) {
 				input ("${pName}NotifPhones", "phone", title: "Phone Number to Send SMS to...\n(Optional)", submitOnChange: true, required: false)
 			}
 		}
-/* This does not exist in Automation children
+
+/*
+this is a parent only method today
+
 		if(showSched && settings["${pName}NotificationsOn"]) {
 			section(title: "Time Restrictions") {
 				href "setNotificationTimePage", title: "Silence Notifications...", description: (getNotifSchedDesc(pName) ?: "Tap to configure..."), params: [pName: "${pName}"],
@@ -9946,6 +9947,7 @@ def sendEventVoiceNotifications(vMsg, pName, msgId=null, rmAAMsg=false, rmMsgId)
 	def allowNotif = settings?."${pName}NotificationsOn" ? true : false
 	def allowSpeech = allowNotif && settings?."${pName}AllowSpeechNotif" ? true : false
 	def speakOnRestore = allowSpeech && settings?."${pName}SpeechOnRestore" ? true : false
+	//TODO needs check for quiet times?  Does quite time make sense for an Alarm?
 	if(allowNotif && allowSpeech) {
 		if(settings["${pName}SpeechDevices"] || settings["${pName}SpeechMediaPlayer"]) {
 			sendTTS(vMsg, pName)
@@ -9979,6 +9981,7 @@ def removeAskAlexaQueueMsg(msgId) {
 def scheduleAlarmOn(autoType) {
 	LogAction("scheduleAlarmOn: autoType: $autoType a1DelayVal: ${getAlert1DelayVal(autoType)}", "debug", true)
 	def timeVal = getAlert1DelayVal(autoType).toInteger()
+	//TODO needs check for quiet times?  Does quite time make sense for an Alarm?
 	log.debug "scheduleAlarmOn timeVal: $timeVal"
 	if(canSchedule()) {
 		if(timeVal > 0) {
