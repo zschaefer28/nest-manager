@@ -8523,31 +8523,31 @@ def editSchedule(cnt) {
 		input "${sLbl}restrictionSwitchOn", "capability.switch", title: "Only execute when these switches are all on", description: "Always", required: false, multiple: true
 		input "${sLbl}restrictionSwitchOff", "capability.switch", title: "Only execute when these switches are all off", description: "Always", required: false, multiple: true
 		if(canHeat) {
-			input "${sLbl}HeatTemp", "decimal", title: "Heat Set Point(°${getTemperatureScale()})", description: "Range within ${tempRangeValues()}", required: true, range: tempRangeValues()
+			input "${sLbl}HeatTemp", "decimal", title: "Heat Set Point(°${getTemperatureScale()})", description: "Range within ${tempRangeValues()}", required: true, range: tempRangeValues(), image: getAppImg("heat_icon.png")
 		}
 		if(canCool) {
-			input "${sLbl}CoolTemp", "decimal", title: "Cool Set Point (°${getTemperatureScale()})", description: "Range within ${tempRangeValues()}", required: true, range: tempRangeValues()
+			input "${sLbl}CoolTemp", "decimal", title: "Cool Set Point (°${getTemperatureScale()})", description: "Range within ${tempRangeValues()}", required: true, range: tempRangeValues(), image: getAppImg("cool_icon.png")
 		}
 		input "${sLbl}HvacMode", "enum", title: "Set Hvac Mode:", required: false, description: "No change set", metadata: [values:tModeHvacEnum(canHeat,canCool)], multiple: false
-		input "${sLbl}DelayValOn", "enum", title: "Delay enabling Settings", required: false, defaultValue: 60, metadata: [values:longTimeSecEnum()], multiple: false
-		input "${sLbl}DelayValOff", "enum", title: "Delay disabling Settings", required: false, defaultValue: 1800, metadata: [values:longTimeSecEnum()], multiple: false
+		input "${sLbl}DelayValOn", "enum", title: "Delay enabling Settings", required: false, defaultValue: 60, metadata: [values:longTimeSecEnum()], multiple: false, image: getAppImg("delay_time_icon.png")
+		input "${sLbl}DelayValOff", "enum", title: "Delay disabling Settings", required: false, defaultValue: 1800, metadata: [values:longTimeSecEnum()], multiple: false, image: getAppImg("delay_time_icon.png")
 
 		if(schMotRemoteSensor) {
-			input "${sLbl}remSensor", "capability.temperatureMeasurement", title: "Alternate Temp Sensors", description: "For Remote Sensor Automation", submitOnChange: false, required: false, multiple: true
+			input "${sLbl}remSensor", "capability.temperatureMeasurement", title: "Alternate Temp Sensors", description: "For Remote Sensor Automation", submitOnChange: false, required: false, multiple: true, image: getAppImg("temperature_icon.png")
 		}
 		def mmot = settings["${sLbl}Motion"]
-		input "${sLbl}Motion", "capability.motionSensor", title: "Motion Sensors", description: "Enables alternate hvac settings based on motion", required: false, multiple: true, submitOnChange: true
+		input "${sLbl}Motion", "capability.motionSensor", title: "Motion Sensors", description: "Enables alternate hvac settings based on motion", required: false, multiple: true, submitOnChange: true, image: getAppImg("motion_icon.png")
 		if(mmot) {
 			paragraph "• Motion State: (${isMotionActive(mmot) ? "Active" : "Not Active"})", state: "complete", image: getAppImg("instruct_icon.png")
 			if(canHeat) {
-				input "${sLbl}MHeatTemp", "decimal", title: "Heat Set Point with Motion(°${getTemperatureScale()})", description: "Range within ${tempRangeValues()}", required: false, range: tempRangeValues()
+				input "${sLbl}MHeatTemp", "decimal", title: "Heat Set Point with Motion(°${getTemperatureScale()})", description: "Range within ${tempRangeValues()}", required: false, range: tempRangeValues(), image: getAppImg("heat_icon.png")
 			}
 			if(canCool) {
-				input "${sLbl}MCoolTemp", "decimal", title: "Cool Set Point with Motion (°${getTemperatureScale()})", description: "Range within ${tempRangeValues()}", required: false, range: tempRangeValues()
+				input "${sLbl}MCoolTemp", "decimal", title: "Cool Set Point with Motion (°${getTemperatureScale()})", description: "Range within ${tempRangeValues()}", required: false, range: tempRangeValues(), image: getAppImg("cool_icon.png")
 			}
 			input "${sLbl}MHvacMode", "enum", title: "Set Hvac Mode with Motion:", required: false, description: "No change set", metadata: [values:tModeHvacEnum(canHeat,canCool)], multiple: false
-			input "${sLbl}MDelayValOn", "enum", title: "Delay enabling Motion Settings", required: false, defaultValue: 60, metadata: [values:longTimeSecEnum()], multiple: false
-			input "${sLbl}MDelayValOff", "enum", title: "Delay disabling Motion Settings", required: false, defaultValue: 1800, metadata: [values:longTimeSecEnum()], multiple: false
+			input "${sLbl}MDelayValOn", "enum", title: "Delay enabling Motion Settings", required: false, defaultValue: 60, metadata: [values:longTimeSecEnum()], multiple: false, image: getAppImg("delay_time_icon.png")
+			input "${sLbl}MDelayValOff", "enum", title: "Delay disabling Motion Settings", required: false, defaultValue: 1800, metadata: [values:longTimeSecEnum()], multiple: false, image: getAppImg("delay_time_icon.png")
 		}
 	}
 }
