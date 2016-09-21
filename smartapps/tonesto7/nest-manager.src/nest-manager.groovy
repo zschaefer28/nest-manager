@@ -36,12 +36,18 @@ definition(
 	appSetting "clientSecret"
 }
 
-def appVersion() { "3.3.0" }
-def appVerDate() { "9-19-2016" }
+def appVersion() { "3.3.1" }
+def appVerDate() { "9-21-2016" }
 def appVerInfo() {
 	def str = ""
 
-	str += "V3.3.0 (September 19th, 2016):"
+	str += "V3.3.1 (September 21st, 2016):"
+	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
+	str += "\n • UPDATED: Lot's of UI reworks for automations..."
+	str += "\n • UPDATED: Lot's of little bugfixes...."
+	str += "\n • UPDATED: Merged in eric's latest patch..."
+
+	str += "\n\nV3.3.0 (September 19th, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
 	str += "\n • UPDATED: Automation Refactor with Schedules (ALPHA)..."
 
@@ -9022,7 +9028,6 @@ def schMotModePage() {
 				input (name: "schMotRemoteSensor", type: "bool", title: "Use Alternate Temperature Sensors and Fan Circulation to control zone temperature?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("remote_sensor_icon.png"))
 				if(settings?.schMotRemoteSensor) {
 					def remSenDescStr = ""
-//ERS
 					remSenDescStr += settings?.remSenRuleType ? "Rule-Type: ${getEnumValue(remSenRuleEnum(), settings?.remSenRuleType)}" : ""
 					remSenDescStr += settings?.remSenTempDiffDegrees ? ("\n • Temp Threshold: (${settings?.remSenTempDiffDegrees}°${getTemperatureScale()})") : ""
 					remSenDescStr += settings?.remSenTstatTempChgVal ? ("\n • Change Temp: (${settings?.remSenTstatTempChgVal}°${getTemperatureScale()})") : ""
