@@ -5813,7 +5813,8 @@ def remSenUnlock(val, myId) {
 def remSensorPage() {
 	def pName = remSenPrefix()
 	dynamicPage(name: "remSensorPage", title: "Remote Sensor Automation", uninstall: false) {
-		def req = (remSensorDay || remSensorNight || remSenTstat || !remSenTstat) ? true : false
+		def remSenTstat = settings?.schMotTstat
+		def req = (settings?.remSensorDay || remSenTstat || !settings?.remSenTstat) ? true : false
 		def dupTstat = false
 		def tStatPhys = true
 		def cannotLock
@@ -5827,8 +5828,6 @@ def remSensorPage() {
 		if(!getMyLockId()) {
 			setMyLockId(app.id)
 		}
-
-		def remSenTstat = schMotTstat
 
 		if(atomicState?.remSenTstat) {
 			if(remSenTstat.deviceNetworkId != atomicState?.remSenTstat) {
