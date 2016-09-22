@@ -36,12 +36,12 @@ definition(
 	appSetting "clientSecret"
 }
 
-def appVersion() { "3.3.1" }
-def appVerDate() { "9-21-2016" }
+def appVersion() { "3.3.2" }
+def appVerDate() { "9-22-2016" }
 def appVerInfo() {
 	def str = ""
 
-	str += "V3.3.1 (September 21st, 2016):"
+	str += "V3.3.2 (September 22nd, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
 	str += "\n • UPDATED: Lot's of UI reworks for automations..."
 	str += "\n • UPDATED: Lot's of little bugfixes...."
@@ -5930,7 +5930,11 @@ def remSensorPage() {
 							paragraph "Unable to ${(vthermostat ? "enable" : "disable")} Virtual Thermostat!!!.  Please Correct...", image: getAppImg("error_icon.png")
 						}
 					}
-					showUpdateSchedule()
+					section ("Manage Schedules (You can add alternate sensors for each schedule):") { // <<< This is experimental
+						def tDesc = ""
+						tDesc += atomicState?.scheduleSchedActiveCount ? "\nActive Schedules: ${atomicState.scheduleSchedActiveCount}" : ""
+						href "schMotSchedulePage", title: "View/Modify Schedules...", description: tDesc != "" ? tDesc : "Tap to Configure...", image: getAppImg("schedule_icon.png")
+					}
 /*
 					section("(Optional) Use Motion Sensors to Evaluate Temps:") {
 						input "remSenMotion", "capability.motionSensor", title: "Motion Sensors", required: false, multiple: true, submitOnChange: true, state: remSenMotion ? "complete" : null, image: getAppImg("motion_icon.png")
@@ -7407,7 +7411,7 @@ def extTmpDpOrTempEvt(type) {
 }
 
 /******************************************************************************
-|					WATCH CONTACTS AUTOMATION CODE			  |
+|						WATCH CONTACTS AUTOMATION CODE			  			  |
 *******************************************************************************/
 def conWatPrefix() { return "conWat" }
 
@@ -8216,7 +8220,7 @@ def tstatModePage() {
 	def pName = tModePrefix()
 	def typ = pName
 	dynamicPage(name: "tstatModePage", title: "Thermostat Setpoint Automation", description: "Configure Schedules and Setpoints", uninstall: false) {
-		if(schMotTstat) {
+		if(settings?.schMotTstat) {
 			def ts = settings?.schMotTstat
 			def canHeat = atomicState?.schMotTstatCanHeat
 			def canCool = atomicState?.schMotTstatCanCool
@@ -8253,7 +8257,18 @@ def tstatModePage() {
 
 def schMotSchedulePage() {
 	dynamicPage(name: "schMotSchedulePage", title: "Thermostat Schedule Page", description: "Configure/View Schedules", uninstall: false) {
-		showUpdateSchedule()
+		if(settings?.schMotTstat) {
+			def ts = settings?.schMotTstat
+			def canHeat = atomicState?.schMotTstatCanHeat
+			def canCool = atomicState?.schMotTstatCanCool
+			section {
+				def str = ""
+				str += "• Temperature: (${getDeviceTemp(ts)}°${getTemperatureScale()})"
+				str += "\n• Setpoints: (H: ${canHeat ? "${getTstatSetpoint(ts, "heat")}°${getTemperatureScale()}" : "NA"}/C: ${canCool ? "${getTstatSetpoint(ts, "cool")}°${getTemperatureScale()}" : "NA"})"
+				paragraph title: "${ts?.displayName}\nSchedules and Setpoints:", "${str}", image: getAppImg("instruct_icon.png")
+			}
+			showUpdateSchedule()
+		}
 	}
 }
 
@@ -8271,7 +8286,7 @@ def showUpdateSchedule() {
 		if (lact || act) {
 			def scdn =  settings["${sLbl}name"]
 			def mstr = scdn? "${scdn} "+ (act ? "Active":"Inactive") : "Tap to Enable"
-			section(title: "Schedule ${scd} (${mstr})", hideable: true, hidden: false) {
+			section(title: "Schedule ${scd} (${mstr})                                    ", hideable: true, hidden: (act ? false : true)) {
 				editSchedule(scd)
 			}
 		}
@@ -8312,9 +8327,15 @@ def editSchedule(cnt) {
 		input "${sLbl}restrictionSwitchOff", "capability.switch", title: "Only execute when these switches are all off", description: "Always", required: false, multiple: true, image: getAppImg("switch_off_icon.png")
 /*
 //TODO I think that the setpoints should only show if the temperature setpoint automation is enabled.
+// I'm also not sure if this should be a per-schedule setting?
 */
-		if(settings?.schMotSetTstatTemp) {
-			paragraph null, title: "\nDesired Temperature Setpoints..."
+		input "${sLbl}SetTstatTemp", "bool", title: "Adjust Setpoints based on schedule, ST modes, and Motion?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("setpoint_automation_icon.png")
+		if(settings?."${sLbl}SetTstatTemp") {
+			def tDesc = ""
+			tDesc += atomicState?.scheduleSchedActiveCount ? "\nActive Schedules: ${atomicState.scheduleSchedActiveCount}" : ""
+			tDesc += tDesc ? "\n\nTap to Modify..." : ""
+			def tModeDesc = tDesc != "" ? "${tDesc}" : null
+			//paragraph tModeDesc, title: "\nDesired Temperature Setpoints..."
 			if(canHeat) {
 				input "${sLbl}HeatTemp", "decimal", title: "Heat Set Point(°${getTemperatureScale()})", description: "Range within ${tempRangeValues()}", required: true, range: tempRangeValues(), image: getAppImg("heat_icon.png")
 			}
@@ -8324,9 +8345,11 @@ def editSchedule(cnt) {
 			input "${sLbl}HvacMode", "enum", title: "Set Hvac Mode:", required: false, description: "No change set", metadata: [values:tModeHvacEnum(canHeat,canCool)], multiple: false, image: getAppImg("hvac_mode_icon.png")
 		}
 
-		if(schMotRemoteSensor) {
+		if(settings?.schMotRemoteSensor) {
 			input "${sLbl}remSensor", "capability.temperatureMeasurement", title: "Alternate Temp Sensors", description: "For Remote Sensor Automation", submitOnChange: false, required: false, multiple: true, image: getAppImg("temperature_icon.png")
 		}
+
+		paragraph null, title: "\nUse Motion to Activate this Schedule..."
 		def mmot = settings["${sLbl}Motion"]
 		input "${sLbl}Motion", "capability.motionSensor", title: "Motion Sensors", description: "Enables alternate hvac settings based on motion", required: false, multiple: true, submitOnChange: true, image: getAppImg("motion_icon.png")
 		if(mmot) {
@@ -8337,7 +8360,7 @@ def editSchedule(cnt) {
 			if(canCool) {
 				input "${sLbl}MCoolTemp", "decimal", title: "Cool Set Point with Motion (°${getTemperatureScale()})", description: "Range within ${tempRangeValues()}", required: false, range: tempRangeValues(), image: getAppImg("cool_icon.png")
 			}
-			input "${sLbl}MHvacMode", "enum", title: "Set Hvac Mode with Motion:", required: false, description: "No change set", metadata: [values:tModeHvacEnum(canHeat,canCool)], multiple: false
+			input "${sLbl}MHvacMode", "enum", title: "Set Hvac Mode with Motion:", required: false, description: "No change set", metadata: [values:tModeHvacEnum(canHeat,canCool)], multiple: false, image: getAppImg("hvac_mode_icon.png")
 			input "${sLbl}MDelayValOn", "enum", title: "Delay enabling Motion Settings", required: false, defaultValue: 60, metadata: [values:longTimeSecEnum()], multiple: false, image: getAppImg("delay_time_icon.png")
 			input "${sLbl}MDelayValOff", "enum", title: "Delay disabling Motion Settings", required: false, defaultValue: 1800, metadata: [values:longTimeSecEnum()], multiple: false, image: getAppImg("delay_time_icon.png")
 		}
@@ -8980,7 +9003,13 @@ def schMotModePage() {
 			section {
 				paragraph "The sections below allow you to configure the automations that will use this thermostat", title: "Choose Automation Options:", required: false
 			}
-
+			section ("Manage Schedules:") { // <<< This is experimental
+				def tDesc = ""
+				tDesc += atomicState?.scheduleSchedActiveCount ? "\nActive Schedules: ${atomicState.scheduleSchedActiveCount}" : ""
+				href "schMotSchedulePage", title: "View/Modify Schedules...", description: tDesc != "" ? tDesc : "Tap to Configure...", image: getAppImg("schedule_icon.png")
+			}
+/*
+			//TODO This section was moved to the top of the schedule page
 			section("Setpoint Automation:") {
 				input (name: "schMotSetTstatTemp", type: "bool", title: "Adjust Setpoints based on schedule, ST modes, and Motion?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("setpoint_automation_icon.png"))
 				if(settings?.schMotSetTstatTemp) {
@@ -8990,17 +9019,7 @@ def schMotModePage() {
 					def tModeDesc = isTstatModesConfigured() ? "${tDesc}" : null
 					href "tstatModePage", title: "Thermostat Setpoint Automation", description: tModeDesc ?: "Tap to Configure...", state: (tModeDesc ? "complete" : null), image: getAppImg("setpoint_automation_icon.png")
 				}
-			}
-/*
-//TODO don't need to ask this? - just do it
-				input (name: "schMotSafetyOn", type: "bool", title: "Turn ON HVAC if Safety Temperature exceeded?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("temperature_icon.png"))
-				if(schMotSafetyOn) {
-					//input "${getAutoType()}UseSafetyTemps", "bool", title: "Restore When Safety Temps are Exceeded?", defaultValue: true, submitOnChange: true, image: getAppImg("switch_icon.png")
-//TODO this is only configured in parent as this page is a parent only page
-					href "safetyValuesPage", title: "Configure Safety Values?", description: (getSafetyValuesDesc() ? "${getSafetyValuesDesc()}\n\nTap to Modify..." : " Tap to configure..."),
-						state: (getSafetyValuesDesc() ? "complete" : null), image: getAppImg("thermostat_icon.png")
-					}
-*/
+			}*/
 
 			if(atomicState?.schMotTstatHasFan) {
 				section("Fan Control:") {
@@ -9104,11 +9123,6 @@ def schMotModePage() {
 				}
 			}
 
-			section ("Manage Schedules:") { // <<< This is experimental
-				def tDesc = ""
-				tDesc += atomicState?.scheduleSchedActiveCount ? "\nActive Schedules: ${atomicState.scheduleSchedActiveCount}" : ""
-				href "schMotSchedulePage", title: "View/Modify Schedules...", description: tDesc != "" ? tDesc : "Tap to Configure...", image: getAppImg("schedule_icon.png")
-			}
 			//showUpdateSchedule()
 			section("Settings:") {
 				input "schMotWaitVal", "enum", title: "Minimum Wait Time between Evaluations?", required: false, defaultValue: 60, metadata: [values:[30:"30 Seconds", 60:"60 Seconds"]], image: getAppImg("delay_time_icon.png")
