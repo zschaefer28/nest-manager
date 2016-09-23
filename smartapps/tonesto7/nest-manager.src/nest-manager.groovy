@@ -6620,9 +6620,9 @@ def remSenRuleEnum(excludeheatcool = false ) {
 	return vals
 }
 
-/********************************************************************************
+/************************************************************************
 |				    FAN CONTROL AUTOMATION CODE	     				    |
-*********************************************************************************/
+*************************************************************************/
 
 def fanCtrlPrefix() { return "fanCtrl" }
 
@@ -8328,7 +8328,7 @@ def editSchedule(cnt) {
 //TODO I think that the setpoints should only show if the temperature setpoint automation is enabled.
 // I'm also not sure if this should be a per-schedule setting?
 */
-		input "${sLbl}SetTstatTemp", "bool", title: "Adjust Setpoints based on schedule, ST modes, and Motion?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("setpoint_automation_icon.png")
+
 		if(settings?."${sLbl}SetTstatTemp") {
 			def tDesc = ""
 			tDesc += atomicState?.scheduleSchedActiveCount ? "\nActive Schedules: ${atomicState.scheduleSchedActiveCount}" : ""
@@ -9000,14 +9000,14 @@ def schMotModePage() {
 
 		if(settings?.schMotTstat && !dupTstat) {
 			section {
-				paragraph "The sections below allow you to configure the automations that will use this thermostat", title: "Choose Automation Options:", required: false
+				paragraph "The sections below allow you to configure your thermostat with automations that will help you save energy and keep your home feeling more comfortable", title: "Choose Automation Options:", required: false
 			}
 			section ("Manage Schedules:") { // <<< This is experimental
 				def tDesc = ""
 				tDesc += atomicState?.scheduleSchedActiveCount ? "\nActive Schedules: ${atomicState.scheduleSchedActiveCount}" : ""
 				href "schMotSchedulePage", title: "View/Modify Schedules...", description: tDesc != "" ? tDesc : "Tap to Configure...", image: getAppImg("schedule_icon.png")
 			}
-/*
+
 			//TODO This section was moved to the top of the schedule page
 			section("Setpoint Automation:") {
 				input (name: "schMotSetTstatTemp", type: "bool", title: "Adjust Setpoints based on schedule, ST modes, and Motion?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("setpoint_automation_icon.png"))
@@ -9018,7 +9018,7 @@ def schMotModePage() {
 					def tModeDesc = isTstatModesConfigured() ? "${tDesc}" : null
 					href "tstatModePage", title: "Thermostat Setpoint Automation", description: tModeDesc ?: "Tap to Configure...", state: (tModeDesc ? "complete" : null), image: getAppImg("setpoint_automation_icon.png")
 				}
-			}*/
+			}
 
 			if(atomicState?.schMotTstatHasFan) {
 				section("Fan Control:") {
@@ -9032,7 +9032,7 @@ def schMotModePage() {
 					}
 				}
 /*
-//TODO not sure if this should be here or inside of remote sensor
+				//TODO not sure if this should be here or inside of remote sensor
 				section("Fan Circulation:") {
 					input (name: "schMotCirculateTstatFan", type: "bool", title: "Operate HVAC Fan for Circulation?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("fan_control_icon.png"))
 					if(schMotCirculateTstatFan) {
