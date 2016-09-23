@@ -8249,9 +8249,9 @@ def editSchedule(cnt) {
 
 	def act = settings["${sLbl}SchedActive"]
 	def actIcon = act ? "active" : "inactive"
-	input "${sLbl}SchedActive", "bool", title: "Schedule Active", required: true, default: true, submitOnChange: true, image: getAppImg("${actIcon}_icon.png")
+	input "${sLbl}SchedActive", "bool", title: "Schedule Active", required: true, defaultValue: false, submitOnChange: true, image: getAppImg("${actIcon}_icon.png")
 	if(act) {
-		input "${sLbl}name", "text", title: "Schedule Name", required: true, default: "Schedule ${cnt}", multiple: false, image: getAppImg("name_tag_icon.png")
+		input "${sLbl}name", "text", title: "Schedule Name", required: true, defaultValue: "Schedule ${cnt}", multiple: false, image: getAppImg("name_tag_icon.png")
 		paragraph null, title: "\nSchedule Restrictions..."
 		input "${sLbl}restrictionMode", "mode", title: "Only execute in these modes", description: "Any location mode", required: false, multiple: true, image: getAppImg("mode_icon.png")
 		input "${sLbl}restrictionDOW", "enum", options: timeDayOfWeekOptions(), title: "Only execute on these days", description: "Any week day", required: false, multiple: true, image: getAppImg("day_calendar_icon.png")
@@ -8279,7 +8279,7 @@ def editSchedule(cnt) {
 			tDesc += atomicState?.scheduleSchedActiveCount ? "\nActive Schedules: ${atomicState.scheduleSchedActiveCount}" : ""
 			tDesc += tDesc ? "\n\nTap to Modify..." : ""
 			def tModeDesc = tDesc != "" ? "${tDesc}" : null
-			//paragraph tModeDesc, title: "\nDesired Temperature Setpoints..."
+			paragraph tModeDesc, title: "\nDesired Temperature Setpoints..."
 			if(canHeat) {
 				input "${sLbl}HeatTemp", "decimal", title: "Heat Set Point(°${getTemperatureScale()})", description: "Range within ${tempRangeValues()}", required: true, range: tempRangeValues(), image: getAppImg("heat_icon.png")
 			}
@@ -8293,7 +8293,7 @@ def editSchedule(cnt) {
 			input "${sLbl}remSensor", "capability.temperatureMeasurement", title: "Alternate Temp Sensors", description: "For Remote Sensor Automation", submitOnChange: false, required: false, multiple: true, image: getAppImg("temperature_icon.png")
 		}
 
-		paragraph null, title: "\nUse Motion to Activate this Schedule..."
+		paragraph null, title: "\nUse Alternate Setpoint base on Motion..."
 		def mmot = settings["${sLbl}Motion"]
 		input "${sLbl}Motion", "capability.motionSensor", title: "Motion Sensors", description: "Enables alternate hvac settings based on motion", required: false, multiple: true, submitOnChange: true, image: getAppImg("motion_icon.png")
 		if(mmot) {
@@ -8766,8 +8766,8 @@ def setTstatTempCheck() {
 //       all thermostats in an automation are in the same Nest structure, so that all react to home/away changes
 //
 	try {
-		def tModeTstats = schMotTstat
-		def tModeTstatMir = schMotTstatMir
+		def tModeTstats = settings?.schMotTstat
+		def tModeTstatMir = settings?.schMotTstatMir
 
 		if(atomicState?.disableAutomation) { return }
 		def execTime = now()
@@ -8810,15 +8810,15 @@ def setTstatTempCheck() {
 				def hvacSettings = atomicState?."sched${mySched}restrictions"
 
 				def newHvacMode = !isBtwn ? hvacSettings?.hvacm : hvacSettings?.mhvacm ?: hvacSettings?.hvacm
-				def tstatHvacMode = schMotTstat?.currentThermostatMode?.toString()
+				def tstatHvacMode = settings?.schMotTstat?.currentThermostatMode?.toString()
 				if(newHvacMode && (newHvacMode.toString() != tstatHvacMode)) {
 					if(setTstatMode(schMotTstat, newHvacMode)) {
-						storeLastAction("Set $schMotTstat Mode to ${newHvacMode.toString().capitalize()}", getDtNow())
-						LogAction("setTstatTempCheck: Setting Thermostat Mode to '${newHvacMode?.toString().capitalize()}' on ($schMotTstat)", "info", true)
-					} else { LogAction("setTstatTempCheck: Error Setting Thermostat Mode to '${newHvacMode?.toString().capitalize()}' on ($schMotTstat)", "warn", true) }
+						storeLastAction("Set ${settings?.schMotTstat} Mode to ${newHvacMode.toString().capitalize()}", getDtNow())
+						LogAction("setTstatTempCheck: Setting Thermostat Mode to '${newHvacMode?.toString().capitalize()}' on (${settings?.schMotTstat})", "info", true)
+					} else { LogAction("setTstatTempCheck: Error Setting Thermostat Mode to '${newHvacMode?.toString().capitalize()}' on (${settings?.schMotTstat})", "warn", true) }
 				}
 
-				def curMode = schMotTstat?.currentThermostatMode?.toString()
+				def curMode = settings?.schMotTstat?.currentThermostatMode?.toString()
 				def isModeOff = (curMode == "off") ? true : false
 				tstatHvacMode = curMode
 
@@ -8826,7 +8826,8 @@ def setTstatTempCheck() {
 				coolTemp = null
 
 				if(!isModeOff && atomicState?.schMotTstatCanHeat) {
-					def oldHeat = schMotTstat?.currentHeatingSetpoint.toDouble()
+					// MY Heating Setpoint has not been set so it was null
+					def oldHeat = settings?.schMotTstat?.currentHeatingSetpoint.toDouble() ?: 0.0
 //ERSERS getRemSenHeatSetTemp()
 					heatTemp = !isBtwn ? hvacSettings.htemp.toDouble() : hvacSettings.mhtemp.toDouble() ?: hvacSettings.htemp.toDouble()
 					def temp = 0.0
@@ -8837,13 +8838,13 @@ def setTstatTempCheck() {
 					}
 					heatTemp = temp
 					if(oldHeat != heatTemp) {
-						LogAction("setTstatTempCheck Setting Heat Setpoint to '${heatTemp}' on ($schMotTstat) old: ${oldHeat}", "info", false)
-						//storeLastAction("Set $schMotTstat Heat Setpoint to ${heatTemp}", getDtNow())
+						LogAction("setTstatTempCheck Setting Heat Setpoint to '${heatTemp}' on (${settings?.schMotTstat}) old: ${oldHeat}", "info", false)
+						//storeLastAction("Set ${settings?.schMotTstat} Heat Setpoint to ${heatTemp}", getDtNow())
 					} else { heatTemp = null }
 				}
 
 				if(!isModeOff && atomicState?.schMotTstatCanCool) {
-					def oldCool = schMotTstat?.currentCoolingSetpoint.toDouble()
+					def oldCool = settings?.schMotTstat?.currentCoolingSetpoint.toDouble() ?: 0.0
 //ERSERS getRemSenCoolSetTemp()
 					coolTemp = !isBtwn ? hvacSettings.ctemp.toDouble() : hvacSettings.mctemp.toDouble() ?: hvacSettings.ctemp.toDouble()
 					def temp = 0.0
@@ -8854,13 +8855,13 @@ def setTstatTempCheck() {
 					}
 					coolTemp = temp
 					if(oldCool != coolTemp) {
-						LogAction("setTstatTempCheck: Setting Cool Setpoint to '${coolTemp}' on ($schMotTstat) old: ${oldCool}", "info", false)
-						//storeLastAction("Set $schMotTstat Cool Setpoint to ${coolTemp}", getDtNow())
+						LogAction("setTstatTempCheck: Setting Cool Setpoint to '${coolTemp}' on (${settings?.schMotTstat}) old: ${oldCool}", "info", false)
+						//storeLastAction("Set ${settings?.schMotTstat} Cool Setpoint to ${coolTemp}", getDtNow())
 					} else { coolTemp = null }
 				}
-				if(setTstatAutoTemps(schMotTstat, coolTemp?.toDouble(), heatTemp?.toDouble())) {
+				if(setTstatAutoTemps(settings?.schMotTstat, coolTemp?.toDouble(), heatTemp?.toDouble())) {
 					LogAction("setTstatTempCheck: Temp Change | $modes | newHvacMode: $newHvacMode | tstatHvacMode: $tstatHvacMode | heatTemp: $heatTemp | coolTemp: $coolTemp | curStMode: $curStMode", "info", true)
-					storeLastAction("Set $schMotTstat Cool Setpoint to ${coolTemp} Set Heat Setpoint to ${heatTemp}", getDtNow())
+					storeLastAction("Set ${settings?.schMotTstat} Cool Setpoint to ${coolTemp} Set Heat Setpoint to ${heatTemp}", getDtNow())
 				} else {
 					LogAction("setTstatTempCheck: set ERROR | $modes | newHvacMode: $newHvacMode | tstatHvacMode: $tstatHvacMode | heatTemp: $heatTemp | coolTemp: $coolTemp | curStMode: $curStMode", "info", true)
 				}
@@ -8949,6 +8950,9 @@ def schMotModePage() {
 			}
 
 			section("Schedule Automation:") {
+				if(getCurrentSchedule()) {
+					paragraph "Active Schedule: ${getCurrentSchedule()}" // This is strictly for testing
+				}
 				input (name: "schMotSetTstatTemp", type: "bool", title: "Use Schedules to set setpoints based on Time, ST modes, and Motion?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("schedule_icon.png"))
 				if(settings?.schMotSetTstatTemp) {
 					def tDesc = ""
