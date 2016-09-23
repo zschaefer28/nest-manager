@@ -1,7 +1,7 @@
 /********************************************************************************************
 |    Application Name: Nest Manager and Automations                                         |
 |    Author: Anthony S. (@tonesto7), Eric S. (@E_sch)                                       |
-|    Contributors: Ben W. (@desertblade)						                            |
+|    Contributors: Ben W. (@desertblade)                                                    |
 |                                                                                           |
 |*******************************************************************************************|
 |    There maybe portions of the code that may resemble code from other apps in the         |
@@ -709,7 +709,7 @@ def getSafetyValuesDesc() {
 			def dew_max = getComfortDewpoint(dev)
 			def minTemp = defmin
 			def maxTemp = defmax
-			def maxDew = dew_max ?: (getTemperatureScale() == "C") ? 15 : 60
+			def maxDew = dew_max ?: (getTemperatureScale() == "C") ? 19 : 66
 
 			if(minTemp == 0) { minTemp = null }
 			if(maxTemp == 0) { maxTemp = null }
@@ -5316,12 +5316,20 @@ def subscribeToEvents() {
 					atomicState.extTmpChgWhileOffDt = getDtNow()
 				}
 			}
+			def senlist = []
 			if(schMotRemoteSensor) {
 				if(isRemSenConfigured()) {
 					subscribe(schMotTstat, "thermostatOperatingState", automationTstatOperEvt)
-					subscribe(schMotTstat, "coolingSetpoint", automationTstatCTempEvt)
-					subscribe(schMotTstat, "heatingSetpoint", automationTstatHTempEvt)
-					if(remSensorDay) { subscribe(remSensorDay, "temperature", automationTempSenEvt) }
+					if(remSensorDay) {
+						for(sen in settings.remSensorDay) {
+							if(senlist?.contains(sen)) {
+								//log.trace "found $sen"
+							} else {
+								senlist << sen
+								subscribe(sen, "temperature", automationTempSenEvt)
+							}
+						}
+					}
 				}
 			}
 			if(schMotSetTstatTemp) {
@@ -5343,7 +5351,6 @@ def subscribeToEvents() {
 			def cnt = 1
 			def swlist = []
 			def mtlist = []
-			def senlist = []
 			schedList?.each { scd ->
 				sLbl = "schMot_${scd}_"
 				def restrict = atomicState."sched${cnt}restrictions"
@@ -5400,6 +5407,8 @@ def subscribeToEvents() {
 			subscribe(schMotTstat, "thermostatMode", automationTstatModeEvt)
 			subscribe(schMotTstat, "temperature", automationTstatTempEvt)
 			subscribe(schMotTstat, "presence", automationPresenceEvt)
+			subscribe(schMotTstat, "coolingSetpoint", automationTstatCTempEvt)
+			subscribe(schMotTstat, "heatingSetpoint", automationTstatHTempEvt)
 			subscribe(schMotTstat, "safetyTempExceeded", automationSafetyTempEvt)
 			subscribe(location, "sunset", automationSunEvtHandler)
 			subscribe(location, "sunrise", automationSunEvtHandler)
@@ -5849,12 +5858,14 @@ def remSensorPage() {
 				}
 				if(remSensorDay) {
 					if(settings?.remSenRuleType in ["Circ", "Heat_Cool_Circ", "Heat_Circ", "Cool_Circ"]) {
+/* WHY HERE?
 						section("Fan Circulation:") {
 							input (name: "schMotCirculateTstatFan", type: "bool", title: "Operate HVAC Fan for Circulation?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("fan_control_icon.png"))
 							if(settings?.schMotCirculateTstatFan) {
 								input(name: "schMotFanRuleType", type: "enum", title: "(Rule) Action Type", options: remSenRuleEnum(true), required: true, image: getAppImg("rule_icon.png"))
 							}
 						}
+*/
 					}
 /*
 					section("Rule Evaluation Options:") {
@@ -5974,10 +5985,10 @@ def automationMotionEvt(evt) {
 
 		LogAction(" Motion: delay: $delay  ${evt.displayName}   ${settings["${sLbl}Motion"]}", "trace", true)
 		if(dorunIn) {
-			if(delay > 20 && delay < 60) {
-				LogAction("Event | Scheduling Motion Check for (${delay} Seconds)", "info", true)
-				scheduleAutomationEval(delay)
-			} else { scheduleAutomationEval() }
+			LogAction("Event | Scheduling Motion Check for (${delay} Seconds)", "info", true)
+			delay = delay > 20 ? delay : 20
+			delay = delay < 60 ? delay : 60
+			scheduleAutomationEval(delay)
 		} else {
 			LogAction("Event | Skipping Motion Check because Active sensor not in active schedule ${mySched}", "info", true)
 		}
@@ -6740,9 +6751,11 @@ def doFanOperation(tempDiff) {
 	LogAction("doFanOperation: Temp Difference: (${tempDiff})", "info", false)
 	try {
 		def tstat = schMotTstat
-		def curTstatTemp = getDeviceTemp(tstat).toDouble()
-		def curCoolSetpoint = getTstatSetpoint(tstat, "cool")
-		def curHeatSetpoint = getTstatSetpoint(tstat, "heat")
+
+		def curTstatTemp = tstat ?  getRemoteSenTemp().toDouble() : null
+		def curCoolSetpoint = getRemSenCoolSetTemp()
+		def curHeatSetpoint = getRemSenHeatSetTemp()
+
 		def hvacMode = tstat ? tstat?.currentThermostatMode.toString() : null
 		def curTstatOperState = tstat?.currentThermostatOperatingState.toString()
 		def curTstatFanMode = tstat?.currentThermostatFanMode.toString()
@@ -7086,11 +7099,9 @@ def extTmpTempOk() {
 		def extTmpTstatMir = settings?.schMotTstatMir
 
 		//def execTime = now()
- 		//def desiredHeatTemp = getGlobalDesiredHeatTemp()
 		def desiredHeatTemp = getRemSenHeatSetTemp()
-		//def desiredCoolTemp = getGlobalDesiredCoolTemp()
 		def desiredCoolTemp = getRemSenCoolSetTemp()
-		def intTemp = extTmpTstat ? extTmpTstat?.currentTemperature.toDouble() : null
+		def intTemp = extTmpTstat ?  getRemoteSenTemp().toDouble() : null
 		def extTemp = getExtTmpTemperature()
 		def curMode = extTmpTstat.currentThermostatMode.toString()
 		def dpLimit = getComfortDewpoint(extTmpTstat) ?: (getTemperatureScale() == "C" ? 19 : 66)
@@ -7108,7 +7119,7 @@ def extTmpTempOk() {
 		if(desiredHeatTemp && desiredCoolTemp && (desiredHeatTemp < desiredCoolTemp) && modeAuto) { desiredTemp = (desiredCoolTemp + desiredHeatTemp)/2.0  }
 
 		LogAction("extTmpTempOk: curMode: ${curMode} | modeOff: ${modeOff} | atomicState.extTmpTstatOffRequested: ${atomicState?.extTmpTstatOffRequested}", "debug", false)
-		LogAction("extTmpTempOk: Inside Temp: ${intTemp} | Desired Temp: ${desiredTemp} | Desired Heat Temp: ${desiredHeatTemp} | Desired Cool Temp: ${desiredCoolTemp}", "debug", false)
+		LogAction("extTmpTempOk: Inside Temp: ${intTemp} | Desired Temp: ${desiredTemp} | Desired Heat Temp: ${desiredHeatTemp} | Desired Cool Temp: ${desiredCoolTemp}", "info", true)
 
 		intTemp = desiredTemp ?: intTemp
 		def tempDiff = Math.abs(extTemp - intTemp)
@@ -7138,7 +7149,7 @@ def extTmpTempOk() {
 			if(!dpOk) { retval = false }
 			LogAction("extTmpTempOk: extTempHigh: ${extTempHigh} | extTempLow: ${extTempLow} | dpOk: ${dpOk}", "debug", false)
 		}
-		LogAction("extTmpTempOk: Inside Temp: (${intTemp}°${getTemperatureScale()}) is ${tempOk ? "" : "Not"} ${str} $diffThresh° of Outside Temp: (${extTemp}°${getTemperatureScale()}) or Dewpoint: (${curDp}°${getTemperatureScale()}) is ${dpOk ? "ok" : "too high"}", "info", true)
+		LogAction("extTmpTempOk: ${retval} Desired Inside Temp: (${intTemp}°${getTemperatureScale()}) is ${tempOk ? "" : "Not"} ${str} $diffThresh° of Outside Temp: (${extTemp}°${getTemperatureScale()}) or Dewpoint: (${curDp}°${getTemperatureScale()}) is ${dpOk ? "ok" : "TOO HIGH"}", "info", true)
 		//storeExecutionHistory((now() - execTime), "getExtTmpTempOk")
 		return retval
 	} catch (ex) {
@@ -7218,7 +7229,7 @@ def extTmpTempCheck(cTimeOut = false) {
 									}
 								}
 
-								rmsg = "Restoring '${extTmpTstat?.label}' to '${lastMode.toUpperCase()}' mode "
+								rmsg = "extTmpTempCheck: Restoring '${extTmpTstat?.label}' to '${lastMode.toUpperCase()}' mode "
 								def needAlarm = false
 								if(!safetyOk) {
 									rmsg += "because External Temp Safefy Temps have been reached..."
@@ -7251,7 +7262,15 @@ def extTmpTempCheck(cTimeOut = false) {
 							if(!home) { LogAction("extTmpTempCheck: Skipping because Nest is set AWAY", "info", true) }
  // TODO check if timeout quickly cycles back...
 						}
-					} else { if(safetyOk) { scheduleAutomationEval(60) } }
+					} else {
+						if(safetyOk) {
+							def remaining = getExtTmpOnDelayVal() - getExtTmpWhileOffDtSec()
+							LogAction("extTmpTempCheck: Delaying restore for wait period ${getExtTmpOnDelayVal()}, remaining ${remaining}", "info", true)
+							remaining = remaining > 20 ? remaining : 20
+							remaining = remaining < 60 ? remaining : 60
+							scheduleAutomationEval(remaining)
+						}
+					}
 				} else {
 					if(modeOff) {
 						if(timeout || !safetyOk) {
@@ -7294,13 +7313,22 @@ def extTmpTempCheck(cTimeOut = false) {
 								if(allowAlarm) { scheduleAlarmOn(pName) }
 							}
 						} else { LogAction("extTmpTempCheck(): Error turning themostat Off", "warn", true) }
-					} else { scheduleAutomationEval(30) }
+					} else {
+						def remaining = getExtTmpOffDelayVal() - getExtTmpWhileOnDtSec()
+						LogAction("extTmpTempCheck: Delaying OFF for wait period ${getExtTmpOffDelayVal()}, remaining ${remaining}", "info", true)
+						remaining = remaining > 20 ? remaining : 20
+						remaining = remaining < 60 ? remaining : 60
+						scheduleAutomationEval(remaining)
+					}
 				} else {
 				   LogAction("extTmpTempCheck() | Skipping change because '${extTmpTstat?.label}' mode is already 'OFF'", "info", true)
 				}
 			} else {
 				if(!schedOk) { LogAction("extTmpTempCheck: Skipping because of Schedule Restrictions...", "info", true) }
 				if(!safetyOk) { LogAction("extTmpTempCheck: Skipping because of Safety Temps Exceeded...", "info", true) }
+				if(!home) { LogAction("extTmpTempCheck: Skipping because of AWAY Nest mode...", "info", true) }
+				if(timeOut) { LogAction("extTmpTempCheck: Skipping because of active timeout...", "info", true) }
+				if(!tempWithinThreshold) { LogAction("extTmpTempCheck: Exterior temperatures not in range...", "info", true) }
 			}
 			storeExecutionHistory((now() - execTime), "extTmpTempCheck")
 		}
@@ -7490,7 +7518,7 @@ def conWatCheck(cTimeOut = false) {
 						def lastMode = null
 						if(atomicState?.conWatRestoreMode) { lastMode = atomicState?.conWatRestoreMode }
 						if(lastMode && (lastMode != curMode || timeOut || !safetyOk)) {
-							scheduleAutomationEval(180)
+							scheduleAutomationEval(60)
 							if(setTstatMode(conWatTstat, lastMode)) {
 								storeLastAction("Restored Mode ($lastMode) to $conWatTstat", getDtNow())
 								atomicState?.conWatRestoreMode = null
@@ -7529,12 +7557,23 @@ def conWatCheck(cTimeOut = false) {
 										if(allowAlarm) { scheduleAlarmOn(pName) }
 									}
 								}
+								storeExecutionHistory((now() - execTime), "conWatCheck")
+								return
+
 							} else { LogAction("conWatCheck() | There was Problem Restoring the Last Mode to ($lastMode)", "error", true) }
 						} else {
 							if(!timeOut && safetyOk) { LogAction("conWatCheck() | Skipping Restore because the Mode to Restore is same as Current Mode ${curMode}", "info", true) }
 							if(!safetyOk) { LogAction("conWatCheck() | Unable to restore mode and safety temperatures are exceeded", "warn", true) }
 						}
-					} else { if(safetyOk) { scheduleAutomationEval(60) } }
+					} else {
+						if(safetyOk) {
+							def remaining = getConWatOnDelayVal() - getConWatCloseDtSec()
+							LogAction("conWatCheck: Delaying restore for wait period ${getConWatOnDelayVal()}, remaining ${remaining}", "info", true)
+							remaining = remaining > 20 ? remaining : 20
+							remaining = remaining < 60 ? remaining : 60
+							scheduleAutomationEval(remaining)
+						}
+					}
 				} else {
 					if(modeOff) {
 						if(timeOut || !safetyOk) {
@@ -7557,7 +7596,7 @@ def conWatCheck(cTimeOut = false) {
 						atomicState?.conWatRestoreMode = curMode
 						LogAction("conWatCheck: Saving ${conWatTstat?.label} mode (${atomicState?.conWatRestoreMode.toString().toUpperCase()}) for Restore later.", "info", true)
 						LogAction("conWatCheck: ${openCtDesc}${getOpenContacts(conWatContacts).size() > 1 ? "are" : "is"} still Open: Turning 'OFF' '${conWatTstat?.label}'", "debug", true)
-						scheduleAutomationEval(180)
+						scheduleAutomationEval(60)
 						if(setTstatMode(conWatTstat, "off")) {
 							storeLastAction("Turned Off $conWatTstat", getDtNow())
 							atomicState?.conWatTstatOffRequested = true
@@ -7577,12 +7616,18 @@ def conWatCheck(cTimeOut = false) {
 						} else { LogAction("conWatCheck(): Error turning themostat Off", "warn", true) }
 					} else {
 						if(getConWatRestoreDelayBetweenDtSec() < (getConWatRestoreDelayBetweenVal() - 2)) {
-							LogAction("conWatCheck() | Skipping change because the delay since last restore has been less than (${getEnumValue(longTimeSecEnum(), conWatRestoreDelayBetween)})", "info", false)
+							LogAction("conWatCheck() | Skipping OFF change because the delay since last restore has been less than (${getEnumValue(longTimeSecEnum(), conWatRestoreDelayBetween)})", "info", false)
 							scheduleAutomationEval(getConWatRestoreDelayBetweenVal() - getConWatRestoreDelayBetweenDtSec())
-						} else { scheduleAutomationEval(60) }
+						} else {
+							def remaining = getConWatOffDelayVal() - getConWatOpenDtSec()
+							LogAction("conWatCheck: Delaying OFF for wait period ${getConWatOffDelayVal()}, remaining ${remaining}", "info", true)
+							remaining = remaining > 20 ? remaining : 20
+							remaining = remaining < 60 ? remaining : 60
+							scheduleAutomationEval(remaining)
+						}
 					}
 				} else {
-					LogAction("conWatCheck() | Skipping change because '${conWatTstat?.label}' mode is already 'OFF'", "info", false)
+					LogAction("conWatCheck() | Skipping OFF change because '${conWatTstat?.label}' mode is already 'OFF'", "info", false)
 				}
 			} else {
 				if(!schedOk) { LogAction("conWatCheck: Skipping because of Schedule Restrictions...", "info", true) }
@@ -7759,6 +7804,9 @@ def leakWatCheck() {
 										if(allowAlarm) { scheduleAlarmOn(pName) }
 									}
 								}
+								storeExecutionHistory((now() - execTime), "leakWatCheck")
+								return
+
 							} else { LogAction("leakWatCheck() | There was problem restoring the last mode to ${lastMode}...", "error", true) }
 						} else {
 							if(!safetyOk) {
@@ -7767,7 +7815,15 @@ def leakWatCheck() {
 								LogAction("leakWatCheck() | Skipping Restore because the Mode to Restore is same as Current Mode ${curMode}", "info", true)
 							}
 						}
-					} else { if(safetyOk) { scheduleAutomationEval(60) } }
+					} else {
+						if(safetyOk) {
+							def remaining = getLeakWatOnDelayVal() - getLeakWatDryDtSec()
+							LogAction("extTmpTempCheck: Delaying restore for wait period ${getLeakWatOnDelayVal()}, remaining ${remaining}", "info", true)
+							remaining = remaining > 20 ? remaining : 20
+							remaining = remaining < 60 ? remaining : 60
+							scheduleAutomationEval(remaining)
+						}
+					}
 				} else {
 					if(modeOff) {
 						if(!safetyOk) {
@@ -8221,7 +8277,7 @@ def schMotSchedulePage() {
 
 def showUpdateSchedule() {
 	def schedList = atomicState?.scheduleList  // setting in initAutoApp adjust # of schedule slots
-	if (schedList == null) { atomicState.scheduleList = [ 1,2,3,4 ]; schedList =  atomicState?.scheduleList }
+	if(schedList == null) { atomicState.scheduleList = [ 1,2,3,4 ]; schedList =  atomicState?.scheduleList }
 	def lact
 	def act = 1
 	def sLbl
@@ -8420,13 +8476,13 @@ def getCurrentSchedule() {
 	}
 	if(ccnt > schedList.size()) { noSched = true }
 	else { mySched = ccnt }
-	LogAction("getCurrentSchedule:  mySched: $mySched  noSched: $noSched  ccnt: $ccnt res1: $res1", "trace", false)
+//	LogAction("getCurrentSchedule:  mySched: $mySched  noSched: $noSched  ccnt: $ccnt res1: $res1", "trace", false)
 	return mySched
 }
 
 
 private checkRestriction(cnt) {
-	LogAction("checkRestriction:( $cnt )...", "trace", false)
+//	LogAction("checkRestriction:( $cnt )...", "trace", false)
 	def sLbl = "schMot_${cnt}_"
 
 	def restriction
@@ -8462,7 +8518,7 @@ private checkRestriction(cnt) {
 	} else {
 		restriction = "an inactive schedule"
 	}
-	LogAction("checkRestriction:( $cnt ) restriction: $restriction", "trace", false)
+//	LogAction("checkRestriction:( $cnt ) restriction: $restriction", "trace", false)
 	return restriction
 }
 
@@ -9768,7 +9824,7 @@ def getDmtSectionDesc(autoType) {
 /************************************************************************************************
 |   					      AUTOMATION SCHEDULE CHECK 								|
 *************************************************************************************************/
-//ERS
+
 def autoScheduleOk(autoType) {
 	try {
 		def inverted = settings?."${autoType}DmtInvert" ? true : false
@@ -9789,7 +9845,7 @@ def autoScheduleOk(autoType) {
 			timeOk = ((inTime && !inverted) || (!inTime && inverted)) ? true : false
 		}
 
-		LogAction("autoScheduleOk( dayOk: $dayOk | modeOk: $modeOk | dayOk: ${dayOk} | timeOk: $timeOk | inverted: ${inverted})", "info", false)
+		//LogAction("autoScheduleOk( dayOk: $dayOk | modeOk: $modeOk | dayOk: ${dayOk} | timeOk: $timeOk | inverted: ${inverted})", "info", false)
 		return (modeOk && dayOk && timeOk) ? true : false
 	} catch (ex) {
 		log.error "${autoType}-autoScheduleOk Exception:", ex
