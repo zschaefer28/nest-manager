@@ -8329,7 +8329,7 @@ def editSchedule(cnt) {
 // I'm also not sure if this should be a per-schedule setting?
 */
 
-		if(settings?."${sLbl}SetTstatTemp") {
+		if(settings?.schMotSetTstatTemp) {
 			def tDesc = ""
 			tDesc += atomicState?.scheduleSchedActiveCount ? "\nActive Schedules: ${atomicState.scheduleSchedActiveCount}" : ""
 			tDesc += tDesc ? "\n\nTap to Modify..." : ""
@@ -9002,11 +9002,7 @@ def schMotModePage() {
 			section {
 				paragraph "The sections below allow you to configure your thermostat with automations that will help you save energy and keep your home feeling more comfortable", title: "Choose Automation Options:", required: false
 			}
-			section ("Manage Schedules:") { // <<< This is experimental
-				def tDesc = ""
-				tDesc += atomicState?.scheduleSchedActiveCount ? "\nActive Schedules: ${atomicState.scheduleSchedActiveCount}" : ""
-				href "schMotSchedulePage", title: "View/Modify Schedules...", description: tDesc != "" ? tDesc : "Tap to Configure...", image: getAppImg("schedule_icon.png")
-			}
+
 
 			//TODO This section was moved to the top of the schedule page
 			section("Setpoint Automation:") {
@@ -9121,7 +9117,12 @@ def schMotModePage() {
 					href "extTempPage", title: "External Temps Config...", description: extTmpDesc ?: "Tap to Configure...", state: (extTmpDesc ? "complete" : null), image: getAppImg("external_temp_icon.png")
 				}
 			}
-
+			section ("Manage Schedules:") { // <<< This is experimental
+				def tDesc = ""
+				tDesc += atomicState?.scheduleSchedActiveCount ? "\nActive Schedules: ${atomicState.scheduleSchedActiveCount}" : ""
+				href "schMotSchedulePage", title: "View/Modify Schedules...", description: tDesc != "" ? tDesc : "Tap to Configure...", image: getAppImg("schedule_icon.png")
+			}
+			
 			//showUpdateSchedule()
 			section("Settings:") {
 				input "schMotWaitVal", "enum", title: "Minimum Wait Time between Evaluations?", required: false, defaultValue: 60, metadata: [values:[30:"30 Seconds", 60:"60 Seconds"]], image: getAppImg("delay_time_icon.png")
