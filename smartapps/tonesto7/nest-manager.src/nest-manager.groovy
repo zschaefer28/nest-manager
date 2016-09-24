@@ -36,12 +36,12 @@ definition(
 	appSetting "clientSecret"
 }
 
-def appVersion() { "3.3.3" }
+def appVersion() { "3.3.4" }
 def appVerDate() { "9-23-2016" }
 def appVerInfo() {
 	def str = ""
 
-	str += "V3.3.3 (September 23rd, 2016):"
+	str += "V3.3.4 (September 23rd, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
 	str += "\n • UPDATED: Lot's of UI reworks for automations..."
 	str += "\n • UPDATED: Lot's of little bugfixes...."
@@ -8281,7 +8281,7 @@ def schMotSchedulePage() {
 				def str = ""
 				str += "• Temperature: (${getDeviceTemp(ts)}°${getTemperatureScale()})"
 				str += "\n• Setpoints: (H: ${canHeat ? "${getTstatSetpoint(ts, "heat")}°${getTemperatureScale()}" : "NA"}/C: ${canCool ? "${getTstatSetpoint(ts, "cool")}°${getTemperatureScale()}" : "NA"})"
-				paragraph title: "${ts?.displayName}\nSchedules and Setpoints:", "${str}", image: getAppImg("instruct_icon.png")
+				paragraph title: "${ts?.displayName}\nSchedules and Setpoints:", "${str}", state: "complete", image: getAppImg("info_icon2.png")
 			}
 			showUpdateSchedule()
 		}
@@ -8322,21 +8322,21 @@ def editSchedule(cnt) {
 		input "${sLbl}name", "text", title: "Schedule Name", required: true, defaultValue: "Schedule ${cnt}", multiple: false, image: getAppImg("name_tag_icon.png")
 		paragraph null, title: "\nSchedule Restrictions..."
 		input "${sLbl}restrictionMode", "mode", title: "Only execute in these modes", description: "Any location mode", required: false, multiple: true, image: getAppImg("mode_icon.png")
-		input "${sLbl}restrictionDOW", "enum", options: timeDayOfWeekOptions(), title: "Only execute on these days", description: "Any week day", required: false, multiple: true, image: getAppImg("day_calendar_icon.png")
+		input "${sLbl}restrictionDOW", "enum", options: timeDayOfWeekOptions(), title: "Only execute on these days", description: "Any week day", required: false, multiple: true, image: getAppImg("day_calendar_icon2.png")
 		def timeFrom = settings["${sLbl}restrictionTimeFrom"]
 		input "${sLbl}restrictionTimeFrom", "enum", title: (timeFrom ? "Only execute if time is between" : "Only execute during this time"), options: timeComparisonOptionValues(), required: false, multiple: false, submitOnChange: true, image: getAppImg("start_time_icon.png")
 		if (timeFrom) {
 			if (timeFrom.contains("custom")) {
 				input "${sLbl}restrictionTimeFromCustom", "time", title: "Custom time", required: true, multiple: false
 			} else {
-				input "${sLbl}restrictionTimeFromOffset", "number", title: "Offset (+/- minutes)", range: "*..*", required: true, multiple: false, defaultValue: 0
+				input "${sLbl}restrictionTimeFromOffset", "number", title: "Offset (+/- minutes)", range: "*..*", required: true, multiple: false, defaultValue: 0, image: getAppImg("offset_icon.png")
 			}
 			def timeTo = settings["${sLbl}restrictionTimeTo"]
 			input "${sLbl}restrictionTimeTo", "enum", title: "And", options: timeComparisonOptionValues(), required: true, multiple: false, submitOnChange: true, image: getAppImg("stop_time_icon.png")
 			if (timeTo && (timeTo.contains("custom"))) {
 				input "${sLbl}restrictionTimeToCustom", "time", title: "Custom time", required: true, multiple: false
 			} else {
-				input "${sLbl}restrictionTimeToOffset", "number", title: "Offset (+/- minutes)", range: "*..*", required: true, multiple: false, defaultValue: 0
+				input "${sLbl}restrictionTimeToOffset", "number", title: "Offset (+/- minutes)", range: "*..*", required: true, multiple: false, defaultValue: 0, image: getAppImg("offset_icon.png")
 			}
 		}
 		input "${sLbl}restrictionSwitchOn", "capability.switch", title: "Only execute when these switches are all on", description: "Always", required: false, multiple: true, image: getAppImg("switch_on_icon.png")
@@ -8487,9 +8487,9 @@ def getCurrentSchedule() {
 		if(res1 == null) { break }
 		ccnt += 1
 	}
-	if(ccnt > schedList.size()) { noSched = true }
+	if(ccnt > schedList?.size()) { noSched = true }
 	else { mySched = ccnt }
-//	LogAction("getCurrentSchedule:  mySched: $mySched  noSched: $noSched  ccnt: $ccnt res1: $res1", "trace", false)
+	//LogAction("getCurrentSchedule:  mySched: $mySched  noSched: $noSched  ccnt: $ccnt res1: $res1", "trace", false)
 	return mySched
 }
 
@@ -8504,11 +8504,11 @@ private checkRestriction(cnt) {
 	if(act) {
 		def apprestrict = atomicState?."sched${cnt}restrictions"
 
-		if (apprestrict.m && apprestrict.m.size() && !(location.mode in apprestrict.m)) {
+		if (apprestrict?.m && apprestrict?.m.size() && !(location.mode in apprestrict?.m)) {
 			restriction = "a mode mismatch"
-		} else if (apprestrict.w && apprestrict.w.size() && !(getDayOfWeekName() in apprestrict.w)) {
+		} else if (apprestrict?.w && apprestrict?.w.size() && !(getDayOfWeekName() in apprestrict?.w)) {
 			restriction = "a day of week mismatch"
-		} else if (apprestrict.tf && apprestrict.tt && !(checkTimeCondition(apprestrict.tf, apprestrict.tfc, apprestrict.tfo, apprestrict.tt, apprestrict.ttc, apprestrict.tto))) {
+		} else if (apprestrict?.tf && apprestrict?.tt && !(checkTimeCondition(apprestrict?.tf, apprestrict?.tfc, apprestrict?.tfo, apprestrict?.tt, apprestrict?.ttc, apprestrict?.tto))) {
 			restriction = "a time of day mismatch"
 		} else {
 			if (settings["${sLbl}restrictionSwitchOn"]) {
@@ -8944,7 +8944,7 @@ def setTstatTempCheck() {
 }
 
 /********************************************************************************
-|       MASTER AUTOMATION FOR THERMOSTATS
+|       				MASTER AUTOMATION FOR THERMOSTATS						|
 *********************************************************************************/
 def schMotPrefix() { return "schMot" }
 
@@ -8974,7 +8974,7 @@ def schMotModePage() {
 				def safetyTemps = getSafetyTemps(ts)
 			       	str +=  safetyTemps ? "\n• Safefy Temps: \n     └ Min: ${safetyTemps.min}°${getTemperatureScale()}/Max: ${safetyTemps.max}°${getTemperatureScale()}" : ""
 			       	str +=  "\n• Type: (${ts?.currentNestType.toString().capitalize()})"
-				paragraph "${str}", title: "${ts.displayName} Status", state: (str != "" ? "complete" : null), image: getAppImg("instruct_icon.png")
+				paragraph "${str}", title: "${ts.displayName} Status", state: (str != "" ? "complete" : null), image: getAppImg("info_icon2.png")
 
 				if(!tStatPhys) {      // if virtual thermostat, check if physical thermostat is in mirror list
 					def mylist = [ deviceNetworkId:"${ts.deviceNetworkId.toString().replaceFirst("v", "")}" ]
@@ -9031,7 +9031,7 @@ def schMotModePage() {
 					tDesc += tDesc ? "\n\nTap to Modify..." : ""
 					def tModeDesc = isTstatModesConfigured() ? "${tDesc}" : null
 					//href "tstatModePage", title: "Thermostat Setpoint Automation", description: tModeDesc ?: "Tap to Configure...", state: (tModeDesc ? "complete" : null), image: getAppImg("setpoint_automation_icon.png")
-					href "schMotSchedulePage", title: "Configure Setpoint Schedules...", description: tDesc != "" ? tDesc : "Tap to Configure...", image: getAppImg("schedule_icon.png")
+					href "schMotSchedulePage", title: "Configure Setpoint Schedules...", description: tDesc != "" ? tDesc : "Tap to Configure...", image: getAppImg("configure_icon.png")
 				}
 			}
 
@@ -9043,7 +9043,7 @@ def schMotModePage() {
 						fanCtrlDescStr += (atomicState?.schMotTstatHasFan) ? "\n ├ Fan Mode: (${fanCtrlTstat?.currentThermostatFanMode.toString().capitalize()})" : ""
 						fanCtrlDescStr += getFanSwitchDesc() ? "${getFanSwitchDesc()}" : ""
 						def fanCtrlDesc = isFanCtrlConfigured() ? "\n${fanCtrlDescStr}\n\nTap to Modify..." : null
-						href "fanControlPage", title: "Fan Control Config...", description: fanCtrlDesc ?: "Tap to Configure...", state: (fanCtrlDesc ? "complete" : null), image: getAppImg("fan_control_icon.png")
+						href "fanControlPage", title: "Fan Control Config...", description: fanCtrlDesc ?: "Tap to Configure...", state: (fanCtrlDesc ? "complete" : null), image: getAppImg("configure_icon.png")
 					}
 				}
 
@@ -9077,7 +9077,7 @@ def schMotModePage() {
 					remSenDescStr += settings?.remSensorDay ? "${dayModeDesc}" : ""
 
 					def remSenDesc = isRemSenConfigured() ? "${remSenDescStr}\n\nTap to Modify..." : null
-					href "remSensorPage", title: "Remote Sensors Config", description: remSenDesc ? remSenDesc : "Tap to Configure...", state: (remSenDesc ? "complete" : null), image: getAppImg("remote_sensor_icon.png")
+					href "remSensorPage", title: "Remote Sensors Config", description: remSenDesc ? remSenDesc : "Tap to Configure...", state: (remSenDesc ? "complete" : null), image: getAppImg("configure_icon.png")
 				}
 			}
 
@@ -9095,7 +9095,7 @@ def schMotModePage() {
 						"\n\nVoice Notifications:${getVoiceNotifConfigDesc(leakWatPrefix())}" : ""
 					leakDesc += (settings?.leakWatSensors) ? "\n\nTap to Modify..." : ""
 					def leakWatDesc = isLeakWatConfigured() ? "${leakDesc}" : null
-					href "leakWatchPage", title: "Leak Sensors Config...", description: leakWatDesc ?: "Tap to Configure...", state: (leakWatDesc ? "complete" : null), image: getAppImg("leak_icon.png")
+					href "leakWatchPage", title: "Leak Sensors Config...", description: leakWatDesc ?: "Tap to Configure...", state: (leakWatDesc ? "complete" : null), image: getAppImg("configure_icon.png")
 				}
 			}
 			section("Contact Automation:") {
@@ -9114,7 +9114,7 @@ def schMotModePage() {
 						"\n\nVoice Notifications:${getVoiceNotifConfigDesc(conWatPrefix())}" : ""
 					conDesc += (settings?.conWatContacts) ? "\n\nTap to Modify..." : ""
 					def conWatDesc = isConWatConfigured() ? "${conDesc}" : null
-					href "contactWatchPage", title: "Contact Sensors Config...", description: conWatDesc ?: "Tap to Configure...", state: (conWatDesc ? "complete" : null), image: getAppImg("open_window.png")
+					href "contactWatchPage", title: "Contact Sensors Config...", description: conWatDesc ?: "Tap to Configure...", state: (conWatDesc ? "complete" : null), image: getAppImg("configure_icon.png")
 				}
 			}
 
@@ -9134,13 +9134,13 @@ def schMotModePage() {
 						"\n • Evaluation Allowed: (${autoScheduleOk(extTmpPrefix()) ? "ON" : "OFF"})" : ""
 					extDesc += ((settings?.extTmpTempSensor || settings?.extTmpUseWeather) ) ? "\n\nTap to Modify..." : ""
 					def extTmpDesc = isExtTmpConfigured() ? "${extDesc}" : null
-					href "extTempPage", title: "External Temps Config...", description: extTmpDesc ?: "Tap to Configure...", state: (extTmpDesc ? "complete" : null), image: getAppImg("external_temp_icon.png")
+					href "extTempPage", title: "External Temps Config...", description: extTmpDesc ?: "Tap to Configure...", state: (extTmpDesc ? "complete" : null), image: getAppImg("configure_icon.png")
 				}
 			}
 			section ("Manage Schedules:") { // <<< This is experimental
 				href "schMotSchedulePage", title: "View/Modify Schedules...", description: "Tap to Configure...", image: getAppImg("schedule_icon.png")
 				def schInfo = getScheduleDesc()
-				if (schInfo.size()) {
+				if (schInfo?.size()) {
 					paragraph null, title: "Active Schedules (${atomicState?.activeSchedData?.size()})"
 					schInfo?.each { schDesc ->
 						paragraph "${schDesc}", state: "complete"
@@ -9175,10 +9175,10 @@ def updateScheduleStateMap() {
 					lbl: settings["${sLbl}name"],
 					m: settings["${sLbl}restrictionMode"],
 					tf: settings["${sLbl}restrictionTimeFrom"],
-					tfc: settings["${sLbl}restrictionTimeFromCustom"],
+					tfc: settings["${sLbl}restrictionTimeFromCustom"].time,
 					tfo: settings["${sLbl}restrictionTimeFromOffset"],
 					tt: settings["${sLbl}restrictionTimeTo"],
-					ttc: settings["${sLbl}restrictionTimeToCustom"],
+					ttc: settings["${sLbl}restrictionTimeToCustom"].time,
 					tto: settings["${sLbl}restrictionTimeToOffset"],
 					w: settings["${sLbl}restrictionDOW"],
 					s1: buildDeviceNameList(settings["${sLbl}restrictionSwitchOn"], "and"),
@@ -9221,10 +9221,10 @@ def getScheduleDesc(num = null) {
 			def timeFrom = null
 			def timeTo = null
 			if(schData?.tf != null || schData?.tfc != null) {
-				if(schData?.tf || schData?.tfc) { timeFrom = schData?.tf ? "${(schData?.tf instanceof String) ? schData?.tf.toString().capitalize() : schData?.tf}${(schData?.tfo != 0) ? " (O: ${schData?.tfo})" : ""}" : schData?.tfc.toString() }
+				if((schData?.tf && schData?.tf != "custom time") || schData?.tfc) { timeFrom = (schData?.tf && schData?.tf != "custom time") ? "${(schData?.tf instanceof String) ? schData?.tf.toString().capitalize() : schData?.tf}${(schData?.tfo != 0) ? " (O: ${schData?.tfo})" : ""}" : schData?.tfc.toString() }
 			}
 			if(schData?.tt != null || schData?.ttc != null) {
-				if(schData?.tt || schData?.ttc) { timeTo = schData?.tt ? "${(schData?.tt instanceof String) ? schData?.tt.toString().capitalize() : schData?.tt}${(schData?.tto != 0) ? "(O: ${schData?.tto})" : ""}" : schData?.ttc }
+				if((schData?.tt && schData?.tt != "custom time") || schData?.ttc) { timeTo = (schData?.tt && schData?.tt != "custom time") ? "${(schData?.tt instanceof String) ? schData?.tt.toString().capitalize() : schData?.tt}${(schData?.tto != 0) ? "(O: ${schData?.tto})" : ""}" : schData?.ttc }
 			}
 
 			str += schData?.lbl ? " • ${schData?.lbl}${actSchedNum == schNum ? " (In Use)" : ""}" : ""
@@ -9232,9 +9232,17 @@ def getScheduleDesc(num = null) {
 
 			//restriction section
 			str += isRestrict ? 			"\n ${isSw ? "├" : "└"} Restrictions:" : ""
-			str += schData?.m ?  			"\n ${isSw ? "│" : " "} ${(timeTo && timeFrom) || schData?.w ? " ├" : " └"} Mode${schData?.m?.size() > 1 ? "s" : ""}: ${schData?.m.toString()}" : ""
-			str += (timeFrom && timeTo) ?  	"\n ${isSw ? "│" : " "} ${schData?.w ? " ├" : " └"} Time: [${timeFrom} to ${timeTo}]" : ""
-			str += schData?.w ?  			"\n ${isSw ? "│" : " "}  └ Days: ${schData?.w}" : ""
+			str += schData?.m ?  			"\n ${isSw ? "│" : " "} ${(timeTo && timeFrom) || schData?.w ? "├" : "└"} Mode${schData?.m?.size() > 1 ? "s" : ""}: ${schData?.m.toString()}" : ""
+			str += (timeFrom && timeTo) ?  	"\n ${isSw ? "│" : " "} ${schData?.w ? "├" : "└"} Time: [${timeFrom} to ${timeTo}]" : ""
+			str += schData?.w ?  			"\n ${isSw ? "│" : " "} ${schData?.s1 ? "├" : "└"} Days: ${schData?.w}" : ""
+			str += schData?.s1 ?			"\n ${isSw ? "│" : " "} ${schData?.s0 ? "├" : "└"} Switches On: (Selected)" : ""
+			str += schData?.s0 ?			"\n ${isSw ? "│" : " "} └ Switches Off: (Selected)" : ""
+
+			//Temp Setpoints
+			str += (schData?.ctemp || schData?.htemp || schData?.hvacm)  ? "\n └ Temp Setpoints:" : ""
+			str += schData?.ctemp  ?		"\n      ${schData?.htemp ? "├" : "└"} Cool Setpoint: (${schData?.ctemp}°${getTemperatureScale()})" : ""
+			str += schData?.htemp ?			"\n      ${schData?.hvacm ? "├" : "└"} Heat Setpoint: (${schData?.htemp}°${getTemperatureScale()})" : ""
+			str += schData?.hvacm ?			"\n      └ HVAC Mode: (${schData?.hvacm})" : ""
 
 			sCnt = sCnt+1
 			if(str != "") { result?.push(str) }
@@ -9670,7 +9678,7 @@ def getNotifVariables(pName) {
 def voiceNotifString(phrase, pName) {
 	//log.trace "conWatVoiceNotifString..."
 	try {
-		if(phrase?.toLowerCase().contains("%devicename%")) { phrase = phrase?.toLowerCase().replace('%devicename%', (settings?."schMotTstat"?.displayName.toString() ?: "unknown")) }
+		if(phrase?.toLowerCase().contains("%tstatname%")) { phrase = phrase?.toLowerCase().replace('%tstatname%', (settings?."schMotTstat"?.displayName.toString() ?: "unknown")) }
 		if(phrase?.toLowerCase().contains("%lastmode%")) { phrase = phrase?.toLowerCase().replace('%lastmode%', (atomicState?."${pName}RestoreMode".toString() ?: "unknown")) }
 		if(pName == "leakWat" && phrase?.toLowerCase().contains("%wetsensor%")) {
 			phrase = phrase?.toLowerCase().replace('%wetsensor%', (getWetWaterSensors(leakWatSensors) ? getWetWaterSensors(leakWatSensors)?.join(", ").toString() : "a selected leak sensor")) }
@@ -9896,7 +9904,7 @@ def sendEventPushNotifications(message, type, pName) {
 	}
 }
 
-def sendEventVoiceNotifications(vMsg, pName, msgId, rmAAMsg=false, rmMsgId) {
+def sendEventVoiceNotifications(vMsg, pName, msgId=null, rmAAMsg=false, rmMsgId) {
 	def allowNotif = settings?."${pName}NotificationsOn" ? true : false
 	def allowSpeech = allowNotif && settings?."${pName}AllowSpeechNotif" ? true : false
 	def ok2Notify = parent.getOk2Notify()
@@ -9911,7 +9919,7 @@ def sendEventVoiceNotifications(vMsg, pName, msgId, rmAAMsg=false, rmMsgId) {
 				removeAskAlexaQueueMsg(rmMsgId)
 			}
 			if (vMsg && msgId != null) {
-				addEventToAskAlexaQueue(vMsg, msgId)
+				addAskAlexaQueueMsg(vMsg, msgId)
 			}
 		}
 	}
