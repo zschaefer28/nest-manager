@@ -9670,7 +9670,7 @@ def getNotifVariables(pName) {
 def voiceNotifString(phrase, pName) {
 	//log.trace "conWatVoiceNotifString..."
 	try {
-		if(phrase?.toLowerCase().contains("%tstatname%")) { phrase = phrase?.toLowerCase().replace('%tstatname%', (settings?."schMotTstat"?.displayName.toString() ?: "unknown")) }
+		if(phrase?.toLowerCase().contains("%devicename%")) { phrase = phrase?.toLowerCase().replace('%devicename%', (settings?."schMotTstat"?.displayName.toString() ?: "unknown")) }
 		if(phrase?.toLowerCase().contains("%lastmode%")) { phrase = phrase?.toLowerCase().replace('%lastmode%', (atomicState?."${pName}RestoreMode".toString() ?: "unknown")) }
 		if(pName == "leakWat" && phrase?.toLowerCase().contains("%wetsensor%")) {
 			phrase = phrase?.toLowerCase().replace('%wetsensor%', (getWetWaterSensors(leakWatSensors) ? getWetWaterSensors(leakWatSensors)?.join(", ").toString() : "a selected leak sensor")) }
@@ -9896,7 +9896,7 @@ def sendEventPushNotifications(message, type, pName) {
 	}
 }
 
-def sendEventVoiceNotifications(vMsg, pName, msgId=null, rmAAMsg=false, rmMsgId) {
+def sendEventVoiceNotifications(vMsg, pName, msgId, rmAAMsg=false, rmMsgId) {
 	def allowNotif = settings?."${pName}NotificationsOn" ? true : false
 	def allowSpeech = allowNotif && settings?."${pName}AllowSpeechNotif" ? true : false
 	def ok2Notify = parent.getOk2Notify()
@@ -9911,7 +9911,7 @@ def sendEventVoiceNotifications(vMsg, pName, msgId=null, rmAAMsg=false, rmMsgId)
 				removeAskAlexaQueueMsg(rmMsgId)
 			}
 			if (vMsg && msgId != null) {
-				addAskAlexaQueueMsg(vMsg, msgId)
+				addEventToAskAlexaQueue(vMsg, msgId)
 			}
 		}
 	}
