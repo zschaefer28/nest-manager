@@ -6776,16 +6776,24 @@ def doFanOperation(tempDiff) {
 			LogAction("doFanOperation: Evaluating turn fans off Because Thermostat Mode does not Match the required Mode to Run Fans", "info", true)
 			hvacFanOn = false  // force off of fans
 		}
+		if(atomicState?.haveRunFan == null) { atomicState.haveRunFan = false }
+		def savedHaveRun = atomicState.haveRunFan
 
 		settings?."${pName}FanSwitches"?.each { sw ->
 			def swOn = (sw?.currentSwitch.toString() == "on") ? true : false
 			if(hvacFanOn) {
-				if(!swOn) {
+				if(!swOn && !savedHaveRun) {
 					LogAction("doFanOperation: Fan Switch (${sw?.displayName}) is (${swOn ? "ON" : "OFF"}) | Turning '${sw}' Switch (ON)", "info", true)
 					sw.on()
+					swOn = true
+					atomicState.haveRunFan = true
 					storeLastAction("Turned On $sw)", getDtNow())
+				} else {
+					if(!swOn && savedHaveRun) {
+						LogAction("doFanOperation: Saved have run state shows switch ${sw} turned OFF outside of automation requests", "info", true)
+					}
 				}
-				if(checkFanSpeedSupport(sw)) {
+				if(swOn && atomicState?.haveRunFan && checkFanSpeedSupport(sw)) {
 					def speed = sw?.currentValue("currentState") ?: null
 					if(settings?."${pName}FanSwitchSpeedCtrl" && settings?."${pName}FanSwitchHighSpeed" && settings?."${pName}FanSwitchMedSpeed" && settings?."${pName}FanSwitchLowSpeed") {
 						if(tempDiff < settings?."${pName}FanSwitchMedSpeed".toDouble()) {
@@ -6818,10 +6826,15 @@ def doFanOperation(tempDiff) {
 					}
 				}
 			} else {
-				if(swOn) {
+				if(swOn && savedHaveRun) {
 					LogAction("doFanOperation: Fan Switch (${sw?.displayName}) is (${swOn ? "ON" : "OFF"}) | Turning '${sw}' Switch (OFF)", "info", true)
 					storeLastAction("Turned Off (${sw})", getDtNow())
 					sw.off()
+					atomicState.haveRunFan = false
+				} else {
+					if(swOn && !savedHaveRun) {
+						LogAction("doFanOperation: Saved have run state shows switch ${sw} turned ON outside of automation requests", "info", true)
+					}
 				}
 			}
 		}
