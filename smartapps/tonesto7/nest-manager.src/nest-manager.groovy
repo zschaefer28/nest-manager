@@ -7132,7 +7132,7 @@ def extTmpTempOk() {
 		if(desiredHeatTemp && desiredCoolTemp && (desiredHeatTemp < desiredCoolTemp) && modeAuto) { desiredTemp = (desiredCoolTemp + desiredHeatTemp)/2.0  }
 
 		LogAction("extTmpTempOk: curMode: ${curMode} | modeOff: ${modeOff} | atomicState.extTmpTstatOffRequested: ${atomicState?.extTmpTstatOffRequested}", "debug", false)
-		LogAction("extTmpTempOk: Inside Temp: ${intTemp} | Desired Temp: ${desiredTemp} | Desired Heat Temp: ${desiredHeatTemp} | Desired Cool Temp: ${desiredCoolTemp}", "info", true)
+		LogAction("extTmpTempOk: Inside Temp: ${intTemp} | Desired Temp: ${desiredTemp} | Desired Heat Temp: ${desiredHeatTemp} | Desired Cool Temp: ${desiredCoolTemp}", "info", false)
 
 		intTemp = desiredTemp ?: intTemp
 		def tempDiff = Math.abs(extTemp - intTemp)
@@ -7353,11 +7353,13 @@ def extTmpTempCheck(cTimeOut = false) {
 
 def extTmpTempEvt(evt) {
 	LogAction("extTmp Event | External Sensor Temperature: ${evt?.displayName} - Temperature is (${evt?.value.toString().toUpperCase()})", "trace", true)
+	storeLastEventData(evt)
 	extTmpDpOrTempEvt("extTmpTempEvt()")
 }
 
 def extTmpDpEvt(evt) {
 	LogAction("extTmp Event | External Sensor Dew point: ${evt?.displayName} - Dew point Temperature is (${evt?.value.toString().toUpperCase()})", "trace", true)
+	storeLastEventData(evt)
 	extTmpDpOrTempEvt("extTmpDpEvt()")
 }
 
@@ -7394,7 +7396,6 @@ def extTmpDpOrTempEvt(type) {
 		} else {
 			LogAction("${type}: Skipping Event...tempWithinThreshold: ${tempWithinThreshold}", "info", true)
 		}
-		storeLastEventData(evt)
 	}
 }
 
@@ -9678,7 +9679,7 @@ def getNotifVariables(pName) {
 def voiceNotifString(phrase, pName) {
 	//log.trace "conWatVoiceNotifString..."
 	try {
-		if(phrase?.toLowerCase().contains("%tstatname%")) { phrase = phrase?.toLowerCase().replace('%tstatname%', (settings?."schMotTstat"?.displayName.toString() ?: "unknown")) }
+		if(phrase?.toLowerCase().contains("%devicename%")) { phrase = phrase?.toLowerCase().replace('%devicename%', (settings?."schMotTstat"?.displayName.toString() ?: "unknown")) }
 		if(phrase?.toLowerCase().contains("%lastmode%")) { phrase = phrase?.toLowerCase().replace('%lastmode%', (atomicState?."${pName}RestoreMode".toString() ?: "unknown")) }
 		if(pName == "leakWat" && phrase?.toLowerCase().contains("%wetsensor%")) {
 			phrase = phrase?.toLowerCase().replace('%wetsensor%', (getWetWaterSensors(leakWatSensors) ? getWetWaterSensors(leakWatSensors)?.join(", ").toString() : "a selected leak sensor")) }
@@ -9904,7 +9905,7 @@ def sendEventPushNotifications(message, type, pName) {
 	}
 }
 
-def sendEventVoiceNotifications(vMsg, pName, msgId=null, rmAAMsg=false, rmMsgId) {
+def sendEventVoiceNotifications(vMsg, pName, msgId, rmAAMsg=false, rmMsgId) {
 	def allowNotif = settings?."${pName}NotificationsOn" ? true : false
 	def allowSpeech = allowNotif && settings?."${pName}AllowSpeechNotif" ? true : false
 	def ok2Notify = parent.getOk2Notify()
@@ -9919,7 +9920,7 @@ def sendEventVoiceNotifications(vMsg, pName, msgId=null, rmAAMsg=false, rmMsgId)
 				removeAskAlexaQueueMsg(rmMsgId)
 			}
 			if (vMsg && msgId != null) {
-				addAskAlexaQueueMsg(vMsg, msgId)
+				addEventToAskAlexaQueue(vMsg, msgId)
 			}
 		}
 	}
