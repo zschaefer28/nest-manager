@@ -8801,6 +8801,7 @@ def getScheduleDesc(num = null) {
 		schedData?.each { scd ->
 			schNum = scd?.key
 			schData = scd?.value
+			def sLbl = "schMot_${schNum}_"
 			def isRestrict = (schData?.m || schData?.tf || schData?.tfc || schData?.tfo || schData?.tt || schData?.ttc || schData?.tto || schData?.w || schData?.s1 || schData?.s0)
 			def isTimeRes = (schData?.tf || schData?.tfc || schData?.tfo || schData?.tt || schData?.ttc || schData?.tto)
 			def isTemp = (schData?.ctemp || schData?.htemp || schData?.hvacm)
@@ -8832,17 +8833,17 @@ def getScheduleDesc(num = null) {
 			str += isTemp  ? 		"${isRestrict ? "\n │\n" : "\n"} ${isMot ? "├" : "└"} Temp Setpoints:" : ""
 			str += schData?.ctemp ? "\n ${isMot || isRemSen ? "│" : "   "} ${schData?.htemp ? "├" : "└"} Cool Setpoint: (${schData?.ctemp}°${getTemperatureScale()})" : ""
 			str += schData?.htemp ? "\n ${isMot || isRemSen ? "│" : "   "} ${schData?.hvacm ? "├" : "└"} Heat Setpoint: (${schData?.htemp}°${getTemperatureScale()})" : ""
-			str += schData?.hvacm ? "\n ${isMot || isRemSen ? "│" : "   "} └ HVAC Mode: (${schData?.hvacm})" : ""
+			str += schData?.hvacm ? "\n ${isMot || isRemSen ? "│" : "   "} └ HVAC Mode: (${schData?.hvacm.toString().capitalize()})" : ""
 
 			//Motion Info
-			str += isMot ?							"${isRemSen || isRestrict ? "\n │\n" : "\n"} ${isRemSen ? "├" : "└"} Motion Settings:" : ""
-			//str += isMot ?						"\n ${isRemSen ? "│" : " "}      └ (${isMotionActive(schData?.m0) ? "Active" : "Not Active"})" : ""
+			str += isMot ?							"${isTemp || isRemSen || isRestrict ? "\n │\n" : "\n"} ${isRemSen ? "├" : "└"} Motion Settings:" : ""
 			str += isMot ?		 					"\n ${isRemSen ? "│" : "   "} ${(schData?.mctemp || schData?.mhtemp) ? "├" : "└"} Motion Sensors: (${schData?.m0.size()})" : ""
-			str += isMot && schData?.mctemp ? 		"\n ${isRemSen ? "│" : "   "} ${(schData?.mctemp || schData?.mhtemp) ? "├" : "└"} Motion Cool Setpoint: (${schData?.mctemp}°${getTemperatureScale()})" : ""
-			str += isMot && schData?.mhtemp ? 		"\n ${isRemSen ? "│" : "   "} ${schData?.mhvacm ? "├" : "└"} Motion Heat Setpoint: (${schData?.mhtemp}°${getTemperatureScale()})" : ""
-			str += isMot && schData?.mhvacm ? 		"\n ${isRemSen ? "│" : "   "} ${(schData?.mdelayOn || schData?.mdelayOff) ? "├" : "└"} Motion HVAC Mode: (${schData?.mhvacm})" : ""
-			str += isMot && schData?.mdelayOn ? 	"\n ${isRemSen ? "│" : "   "} ${(schData?.mdelayOn || schData?.mdelayOff) ? "├" : "└"} Motion On Delay: (${schData?.mdelayOn})" : ""
-			str += isMot && schData?.mdelayOff ? 	"\n ${isRemSen ? "│" : "   "} └ Motion Off Delay: (${schData?.mdelayOff})" : ""
+			str += isMot ?							"\n ${isRemSen ? "│" : "   "}     └ (${isMotionActive(settings["${sLbl}Motion"]) ? "Active" : "None Active"})" : ""
+			str += isMot && schData?.mctemp ? 		"\n ${isRemSen ? "│" : "   "} ${(schData?.mctemp || schData?.mhtemp) ? "├" : "└"} Mot. Cool Setpoint: (${schData?.mctemp}°${getTemperatureScale()})" : ""
+			str += isMot && schData?.mhtemp ? 		"\n ${isRemSen ? "│" : "   "} ${schData?.mhvacm ? "├" : "└"} Mot. Heat Setpoint: (${schData?.mhtemp}°${getTemperatureScale()})" : ""
+			str += isMot && schData?.mhvacm ? 		"\n ${isRemSen ? "│" : "   "} ${(schData?.mdelayOn || schData?.mdelayOff) ? "├" : "└"} Mot. HVAC Mode: (${schData?.mhvacm.toString().capitalize()})" : ""
+			str += isMot && schData?.mdelayOn ? 	"\n ${isRemSen ? "│" : "   "} ${(schData?.mdelayOn || schData?.mdelayOff) ? "├" : "└"} Mot. On Delay: (${getEnumValue(longTimeSecEnum(), schData?.mdelayOn)})" : ""
+			str += isMot && schData?.mdelayOff ? 	"\n ${isRemSen ? "│" : "   "} └ Mot. Off Delay: (${getEnumValue(longTimeSecEnum(), schData?.mdelayOff)})" : ""
 
 			//Remote Sensor Info
 			str += isRemSen != null ?	"${isRemSen || isRestrict ? "\n │\n" : "\n"} └ Alternate Remote Sensor:" : ""
