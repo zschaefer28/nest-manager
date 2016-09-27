@@ -6591,7 +6591,7 @@ def getFanSwitches() {
 }
 
 def isFanCtrlConfigured() {
-	def devOk = (fanCtrlFanSwitches) ? true : false
+	def devOk = (settings?.fanCtrlFanSwitches) ? true : false
 	return devOk
 }
 
@@ -6610,10 +6610,12 @@ def getFanSwitchDesc(showOpt = true) {
 		swDesc += "${checkFanSpeedSupport(sw) ? "\n   └ 3Spd (${sw?.currentValue("currentState").toString()})" : ""}"
 	}
 	if(showOpt) {
-		swDesc += (settings?."${pName}FanSwitches" && (settings?."${pName}FanSwitchSpeedCtrl" || settings?."${pName}FanSwitchTriggerType" || settings?."${pName}FanSwitchHvacModeFilter")) ? "\n\nFan Triggers:" : ""
-		swDesc += (settings?."${pName}FanSwitches" && settings?."${pName}FanSwitchSpeedCtrl") ? "\n  • 3-Speed Fan Support: (Active)" : ""
-		swDesc += (settings?."${pName}FanSwitches" && settings?."${pName}FanSwitchTriggerType") ? "\n  • Fan Trigger: (${getEnumValue(switchRunEnum(), settings?."${pName}FanSwitchTriggerType")})" : ""
-		swDesc += (settings?."${pName}FanSwitches" && settings?."${pName}FanSwitchHvacModeFilter") ? "\n  • Hvac Mode Filter: (${getEnumValue(fanModeTrigEnum(), settings?."${pName}FanSwitchHvacModeFilter")})" : ""
+		if (settings?."${pName}FanSwitches") {
+			swDesc += (settings?."${pName}FanSwitchSpeedCtrl" || settings?."${pName}FanSwitchTriggerType" || settings?."${pName}FanSwitchHvacModeFilter") ? "\n\nFan Triggers:" : ""
+			swDesc += (settings?."${pName}FanSwitchSpeedCtrl") ? "\n  • 3-Speed Fan Support: (Active)" : ""
+			swDesc += (settings?."${pName}FanSwitchTriggerType") ? "\n  • Fan Trigger: (${getEnumValue(switchRunEnum(), settings?."${pName}FanSwitchTriggerType")})" : ""
+			swDesc += (settings?."${pName}FanSwitchHvacModeFilter") ? "\n  • Hvac Mode Filter: (${getEnumValue(fanModeTrigEnum(), settings?."${pName}FanSwitchHvacModeFilter")})" : ""
+		}
 	}
 	return (swDesc == "") ? null : "${swDesc}"
 }
@@ -8887,9 +8889,9 @@ def schMotModePage() {
 					input (name: "schMotOperateFan", type: "bool", title: "Run External Fan while HVAC is Operating?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("fan_control_icon.png"))
 					if(settings?.schMotOperateFan) {
 						def fanCtrlDescStr = ""
-						fanCtrlDescStr += (atomicState?.schMotTstatHasFan) ? "\n ├ Fan Mode: (${schMotTstat?.currentThermostatFanMode.toString().capitalize()})" : ""
-						fanCtrlDescStr += getFanSwitchDesc() ? "\n${getFanSwitchDesc()}" : ""
-						def fanCtrlDesc = isFanCtrlConfigured() ? "\n${fanCtrlDescStr}\n\nTap to Modify..." : null
+						//fanCtrlDescStr += (atomicState?.schMotTstatHasFan) ? "\n • Current Fan Mode: (${schMotTstat?.currentThermostatFanMode.toString().capitalize()})" : ""
+						fanCtrlDescStr += getFanSwitchDesc() ? "${getFanSwitchDesc()}" : ""
+						def fanCtrlDesc = isFanCtrlConfigured() ? "${fanCtrlDescStr}\n\nTap to Modify..." : null
 						href "fanControlPage", title: "Fan Control Config...", description: fanCtrlDesc ?: "Tap to Configure...", state: (fanCtrlDesc ? "complete" : null), image: getAppImg("configure_icon.png")
 					}
 				}
@@ -9475,14 +9477,14 @@ def setNotificationPage(params) {
 	}
 	dynamicPage(name: "setNotificationPage", title: "Configure Notification Options", uninstall: false) {
 		section("Notification Preferences:") {
-			input "${pName}NotificationsOn", "bool", title: "Enable Notifications?", description: "Enable Text, Voice, Alexa, or Alarm Notifications...", required: false, defaultValue: false, submitOnChange: true,
+			input "${pName}NotificationsOn", "bool", title: "Enable Notifications?", description: (!settings["${pName}NotificationsOn"] ? "Enable Text, Voice, Ask Alexa, or Alarm Notifications..." : ""), required: false, defaultValue: false, submitOnChange: true,
 						image: getAppImg("notification_icon.png")
 		}
 		if(settings["${pName}NotificationsOn"]) {
 			def notifDesc = !location.contactBookEnabled ? "Enable Push Messages Below..." : "(Manager App Recipients are Used by Default)\n\nYou can customize who receives notifications"
 			section("${notifDesc}") {
 				if(location.contactBookEnabled) {
-					input("${pName}NotifRecips", "contact", title: "Select Contacts...\n(Optional)", required: false, submitOnChange: true, image: getAppImg("recipient_icon.png"))
+					input("${pName}NotifRecips", "contact", title: "Select Contacts...\n(Optional)", required: false, multiple: true, submitOnChange: true, image: getAppImg("recipient_icon.png"))
 				} else {
 					input "${pName}UsePush", "bool", title: "Send Push Notitifications\n(Optional)", required: false, submitOnChange: true, defaultValue: false, image: getAppImg("notification_icon.png")
 					input ("${pName}NotifPhones", "phone", title: "Phone Number to Send SMS to...\n(Optional)", submitOnChange: true, required: false)
@@ -9502,7 +9504,7 @@ this is a parent only method today
 */
 		if(allowSpeech && settings?."${pName}NotificationsOn") {
 			section("Voice Notification Preferences:") {
-				input "${pName}AllowSpeechNotif", "bool", title: "Enable Voice Notifications?", description: "Media players, Speed Devices, or Alexa", required: false, defaultValue: (settings?."${pName}AllowSpeechNotif" ? true : false), submitOnChange: true, image: getAppImg("speech_icon.png")
+				input "${pName}AllowSpeechNotif", "bool", title: "Enable Voice Notifications?", description: "Media players, Speech Devices, or Ask Alexa", required: false, defaultValue: (settings?."${pName}AllowSpeechNotif" ? true : false), submitOnChange: true, image: getAppImg("speech_icon.png")
 				if(settings["${pName}AllowSpeechNotif"]) {
 					if(pName == "leakWat") {
 						if(!atomicState?."${pName}OffVoiceMsg" || !settings["${pName}UseCustomSpeechNotifMsg"]) { atomicState?."${pName}OffVoiceMsg" = "ATTENTION: %devicename% has been turned OFF because %wetsensor% has reported it is WET" }
@@ -9818,7 +9820,7 @@ def setDayModeTimePage(params) {
 			def timeReq = (settings?."${pName}StartTime" || settings."${pName}StopTime") ? true : false
 			input "${pName}StartTime", "time", title: "Start time", required: timeReq, image: getAppImg("start_time_icon.png")
 			input "${pName}StopTime", "time", title: "Stop time", required: timeReq, image: getAppImg("stop_time_icon.png")
-			input "${pName}Days", "enum", title: "${inverted ? "Not": "Only"} These Days", multiple: true, required: false, options: timeDayOfWeekOptions(), image: getAppImg("day_calendar_icon.png")
+			input "${pName}Days", "enum", title: "${inverted ? "Not": "Only"} These Days", multiple: true, required: false, options: timeDayOfWeekOptions(), image: getAppImg("day_calendar_icon2.png")
 			input "${pName}Modes", "mode", title: "${inverted ? "Not": "Only"} in These Modes...", multiple: true, required: false, image: getAppImg("mode_icon.png")
 		}
 	}
@@ -10191,7 +10193,7 @@ def checkFanSpeedSupport(dev) {
 		if(cmd.name in req) { devCnt = devCnt+1 }
 	}
 	def speed = dev?.currentValue("currentState") ?: null
-	log.debug "checkFanSpeedSupport (speed: $speed | devCnt: $devCnt)"
+	//log.debug "checkFanSpeedSupport (speed: $speed | devCnt: $devCnt)"
 	return (speed && devCnt == 3) ? true : false
 }
 
