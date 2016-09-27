@@ -36,12 +36,12 @@ definition(
 	appSetting "clientSecret"
 }
 
-def appVersion() { "3.4.1" }
-def appVerDate() { "9-26-2016" }
+def appVersion() { "3.4.2" }
+def appVerDate() { "9-27-2016" }
 def appVerInfo() {
 	def str = ""
 
-	str += "V3.4.1 (September 26th, 2016):"
+	str += "V3.4.2 (September 27th, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
 	str += "\n • UPDATED: Lot's of UI reworks for automations..."
 	str += "\n • UPDATED: Lot's of little bugfixes...."
@@ -8843,13 +8843,30 @@ def schMotModePage() {
 			}
 
 			section("Schedule Automation:") {
-				if(getCurrentSchedule()) {
-					paragraph "Current Schedule Active: (#${getCurrentSchedule()})", state: "complete" // This is strictly for testing
-				}
 				input (name: "schMotSetTstatTemp", type: "bool", title: "Use Schedules to modify Temp Setpoints based on Day, Time, ST Modes, Switches, and Motion?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("schedule_icon.png"))
 				if(settings?.schMotSetTstatTemp) {
-					def tModeDesc = isTstatModesConfigured() ? "Tap to Modify..." : null
-					href "tstatModePage", title: "Configure Setpoint Schedules...", description: (tModeDesc != "" ? tModeDesc : "Tap to Configure..."), state: (tModeDesc != "" ? "complete" : ""), image: getAppImg("configure_icon.png")
+					def tDesc = ""
+					tDesc += atomicState?.activeSchedData?.size() ? "Active Schedules (${atomicState?.activeSchedData?.size()})" : ""
+					tDesc += isTstatModesConfigured() ? "\n\nTap to Modify..." : ""
+					def tModeDesc = tDesc != "" ? tDesc : null
+					href "tstatModePage", title: "Configure Setpoint Schedules...", description: (tModeDesc ?: "Tap to Configure..."), state: (tModeDesc ? "complete" : ""), image: getAppImg("configure_icon.png")
+				}
+				if (atomicState?.activeSchedData.size()) {
+					//section ("Manage Schedules:") { // <<< This is experimental
+						def schInfo = getScheduleDesc()
+						def curSch = getCurrentSchedule()
+						if (schInfo?.size()) {
+							//paragraph null, title: "Active Schedules (${atomicState?.activeSchedData?.size()})"
+							schInfo?.each { schItem ->
+								def schNum = schItem?.key
+								def schDesc = schItem?.value
+								def schInUse = curSch == schNum ? true : false
+								if(schNum && schDesc) {
+									href "schMotEditSchedulePage", title: "", description: "${schDesc}\n\nTap to Modify Schedule...", params: ["sNum":schNum], state: (schInUse ? "complete" : "")
+								}
+							}
+						}
+					//}
 				}
 			}
 
@@ -8952,21 +8969,6 @@ def schMotModePage() {
 					extDesc += ((settings?.extTmpTempSensor || settings?.extTmpUseWeather) ) ? "\n\nTap to Modify..." : ""
 					def extTmpDesc = isExtTmpConfigured() ? "${extDesc}" : null
 					href "extTempPage", title: "External Temps Config...", description: extTmpDesc ?: "Tap to Configure...", state: (extTmpDesc ? "complete" : null), image: getAppImg("configure_icon.png")
-				}
-			}
-			if (atomicState?.activeSchedData.size()) {
-				section ("Manage Schedules:") { // <<< This is experimental
-					def schInfo = getScheduleDesc()
-					if (schInfo?.size()) {
-						paragraph null, title: "Active Schedules (${atomicState?.activeSchedData?.size()})"
-						schInfo?.each { schItem ->
-							def schNum = schItem?.key
-							def schDesc = schItem?.value
-							if(schNum && schDesc) {
-								href "schMotEditSchedulePage", title: "", description: "${schDesc}\n\nTap to Modify Schedule...", params: ["sNum":schNum], state: "complete"
-							}
-						}
-					}
 				}
 			}
 
@@ -9076,8 +9078,8 @@ def showUpdateSchedule(sNum=null,hideStr=null) {
 				act = settings["${sLbl}SchedActive"]
 				def scdn =  settings["${sLbl}name"]
 				def mstr = scdn? "${scdn} "+ (act ? "Active":"Inactive") : "Tap to Enable"
-				section(title: "Schedule ${scd} (${mstr})                                                 ", hideable: true, hidden: ((act || scd == 1) ? false : true)) {
-					editSchedule(scd, hideStr)
+				section(title: "Schedule ${scd} (${mstr})                                                 ", hideable: (sNum ? false : true), hidden: ((act || scd == 1) ? false : true)) {
+					editSchedule(scd, true, hideStr)
 				}
 			}
 		} else {
@@ -9087,14 +9089,14 @@ def showUpdateSchedule(sNum=null,hideStr=null) {
 				def scdn =  settings["${sLbl}name"]
 				def mstr = scdn? "${scdn} "+ (act ? "Active":"Inactive") : "Tap to Enable"
 				section(title: "Schedule ${scd} (${mstr})                                                 ", hideable: true, hidden: ((act || scd == 1) ? false : true)) {
-					editSchedule(scd, hideStr)
+					editSchedule(scd, false, hideStr)
 				}
 			}
 		}
 	}
 }
 
-def editSchedule(cnt, hideStr=null) {
+def editSchedule(cnt, soloSch=false, hideStr=null) {
 	LogAction("editSchedule ($cnt, $hideStr)", "trace", false)
 	def sLbl = "schMot_${cnt}_"
 	def canHeat = atomicState?.schMotTstatCanHeat
@@ -9102,6 +9104,7 @@ def editSchedule(cnt, hideStr=null) {
 
 	def act = settings["${sLbl}SchedActive"]
 	def actIcon = act ? "active" : "inactive"
+	//section(title: "Schedule ${scd} (${mstr})                                                 ", hideable: (soloSch ? false : true), hidden: ((act || scd == 1) ? false : true)) {
 	input "${sLbl}SchedActive", "bool", title: "Schedule Active", description: (cnt == 1 && !settings?."${sLbl}SchedActive" ? "Enable to Edit Schedule..." : null), required: true,
 			defaultValue: false, submitOnChange: true, image: getAppImg("${actIcon}_icon.png")
 	if(act) {
@@ -9184,7 +9187,7 @@ def getScheduleDesc(num = null) {
 			def isMot = schData?.m0
 			def isRemSen = schData?.sen0
 
-			str += schData?.lbl ? " • ${schData?.lbl}${actSchedNum == schNum ? " (In Use)" : ""}" : ""
+			str += schData?.lbl ? " • ${schData?.lbl}${actSchedNum == schNum ? " (In Use)" : " (Not In Use)"}" : ""
 
 			//restriction section
 			str += isRestrict ? 	"\n ${isSw || isTemp ? "├" : "└"} Restrictions:" : ""
