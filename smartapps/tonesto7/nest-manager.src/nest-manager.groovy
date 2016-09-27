@@ -5054,8 +5054,9 @@ def mainAutoPage(params) {
 				} else {
 					def newName = getAutoTypeLabel()
 					label title: "Label this Automation:", description: "Suggested Name: ${newName}", defaultValue: newName, required: true
-					//paragraph "Suggested New Name:\n${newName}", required: true, state: null
-					paragraph "FYI:\nMake sure to name it something that will help you easily identify the automation later."
+					if(!atomicState?.isInstalled) {
+						paragraph "FYI:\nMake sure to name it something that will help you easily identify the automation later."
+					}
 				}
 			}
 		}
@@ -5869,21 +5870,7 @@ def remSensorPage() {
 						}
 */
 					}
-/*
-					section("Rule Evaluation Options:") {
-						//input "remSenEvalModes", "mode", title: "Only Evaluate Actions in these Modes?", multiple: true, required: false, image: getAppImg("mode_icon.png")
-						//input "schMotWaitVal", "enum", title: "Minimum Wait Time between Evaluations?", required: false, defaultValue: 60, metadata: [values:longTimeSecEnum()], image: getAppImg("delay_time_icon.png")
-					}
-					section("(Optional) Turn On a Fan/Switch While HVAC is Running:") {
-						href "remSenTstatFanSwitchPage", title: "Control a Fan/Switch when HVAC is Running?", description: getFanSwitchDesc() ?: "", state: (getFanSwitchDesc() ? "complete" : null), image: getAppImg("fan_ventilation_icon.png")
-					}
-					if(remSenRuleType in ["Circ", "Heat_Circ", "Cool_Circ", "Heat_Cool_Circ"]) {
-						section("Fan Settings:") {
-							paragraph "Default Fan Runtime is 15 minutes\nThis can be adjusted under your Nest Mobile App.", image: getAppImg("instruct_icon.png")
-							input "remSenTimeBetweenRuns", "enum", title: "Wait Time between Fan Runs?", required: true, defaultValue: 3600, metadata: [values:longTimeSecEnum()], image: getAppImg("delay_time_icon.png")
-						}
-					}
-*/
+
 					section("(Optional) Create a Virtual Nest Thermostat:") {
 						input(name: "vthermostat", type: "bool", title:"Create Virtual Nest Thermostat", required: false, submitOnChange: true, image: getAppImg("thermostat_icon.png"))
 						if(settings?.vthermostat != null  && !parent?.addRemoveVthermostat(remSenTstat.deviceNetworkId, vthermostat, getMyLockId())) {
@@ -5903,14 +5890,6 @@ def remSensorPage() {
 		}
 	}
 }
-
-/*
-def remSenTstatFanSwitchPage() {
-	dynamicPage(name: "remSenTstatFanSwitchPage", uninstall: false) {
-		getFanSwitches()
-	}
-}
-*/
 
 //Requirements Section
 def remSenCoolTempsReq() { return (remSenRuleType in [ "Cool", "Heat_Cool", "Cool_Circ", "Heat_Cool_Circ" ]) ? true : false }
@@ -6528,7 +6507,7 @@ def remSenRuleEnum(excludeheatcool = false ) {
 	//log.debug "remSenRuleEnum -- hasFan: $hasFan (${atomicState?.schMotTstatHasFan} | canCool: $canCool (${atomicState?.schMotTstatCanCool} | canHeat: $canHeat (${atomicState?.schMotTstatCanHeat}"
 
 	def vals = []
-	if(heatcoolonly) {
+	if(excludeheatcool) {
 		if(canCool && !canHeat && hasFan) { vals = ["Circ":"Circulate(Fan)", "Cool_Circ":"Cool/Circulate(Fan)"] }
 		else if(!canCool && canHeat && hasFan) { vals = ["Circ":"Circulate(Fan)", "Heat_Circ":"Heat/Circulate(Fan)"] }
 		else if(!canCool && !canHeat && hasFan) { vals = ["Circ":"Circulate(Fan)"] }
@@ -7239,7 +7218,6 @@ def extTmpTempCheck(cTimeOut = false) {
 									rmsg += "because External Temp has been above the Threshold for (${getEnumValue(longTimeSecEnum(), extTmpOnDelay)})..."
 								}
 								LogAction(rmsg, (needAlarm ? "warn" : "info"), true)
-//ERS
 								if(allowNotif) {
 									if(!timeOut && safetyOk) {
 										sendEventPushNotifications(rmsg, "Info", pName)  // this uses parent and honors quiet times others do NOT
@@ -7259,7 +7237,7 @@ def extTmpTempCheck(cTimeOut = false) {
 								atomicState?.extTmpTstatOffRequested = false
 							} else if(!timeOut && safetyOk) { LogAction("extTmpTstatCheck() | Skipping Restore because the Mode to Restore is same as Current Mode ${curMode}", "info", true) }
 							if(!safetyOk) { LogAction("extTmpTempCheck() | Unable to restore mode and safety temperatures are exceeded", "warn", true) }
- // TODO check if timeout quickly cycles back...
+ 						// TODO check if timeout quickly cycles back...
 						}
 					} else {
 						if(safetyOk) {
@@ -7305,7 +7283,6 @@ def extTmpTempCheck(cTimeOut = false) {
 								}
 							}
 							LogAction(rmsg, "info", true)
-//ERS
 							if(allowNotif) {
 								sendEventPushNotifications(rmsg, "Info", pName) // this uses parent and honors quiet times, others do NOT
 								if(allowSpeech) { sendEventVoiceNotifications(voiceNotifString(atomicState?."${pName}OffVoiceMsg",pName), pName, "nmExtTmpOff_${app?.id}", true, "nmExtTmpOn_${app?.id}") }
@@ -7826,7 +7803,6 @@ def leakWatCheck() {
 								}
 
 								LogAction(rmsg, needAlarm ? "warn" : "info", true)
-//ERS
 								if(allowNotif) {
 									if(safetyOk) {
 										sendEventPushNotifications(rmsg, "Info", pName) // this uses parent and honors quiet times, others do NOT
@@ -7890,7 +7866,6 @@ def leakWatCheck() {
 						}
 						rmsg = "${leakWatTstat.label} has been turned 'OFF' because${wetCtDesc}has reported it's WET..."
 						LogAction(rmsg, "warn", true)
-//ERS
 						if(allowNotif) {
 							sendEventPushNotifications(rmsg, "Warning", pName) // this uses parent and honors quiet times, others do NOT
 							if(allowSpeech) { sendEventVoiceNotifications(voiceNotifString(atomicState?."${pName}OffVoiceMsg",pName), pName, "nmLeakWatOff_${app?.id}", true, "nmLeakWatOn_${app?.id}") }
@@ -8845,13 +8820,7 @@ def schMotModePage() {
 				}
 				dupTstat3 = checkThermostatDupe(settings?.schMotTstat, settings?.schMotTstatMir)  // make sure thermostat is not in mirror list
 				dupTstat = dupTstat1 || dupTstat2 || dupTstat3
-/*
-				if(schMotTstatMir) {
-					schMotTstatMir?.each { t ->
-						tStatPhys = tStatPhys ? (t?.currentNestType == "physical" ? true : false) : false
-					}
-				}
-*/
+
 				if(dupTstat) {
 					paragraph "ERROR:\nThe Primary Thermostat was also found in the Mirror Thermostat List!!!\nPlease Correct to Proceed...", required: true, state: null, image: getAppImg("error_icon.png")
 				}
@@ -8896,7 +8865,6 @@ def schMotModePage() {
 					}
 				}
 
-				//TODO not sure if this should be here or inside of remote sensor
 				section("Fan Circulation:") {
 					input (name: "schMotCirculateTstatFan", type: "bool", title: "Run HVAC Fan for Circulation?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("fan_control_icon.png"))
 					if(settings?.schMotCirculateTstatFan) {
@@ -8997,10 +8965,8 @@ def schMotModePage() {
 							if(schNum && schDesc) {
 								href "schMotEditSchedulePage", title: "", description: "${schDesc}\n\nTap to Modify Schedule...", params: ["sNum":schNum], state: "complete"
 							}
-							//paragraph "${schDesc}", state: "complete"
 						}
 					}
-					//href "schMotSchedulePage", title: "View/Modify Schedules...", description: "Tap to Configure...", image: getAppImg("schedule_icon.png")
 				}
 			}
 
@@ -9324,31 +9290,6 @@ def deviceInputToList(items) {
 	return null
 }
 
-/*
-//This is strictly here as a reference to the inputs and their flow
-		if(settings?.schMotRemoteSensor) {
-			input "${sLbl}remSensor", "capability.temperatureMeasurement", title: "Alternate Temp Sensors", description: "For Remote Sensor Automation", submitOnChange: false, required: false, multiple: true, image: getAppImg("temperature_icon.png")
-		}
-
-		paragraph null, title: "\nUse Alternate Setpoint base on Motion..."
-		def mmot = settings["${sLbl}Motion"]
-		input "${sLbl}Motion", "capability.motionSensor", title: "Motion Sensors", description: "Enables alternate hvac settings based on motion", required: false, multiple: true, submitOnChange: true, image: getAppImg("motion_icon.png")
-		if(mmot) {
-			paragraph "• Motion State: (${isMotionActive(mmot) ? "Active" : "Not Active"})", state: "complete", image: getAppImg("instruct_icon.png")
-			if(canHeat) {
-				input "${sLbl}MHeatTemp", "decimal", title: "Heat Set Point with Motion(°${getTemperatureScale()})", description: "Range within ${tempRangeValues()}", required: false, range: tempRangeValues(), image: getAppImg("heat_icon.png")
-			}
-			if(canCool) {
-				input "${sLbl}MCoolTemp", "decimal", title: "Cool Set Point with Motion (°${getTemperatureScale()})", description: "Range within ${tempRangeValues()}", required: false, range: tempRangeValues(), image: getAppImg("cool_icon.png")
-			}
-			input "${sLbl}MHvacMode", "enum", title: "Set Hvac Mode with Motion:", required: false, description: "No change set", metadata: [values:tModeHvacEnum(canHeat,canCool)], multiple: false, image: getAppImg("hvac_mode_icon.png")
-			input "${sLbl}MDelayValOn", "enum", title: "Delay enabling Motion Settings", required: false, defaultValue: 60, metadata: [values:longTimeSecEnum()], multiple: false, image: getAppImg("delay_time_icon.png")
-			input "${sLbl}MDelayValOff", "enum", title: "Delay disabling Motion Settings", required: false, defaultValue: 1800, metadata: [values:longTimeSecEnum()], multiple: false, image: getAppImg("delay_time_icon.png")
-		}
-	}
-
-*/
-
 def isSchMotConfigured() {
 	if(settings?.schMotTstat) {
 		return true
@@ -9540,23 +9481,24 @@ this is a parent only method today
 									desc = "Water Dried"
 									break
 							}
-						}
 
-						input "${pName}SpeechOnRestore", "bool", title: "Speak when returning HVAC to On for ${desc}?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("speech_icon.png")
-// TODO There are more messages and errors than ON / OFF
-						input "${pName}UseCustomSpeechNotifMsg", "bool", title: "Customize Notitification Message?", required: false, defaultValue: (settings?."${pName}AllowSpeechNotif" ? false : true), submitOnChange: true,
-							image: getAppImg("speech_icon.png")
-						if(settings["${pName}UseCustomSpeechNotifMsg"]) {
-							getNotifVariables(pName)
-							input "${pName}CustomOffSpeechMessage", "text", title: "Turn Off Message?", required: false, defaultValue: atomicState?."${pName}OffVoiceMsg" , submitOnChange: true, image: getAppImg("speech_icon.png")
-							if(settings?."${pName}CustomOffSpeechMessage") {
-								atomicState?."${pName}OffVoiceMsg" = settings?."${pName}CustomOffSpeechMessage"
-								paragraph "Off Msg:\n" + voiceNotifString(atomicState?."${pName}OffVoiceMsg",pName)
-							}
-							input "${pName}CustomOnSpeechMessage", "text", title: "Restore On Message?", required: false, defaultValue: atomicState?."${pName}OnVoiceMsg", submitOnChange: true, image: getAppImg("speech_icon.png")
-							if(settings?."${pName}CustomOnSpeechMessage") {
-								atomicState?."${pName}OnVoiceMsg" = settings?."${pName}CustomOnSpeechMessage"
-								paragraph "Restore On Msg:\n" + voiceNotifString(atomicState?."${pName}OnVoiceMsg",pName)
+
+							input "${pName}SpeechOnRestore", "bool", title: "Speak when returning HVAC to On for ${desc}?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("speech_icon.png")
+	// TODO There are more messages and errors than ON / OFF
+							input "${pName}UseCustomSpeechNotifMsg", "bool", title: "Customize Notitification Message?", required: false, defaultValue: (settings?."${pName}AllowSpeechNotif" ? false : true), submitOnChange: true,
+								image: getAppImg("speech_icon.png")
+							if(settings["${pName}UseCustomSpeechNotifMsg"]) {
+								getNotifVariables(pName)
+								input "${pName}CustomOffSpeechMessage", "text", title: "Turn Off Message?", required: false, defaultValue: atomicState?."${pName}OffVoiceMsg" , submitOnChange: true, image: getAppImg("speech_icon.png")
+								if(settings?."${pName}CustomOffSpeechMessage") {
+									atomicState?."${pName}OffVoiceMsg" = settings?."${pName}CustomOffSpeechMessage"
+									paragraph "Off Msg:\n" + voiceNotifString(atomicState?."${pName}OffVoiceMsg",pName)
+								}
+								input "${pName}CustomOnSpeechMessage", "text", title: "Restore On Message?", required: false, defaultValue: atomicState?."${pName}OnVoiceMsg", submitOnChange: true, image: getAppImg("speech_icon.png")
+								if(settings?."${pName}CustomOnSpeechMessage") {
+									atomicState?."${pName}OnVoiceMsg" = settings?."${pName}CustomOnSpeechMessage"
+									paragraph "Restore On Msg:\n" + voiceNotifString(atomicState?."${pName}OnVoiceMsg",pName)
+								}
 							}
 						}
 					}
