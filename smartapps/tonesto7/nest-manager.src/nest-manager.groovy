@@ -5762,10 +5762,6 @@ def isWatchdogConfigured() {
 /******************************************************************************
 |					REMOTE SENSOR AUTOMATION CODE			  |
 *******************************************************************************/
-/*
-   TODO Add in dynamic remote sensor options > Select modes for the sensor and allow current choices and triggers for each
-	maybe just allow toggle for advanced options
-*/
 
 def remSenPrefix() { return "remSen" }
 
@@ -6480,7 +6476,7 @@ def getRemoteSenAutomationEnabled() {
 }
 
 // TODO When a temp change is sent to virtual device, it lasts for 4 hours, or next turn off, then we return to automation settings
-// Other choices could be to change the day or night schedule permanently
+// Other choices could be to change the schedule setpoint permanently if one is active,  or allow folks to set timer,  or have next schedule change clear override
 
 def getLastOverrideCoolSec() { return !atomicState?.lastOverrideCoolDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastOverrideCoolDt).toInteger() }
 def getLastOverrideHeatSec() { return !atomicState?.lastOverrideHeatDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastOverrideHeatDt).toInteger() }
@@ -6980,13 +6976,15 @@ def extTempPage() {
 		}
 		if((settings?.extTmpUseWeather || settings?.extTmpTempSensor)) {
 			section("Delay Values:") {
+// TODO can these delays be set to 0?
 				input name: "extTmpOffDelay", type: "enum", title: "Delay Off (in minutes)", defaultValue: 300, metadata: [values:longTimeSecEnum()], required: false, submitOnChange: true,
 						image: getAppImg("delay_time_icon.png")
 				input name: "extTmpOnDelay", type: "enum", title: "Delay Restore (in minutes)", defaultValue: 300, metadata: [values:longTimeSecEnum()], required: false, submitOnChange: true,
 						image: getAppImg("delay_time_icon.png")
 			}
 			section("Restoration Preferences (Optional):") {
-				//input "${pName}UseSafetyTemps", "bool", title: "Restore When Safety Temps are Exceeded?", defaultValue: true, submitOnChange: true, image: getAppImg("switch_icon.png")
+// TODO can these delays be set to 0? to turn back off?
+// TODO confusing label vs. label above
 				input "${pName}OffTimeout", "enum", title: "Auto Restore Delay (Optional)", defaultValue: 43200, metadata: [values:longTimeSecEnum()], required: false, submitOnChange: true,
 						image: getAppImg("delay_time_icon.png")
 				if(!settings?."${pName}OffTimeout") { atomicState."${pName}timeOutScheduled" = false }
@@ -7011,12 +7009,6 @@ def isExtTmpConfigured() {
 
 def getExtConditions( doEvent = false ) {
 	//log.trace "getExtConditions..."
-/*
-	def origTempF = atomicState?.curWeatherTemp_f
-	def origTempC = atomicState?.curWeatherTemp_c
-	def origDpTempF = atomicState?.curWeatherDewpointTemp_f
-	def origDpTempC = atomicState?.curWeatherDewpointTemp_c
-*/
 	if(atomicState?.NeedwUpd && parent?.getWeatherDeviceInst()) {
 		def cur = parent?.getWData()
 		def weather = parent.getWeatherDevice()
@@ -7194,10 +7186,14 @@ def extTmpTempCheck(cTimeOut = false) {
 				unschedTimeoutRestore(pName)
 			}
 
+			def lastaway = atomicState?."${pName}lastaway"  // when we state change from away to home, ensure delays happen before off can happen again
+			if(!modeOff && (home && lastaway != home)) { atomicState.extTmpChgWhileOnDt = getDtNow() }
+			atomicState?."${pName}lastaway" = home
+
 			def okToRestore = (modeOff && atomicState?.extTmpTstatOffRequested && atomicState?.extTmpRestoreMode) ? true : false
 			def tempWithinThreshold = extTmpTempOk()
 
-			if(!tempWithinThreshold || timeOut || !safetyOk) {
+			if(!tempWithinThreshold || timeOut || !safetyOk || away) {
 				if(allowAlarm) { alarmEvtSchedCleanup(extTmpPrefix()) }
 				def rmsg = ""
 				if(okToRestore) {
@@ -7211,8 +7207,8 @@ def extTmpTempCheck(cTimeOut = false) {
 								atomicState?.extTmpRestoreMode = null
 								atomicState?.extTmpTstatOffRequested = false
 								atomicState?.extTmpRestoredDt = getDtNow()
-								atomicState."${pName}timeOutOn" = false
 								atomicState.extTmpChgWhileOnDt = getDtNow()
+								atomicState."${pName}timeOutOn" = false
 								unschedTimeoutRestore(pName)
 								modeOff = false
 
@@ -7227,11 +7223,11 @@ def extTmpTempCheck(cTimeOut = false) {
 								if(!safetyOk) {
 									rmsg += "because External Temp Safefy Temps have been reached..."
 									needAlarm = true
-								}
-								else if(timeOut) {
+								} else if(timeOut) {
 									rmsg += "because the (${getEnumValue(longTimeSecEnum(), extTmpOffTimeout)}) Timeout has been reached..."
-								}
-								else {
+								} else if(away) {
+									rmsg += "because of AWAY Nest mode..."
+								} else {
 									rmsg += "because External Temp has been above the Threshold for (${getEnumValue(longTimeSecEnum(), extTmpOnDelay)})..."
 								}
 								LogAction(rmsg, (needAlarm ? "warn" : "info"), true)
@@ -7317,11 +7313,11 @@ def extTmpTempCheck(cTimeOut = false) {
 				   LogAction("extTmpTempCheck() | Skipping because Exterior temperatures in range and '${extTmpTstat?.label}' mode is already 'OFF'", "info", true)
 				}
 			} else {
-				if(!schedOk) { LogAction("extTmpTempCheck: Skipping because of Schedule Restrictions...", "info", true) }
-				if(!safetyOk) { LogAction("extTmpTempCheck: Skipping because of Safety Temps Exceeded...", "info", true) }
 				if(!home) { LogAction("extTmpTempCheck: Skipping because of AWAY Nest mode...", "info", true) }
-				if(timeOut) { LogAction("extTmpTempCheck: Skipping because of active timeout...", "info", true) }
-				if(!tempWithinThreshold) { LogAction("extTmpTempCheck: Exterior temperatures not in range...", "info", true) }
+				else if(!schedOk) { LogAction("extTmpTempCheck: Skipping because of Schedule Restrictions...", "info", true) }
+				else if(!safetyOk) { LogAction("extTmpTempCheck: Skipping because of Safety Temps Exceeded...", "info", true) }
+				else if(timeOut) { LogAction("extTmpTempCheck: Skipping because of active timeout...", "info", true) }
+				else if(!tempWithinThreshold) { LogAction("extTmpTempCheck: Exterior temperatures not in range...", "info", true) }
 			}
 			storeExecutionHistory((now() - execTime), "extTmpTempCheck")
 		}
@@ -7401,6 +7397,7 @@ def contactWatchPage() {
 		}
 		if(settings?.conWatContacts) {
 			section("Trigger Actions:") {
+// TODO can these delays be set to 0?
 				input name: "conWatOffDelay", type: "enum", title: "Delay Off (in Minutes)", defaultValue: 300, metadata: [values:longTimeSecEnum()], required: false, submitOnChange: true,
 						image: getAppImg("delay_time_icon.png")
 
@@ -7410,7 +7407,8 @@ def contactWatchPage() {
 						image: getAppImg("delay_time_icon.png")
 			}
 			section("Restoration Preferences (Optional):") {
-				//input "${pName}UseSafetyTemps", "bool", title: "Restore When Safety Temps are Exceeded?", defaultValue: true, submitOnChange: true, image: getAppImg("switch_icon.png")
+// TODO can these delays be set to 0? to turn back off?
+// TODO confusing label vs. label above
 				input "${pName}OffTimeout", "enum", title: "Auto Restore Delay (Optional)", defaultValue: 3600, metadata: [values:longTimeSecEnum()], required: false, submitOnChange: true,
 						image: getAppImg("delay_time_icon.png")
 				if(!settings?."${pName}OffTimeout") { atomicState."${pName}timeOutScheduled" = false }
@@ -7513,10 +7511,14 @@ def conWatCheck(cTimeOut = false) {
 				unschedTimeoutRestore(pName)
 			}
 
+			def lastaway = atomicState?."${pName}lastaway"  // when we state change from away to home, ensure delays happen before off can happen again
+			if(!modeOff && (home && lastaway != home)) { atomicState?.conWatOpenDt = getDtNow() }
+			atomicState?."${pName}lastaway" = home
+
 			def okToRestore = (modeOff && atomicState?.conWatTstatOffRequested) ? true : false
 			def contactsOk = getConWatContactsOk()
 
-			if(contactsOk || timeOut || !safetyOk) {
+			if(contactsOk || timeOut || !safetyOk || away) {
 				if(allowAlarm) { alarmEvtSchedCleanup(conWatPrefix()) }
 				def rmsg = ""
 				if(okToRestore) {
@@ -7545,11 +7547,11 @@ def conWatCheck(cTimeOut = false) {
 								if(!safetyOk) {
 									rmsg += "because Global Safefy Values have been reached..."
 									needAlarm = true
-								}
-								else if(timeOut) {
+								} else if(timeOut) {
 									rmsg += "because the (${getEnumValue(longTimeSecEnum(), conWatOffTimeout)}) Timeout has been reached..."
-								}
-								else {
+								} else if(away) {
+									rmsg += "because of AWAY Nest mode..."
+								} else {
 									rmsg += "because ALL contacts have been 'Closed' again for (${getEnumValue(longTimeSecEnum(), conWatOnDelay)})..."
 								}
 
@@ -7644,11 +7646,11 @@ def conWatCheck(cTimeOut = false) {
 					LogAction("conWatCheck() | Skipping OFF change because '${conWatTstat?.label}' mode is already 'OFF'", "info", true)
 				}
 			} else {
-				if(!schedOk) { LogAction("conWatCheck: Skipping because of Schedule Restrictions...", "info", true) }
-				if(!safetyOk) { LogAction("conWatCheck: Skipping because of Safety Temps Exceeded...", "warn", true) }
 				if(!home) { LogAction("conWatCheck: Skipping because of AWAY Nest mode...", "info", true) }
-				if(timeOut) { LogAction("conWatCheck: Skipping because of active timeout...", "info", true) }
-				if(contactsOk) { LogAction("conWatCheck: Contacts are closed...", "info", true) }
+				else if(!schedOk) { LogAction("conWatCheck: Skipping because of Schedule Restrictions...", "info", true) }
+				else if(!safetyOk) { LogAction("conWatCheck: Skipping because of Safety Temps Exceeded...", "warn", true) }
+				else if(timeOut) { LogAction("conWatCheck: Skipping because of active timeout...", "info", true) }
+				else if(contactsOk) { LogAction("conWatCheck: Contacts are closed...", "info", true) }
 			}
 			storeExecutionHistory((now() - execTime), "conWatCheck")
 		}
@@ -7715,9 +7717,6 @@ def leakWatchPage() {
 				input name: "leakWatOnDelay", type: "enum", title: "Delay Restore (in minutes)", defaultValue: 300, metadata: [values:longTimeSecEnum()], required: false, submitOnChange: true,
 						image: getAppImg("delay_time_icon.png")
 			}
-			//section("Restoration Preferences (Optional):") {
-				//input "${pName}UseSafetyTemps", "bool", title: "Restore When Safety Temps are Exceeded?", defaultValue: true, submitOnChange: false, image: getAppImg("switch_icon.png")
-			//}
 			section("Notifications:") {
 				href "setNotificationPage", title: "Configure Notifications...", description: getNotifConfigDesc(pName), params: ["pName":"${pName}", "allowSpeech":true, "allowAlarm":true, "showSchedule":true],
 						state: (getNotificationOptionsConf(pName) ? "complete" : null), image: getAppImg("notification_icon.png")
