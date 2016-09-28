@@ -255,7 +255,7 @@ def mainPage() {
 			}
 		}
 		if(!atomicState?.isInstalled) {
-			doDevs()
+			devicesPage()
 		}
 		if(atomicState?.isInstalled && atomicState?.structures && (atomicState?.thermostats || atomicState?.protects || atomicState?.cameras)) {
 			def autoDesc = getInstAutoTypesDesc() ? "${getInstAutoTypesDesc()}\n\nTap to Modify..." : null
@@ -306,7 +306,7 @@ def mainPage() {
 	}
 }
 
-def doDevs() {
+def devicesPage() {
 	def structs = getNestStructures()
 	def structDesc = !structs?.size() ? "No Locations Found" : "Found (${structs?.size()}) Locations..."
 	LogAction("${structDesc} (${structs})", "info", false)
@@ -362,7 +362,7 @@ def doDevs() {
 
 def deviceSelectPage() {
 	return dynamicPage(name: "deviceSelectPage", title: "Device Selection", nextPage: "startPage", install: false, uninstall: false) {
-		doDevs()
+		devicesPage()
 	}
 }
 
@@ -446,6 +446,7 @@ def prefsPage() {
 		section ("Misc. Options:") {
 			input ("useMilitaryTime", "bool", title: "Use Military Time (HH:mm)?", defaultValue: false, submitOnChange: true, required: false, image: getAppImg("military_time_icon.png"))
 			input ("disAppIcons", "bool", title: "Disable App Icons?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("no_icon.png"))
+			input ("debugAppendAppName", "bool", title: "Append App Name to Log Entries?", required: false, defaultValue: true, submitOnChange: true, image: getAppImg("no_icon.png"))
 			atomicState.needChildUpd = true
 		}
 		section("Manage Your Nest Login:") {
@@ -3470,7 +3471,7 @@ def LogAction(msg, type = "debug", showAlways = false) {
 def Logger(msg, type) {
 	if(msg && type) {
 		def labelstr = ""
-def debugAppendAppName = true
+		def debugAppendAppName = (setting?.debugAppendAppName == true || settings?.debugAppendAppName == null) ? true : false
 		if(debugAppendAppName) { labelstr = "${app.label} | " }
 		switch(type) {
 			case "debug":
@@ -3833,10 +3834,10 @@ def getPollingConfDesc() {
 	def pollWaitValDesc = (!pollWaitVal || pollWaitVal == 10) ? "" : " (Custom)"
 	def pStr = ""
 	pStr += "Polling: (${!atomicState?.pollingOn ? "Not Active" : "Active"})"
-	pStr += "\n• Device: (${getInputEnumLabel(pollValue?:180, pollValEnum())})"
-	pStr += "\n• Structure: (${getInputEnumLabel(pollStrValue?:180, pollValEnum())})"
+	pStr += "\n • Device: (${getInputEnumLabel(pollValue?:180, pollValEnum())})"
+	pStr += "\n • Structure: (${getInputEnumLabel(pollStrValue?:180, pollValEnum())})"
 	pStr += atomicState?.weatherDevice ? "\n• Weather Polling: (${getInputEnumLabel(pollWeatherValue?:900, notifValEnum())})" : ""
-	pStr += "\n• Forced Poll Refresh Limit: (${getInputEnumLabel(pollWaitVal?:10, waitValEnum())})"
+	pStr += "\n • Forced Poll Refresh Limit:\n    └ (${getInputEnumLabel(pollWaitVal ?: 10, waitValEnum())})"
 	return ((pollValDesc || pollStrValDesc || pollWEatherValDesc || pollWaitValDesc) ? pStr : "")
 }
 
@@ -4014,7 +4015,7 @@ def custWeatherPage() {
 def getWeatherConfDesc() {
 	def str = ""
 	def defZip = getStZipCode() ? getStZipCode() : getNestZipCode()
-	str += custLocStr ? "• Custom Weather Location: ${custLocStr}" : "• Default Weather Location: ${defZip}"
+	str += custLocStr ? " • Weather Location: (${custLocStr})" : " • Default Weather Location: (${defZip})"
 	return (str != "") ? "${str}" : null
 }
 
@@ -4022,9 +4023,9 @@ def devCustomizePageDesc() {
 	def tempChgWaitValDesc = (!tempChgWaitVal || tempChgWaitVal == 4) ? "" : tempChgWaitVal
 	def wstr = weathAlertNotif  ? "Enabled" : "Disabled"
 	def str = "Device Customizations:"
-	str += "\n• Temperature Change Wait: ${getInputEnumLabel(tempChgWaitVal?:4, waitValEnum())}"
+	str += "\n • Man. Temp Change Delay:\n    └ (${getInputEnumLabel(tempChgWaitVal ?: 4, waitValEnum())})"
 	str += "\n${getWeatherConfDesc()}"
-	str += "\n• Weather Alerts: ${wstr}"
+	str += "\n • Weather Alerts: (${wstr})"
 	return ((tempChgWaitValDesc || custLocStr || weathAlertNotif) ? str : "")
 }
 
@@ -8423,6 +8424,11 @@ def setTstatTempCheck() {
 					if(setTstatMode(schMotTstat, newHvacMode)) {
 						storeLastAction("Set ${settings?.schMotTstat} Mode to ${newHvacMode.toString().capitalize()}", getDtNow())
 						LogAction("setTstatTempCheck: Setting Thermostat Mode to '${newHvacMode?.toString().capitalize()}' on (${settings?.schMotTstat})", "info", true)
+						if(settings?.schMotRemoteSensor && isRemSenConfigured()) {
+ 							atomicState.lastSched = curSched
+ 							storeExecutionHistory((now() - execTime), "setTstatTempCheck")
+ 							return  // if remote sensor is on, let it handle temp changes after mode change
+ 						}
 					} else { LogAction("setTstatTempCheck: Error Setting Thermostat Mode to '${newHvacMode?.toString().capitalize()}' on (${settings?.schMotTstat})", "warn", true) }
 				}
 
@@ -9334,9 +9340,8 @@ def schMotCheck() {
 		atomicState?.lastEvalDt = getDtNow()
 		atomicState?.lastschMotEval = getDtNow()
 
-
-// This order is important...
-// turn system on/off, then update remote sensors, then follow schedules, then update fans
+		// This order is important...
+		// turn system on/off, then update remote sensors, then follow schedules, then update fans
 
 		if(settings?.schMotWaterOff) {
 			if(isLeakWatConfigured()) { leakWatCheck() }
@@ -9352,13 +9357,13 @@ def schMotCheck() {
 				extTmpTempCheck()
 			}
 		}
+		if(settings?.schMotSetTstatTemp) {
+			if(isTstatSchedConfigured()) { setTstatTempCheck() }
+		}
 		if(settings?.schMotRemoteSensor) {
 			if(isRemSenConfigured()) {
 				remSenCheck()
 			}
-		}
-		if(settings?.schMotSetTstatTemp) {
-			if(isTstatSchedConfigured()) { setTstatTempCheck() }
 		}
 		if(settings?.schMotOperateFan) {
 			if(isFanCtrlConfigured()) { fanCtrlCheck() }
