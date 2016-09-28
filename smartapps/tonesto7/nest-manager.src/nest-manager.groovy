@@ -3786,6 +3786,10 @@ def waitValEnum() {
 	return vals
 }
 
+def strCapitalize(str) {
+	return str ? str?.toString().capitalize() : null
+}
+
 def getInputEnumLabel(inputName, enumName) {
 	def result = "Not Set"
 	if(input && enumName) {
@@ -8356,7 +8360,7 @@ def checkOnMotion(mySched) {
 			lastinactivemotionSec = getLastMotionInActiveSec(mySched)
 		}
 
-		LogAction("checkOnMotion: active: $lastactivemotionDt $lastactivemotionSec     inactive: $lastinactivemotionDt $lastinactivemotionSec     motionOn: $motionOn", "trace", true)
+		LogAction("checkOnMotion: [active: $lastactivemotionDt ($lastactivemotionSec) | inactive: $lastinactivemotionDt ($lastinactivemotionSec) | motionOn: $motionOn]", "trace", true)
 
 		if(lastactivemotionDt > lastinactivemotionDt) { return motionOn }
 
@@ -8377,27 +8381,25 @@ def setTstatTempCheck() {
 //       all thermostats in an automation are in the same Nest structure, so that all react to home/away changes
 //
 	try {
-		def tModeTstats = settings?.schMotTstat
-		def tModeTstatMir = settings?.schMotTstatMir
+		def tstat = settings?.schMotTstat
+		def tstatMir = settings?.schMotTstatMir
 
 		if(atomicState?.disableAutomation) { return }
 		def execTime = now()
-		//atomicState?.lastEvalDt = getDtNow()
 
 		def away = (getNestLocPres() == "home") ? false : true
 
-		def noSched = false
 		def mySched = getCurrentSchedule()
-		if(mySched == null) { noSched = true }
+		def noSched = (mySched == null) ? true : false
 
 		LogAction("setTstatTempCheck: mySched: $mySched  noSched: $noSched ", "trace", true)
 
 		if(away || noSched) {
 			if(away) {
-				LogAction("setTstatTempCheck: Skipping because Nest is set AWAY", "info", true)
+				LogAction("setTstatTempCheck: Skipping check because [Nest is set AWAY]", "info", true)
 				atomicState.lastSched = null
 			} else {
-				LogAction("setTstatTempCheck: Skipping because of no matching Schedule", "info", true)
+				LogAction("setTstatTempCheck: Skipping check because [No matching Schedule]", "info", true)
 				atomicState.lastSched = null
 			}
 		}
@@ -8409,7 +8411,7 @@ def setTstatTempCheck() {
 			def previousBtwn = atomicState?."motion${mySched}InBtwn"
 			atomicState?."motion${mySched}InBtwn" = isBtwn
 
-			LogAction("setTstatTempCheck: isBtwn : $isBtwn ", "trace", true)
+			LogAction("setTstatTempCheck: isBtwn: $isBtwn ", "trace", true)
 
 			def previousSched = atomicState?.lastSched
 			def schedMatch
@@ -8417,24 +8419,24 @@ def setTstatTempCheck() {
 				schedMatch = true
 			}
 
-			if(tModeTstats && !schedMatch) {
+			if(tstat && !schedMatch) {
 				def hvacSettings = atomicState?."sched${mySched}restrictions"
 
-				def newHvacMode = !isBtwn ? hvacSettings?.hvacm : hvacSettings?.mhvacm ?: hvacSettings?.hvacm
-				def tstatHvacMode = settings?.schMotTstat?.currentThermostatMode?.toString()
+				def newHvacMode = (!isBtwn ? hvacSettings?.hvacm : (hvacSettings?.mhvacm ?: hvacSettings?.hvacm))
+				def tstatHvacMode = tstat?.currentThermostatMode?.toString()
 				if(newHvacMode && (newHvacMode.toString() != tstatHvacMode)) {
 					if(setTstatMode(schMotTstat, newHvacMode)) {
-						storeLastAction("Set ${settings?.schMotTstat} Mode to ${newHvacMode.toString().capitalize()}", getDtNow())
-						LogAction("setTstatTempCheck: Setting Thermostat Mode to '${newHvacMode?.toString().capitalize()}' on (${settings?.schMotTstat})", "info", true)
+						storeLastAction("Set ${tstat} Mode to ${strCapitalize(newHvacMode)}", getDtNow())
+						LogAction("setTstatTempCheck: Setting Thermostat Mode to '${strCapitalize(newHvacMode)}' on (${tstat})", "info", true)
 						if(settings?.schMotRemoteSensor && isRemSenConfigured()) {
  							atomicState.lastSched = curSched
  							storeExecutionHistory((now() - execTime), "setTstatTempCheck")
  							return  // if remote sensor is on, let it handle temp changes after mode change
  						}
-					} else { LogAction("setTstatTempCheck: Error Setting Thermostat Mode to '${newHvacMode?.toString().capitalize()}' on (${settings?.schMotTstat})", "warn", true) }
+					} else { LogAction("setTstatTempCheck: Error Setting Thermostat Mode to '${strCapitalize(newHvacMode)}' on (${tstat})", "warn", true) }
 				}
 
-				def curMode = settings?.schMotTstat?.currentThermostatMode?.toString()
+				def curMode = tstat?.currentThermostatMode?.toString()
 				def isModeOff = (curMode == "off") ? true : false
 				tstatHvacMode = curMode
 
@@ -8443,9 +8445,9 @@ def setTstatTempCheck() {
 
 				if(!isModeOff && atomicState?.schMotTstatCanHeat) {
 					// MY Heating Setpoint has not been set so it was null
-					def oldHeat = settings?.schMotTstat?.currentHeatingSetpoint.toDouble() ?: 0.0
+					def oldHeat = tstat?.currentHeatingSetpoint.toDouble() ?: 0.0
 //ERSERS getRemSenHeatSetTemp()
-					heatTemp = !isBtwn ? hvacSettings.htemp.toDouble() : hvacSettings.mhtemp.toDouble() ?: hvacSettings.htemp.toDouble()
+					heatTemp = !isBtwn ? hvacSettings?.htemp.toDouble() : hvacSettings?.mhtemp.toDouble() ?: hvacSettings?.htemp.toDouble()
 					def temp = 0.0
 					if( getTemperatureScale() == "C") {
 						temp = Math.round(heatTemp.round(1) * 2) / 2.0f
@@ -8454,15 +8456,15 @@ def setTstatTempCheck() {
 					}
 					heatTemp = temp
 					if(oldHeat != heatTemp) {
-						LogAction("setTstatTempCheck Setting Heat Setpoint to '${heatTemp}' on (${settings?.schMotTstat}) old: ${oldHeat}", "info", false)
+						LogAction("setTstatTempCheck Setting Heat Setpoint to '${heatTemp}' on (${tstat}) old: ${oldHeat}", "info", false)
 						//storeLastAction("Set ${settings?.schMotTstat} Heat Setpoint to ${heatTemp}", getDtNow())
 					} else { heatTemp = null }
 				}
 
 				if(!isModeOff && atomicState?.schMotTstatCanCool) {
-					def oldCool = settings?.schMotTstat?.currentCoolingSetpoint.toDouble() ?: 0.0
+					def oldCool = tstat?.currentCoolingSetpoint.toDouble() ?: 0.0
 //ERSERS getRemSenCoolSetTemp()
-					coolTemp = !isBtwn ? hvacSettings.ctemp.toDouble() : hvacSettings.mctemp.toDouble() ?: hvacSettings.ctemp.toDouble()
+					coolTemp = !isBtwn ? hvacSettings?.ctemp.toDouble() : hvacSettings?.mctemp.toDouble() ?: hvacSettings?.ctemp.toDouble()
 					def temp = 0.0
 					if( getTemperatureScale() == "C") {
 						temp = Math.round(coolTemp.round(1) * 2) / 2.0f
@@ -8471,15 +8473,15 @@ def setTstatTempCheck() {
 					}
 					coolTemp = temp
 					if(oldCool != coolTemp) {
-						LogAction("setTstatTempCheck: Setting Cool Setpoint to '${coolTemp}' on (${settings?.schMotTstat}) old: ${oldCool}", "info", false)
+						LogAction("setTstatTempCheck: Setting Cool Setpoint to '${coolTemp}' on (${tstat}) old: ${oldCool}", "info", false)
 						//storeLastAction("Set ${settings?.schMotTstat} Cool Setpoint to ${coolTemp}", getDtNow())
 					} else { coolTemp = null }
 				}
 				if(setTstatAutoTemps(settings?.schMotTstat, coolTemp?.toDouble(), heatTemp?.toDouble())) {
-					LogAction("setTstatTempCheck: Temp Change | $modes | newHvacMode: $newHvacMode | tstatHvacMode: $tstatHvacMode | heatTemp: $heatTemp | coolTemp: $coolTemp | curStMode: $curStMode", "info", true)
-					storeLastAction("Set ${settings?.schMotTstat} Cool Setpoint to ${coolTemp} Set Heat Setpoint to ${heatTemp}", getDtNow())
+					LogAction("setTstatTempCheck: [Temp Change | $modes | newHvacMode: $newHvacMode | tstatHvacMode: $tstatHvacMode | heatTemp: $heatTemp | coolTemp: $coolTemp | curStMode: $curStMode]", "info", true)
+					storeLastAction("Set ${tstat} Cool Setpoint to ${coolTemp} Set Heat Setpoint to ${heatTemp}", getDtNow())
 				} else {
-					LogAction("setTstatTempCheck: set ERROR | $modes | newHvacMode: $newHvacMode | tstatHvacMode: $tstatHvacMode | heatTemp: $heatTemp | coolTemp: $coolTemp | curStMode: $curStMode", "info", true)
+					LogAction("setTstatTempCheck: [set ERROR | $modes | newHvacMode: $newHvacMode | tstatHvacMode: $tstatHvacMode | heatTemp: $heatTemp | coolTemp: $coolTemp | curStMode: $curStMode]", "info", true)
 				}
 			}
 			atomicState.lastSched = curSched
@@ -8506,8 +8508,9 @@ def schMotModePage() {
 		def tStatPhys
 		section("Configure your Thermostat") {
 			input name: "schMotTstat", type: "capability.thermostat", title: "Select your Thermostat?", multiple: false, submitOnChange: true, required: true, image: getAppImg("thermostat_icon.png")
-			if(settings?.schMotTstat) {
-				def tstat = settings?.schMotTstat
+			def tstat = settings?.schMotTstat
+			def tstatMir = settings?.schMotTstatMir
+			if(tstat) {
 				getTstatCapabilities(tstat, schMotPrefix())
 				def canHeat = atomicState?.schMotTstatCanHeat
 				def canCool = atomicState?.schMotTstatCanCool
@@ -8526,18 +8529,18 @@ def schMotModePage() {
 
 				if(!tStatPhys) {      // if virtual thermostat, check if physical thermostat is in mirror list
 					def mylist = [ deviceNetworkId:"${tstat.deviceNetworkId.toString().replaceFirst("v", "")}" ]
-					dupTstat1 = checkThermostatDupe(mylist, settings?.schMotTstatMir)
+					dupTstat1 = checkThermostatDupe(mylist, tstatMir)
 					if(dupTstat1) {
 						paragraph "ERROR:\nThe Virtual version of the Primary Thermostat was found in Mirror Thermostat List!!!\nPlease Correct to Proceed...", required: true, state: null,  image: getAppImg("error_icon.png")
 					}
 				} else {	      // if physcial thermostat, see if virtual version is in mirror list
 					def mylist = [ deviceNetworkId:"v${tstat.deviceNetworkId.toString()}" ]
-					dupTstat2 = checkThermostatDupe(mylist, settings?.schMotTstatMir)
+					dupTstat2 = checkThermostatDupe(mylist, tstatMir)
 					if(dupTstat2) {
 						paragraph "ERROR:\nThe Virtual version of the Primary Thermostat was found in Mirror Thermostat List!!!\nPlease Correct to Proceed...", required: true, state: null,  image: getAppImg("error_icon.png")
 					}
 				}
-				dupTstat3 = checkThermostatDupe(settings?.schMotTstat, settings?.schMotTstatMir)  // make sure thermostat is not in mirror list
+				dupTstat3 = checkThermostatDupe(tstat, tstatMir)  // make sure thermostat is not in mirror list
 				dupTstat = dupTstat1 || dupTstat2 || dupTstat3
 
 				if(dupTstat) {
@@ -8546,19 +8549,19 @@ def schMotModePage() {
 				if(!tStatPhys) {
 				}
 				input "schMotTstatMir", "capability.thermostat", title: "Mirror Changes to these Thermostats", multiple: true, submitOnChange: true, required: false, image: getAppImg("thermostat_icon.png")
-				if(settings?.schMotTstatMir && !dupTstat) {
-					settings?.schMotTstatMir?.each { t ->
+				if(tstatMir && !dupTstat) {
+					tstatMir?.each { t ->
 						paragraph "Thermostat Temp: ${getDeviceTemp(t)}${getTemperatureScale()}", image: " "
 					}
 				}
 			}
 		}
 
-		if(settings?.schMotTstat && !dupTstat) {
+		if(tstat && !dupTstat) {
 			updateScheduleStateMap()
 			getScheduleDesc()
 			section {
-				paragraph "The sections below allow you to configure your thermostat with automations that will help you save energy and keep your home feeling more comfortable", title: "Choose Automation Options:", required: false
+				paragraph "The Option below allow you to configure your thermostat with automations that will help you save energy and keep your home feeling more comfortable", title: "Choose Automation Options:", required: false
 			}
 
 			section("Schedule Automation:") {
@@ -8570,7 +8573,6 @@ def schMotModePage() {
 					if (actSch) {
 						def schInfo = getScheduleDesc()
 						if (schInfo?.size()) {
-							//paragraph null, title: "Active Schedules (${atomicState?.activeSchedData?.size()})"
 							schInfo?.each { schItem ->
 								def schNum = schItem?.key
 								def schDesc = schItem?.value
@@ -8737,7 +8739,7 @@ def tstatConfigAutoPage(params) {
 	}
 	dynamicPage(name: "tstatConfigAutoPage", title: pTitle, description: pDesc, uninstall: false) {
 		def tstat = settings?.schMotTstat
-		if(tstat) {
+		if (tstat) {
 			def tempScale = getTemperatureScale()
 			def tempScaleStr = "°${tempScale}"
 			def tStatName = tstat?.displayName.toString()
@@ -8756,7 +8758,7 @@ def tstatConfigAutoPage(params) {
 					str += "\n• Setpoints: (H: ${canHeat ? "${tStatHeatSp}${tempScaleStr}" : "NA"}/C: ${canCool ? "${tStatCoolSp}${tempScaleStr}" : "NA"})"
 					paragraph title: "${tStatName}\nSchedules and Setpoints:", "${str}", state: "complete", image: getAppImg("info_icon2.png")
 				}
-				showUpdateSchedule(null, ["remSen"])
+				showUpdateSchedule(null, ["remSen", "fanCtrl"])
 			}
 
 			if(configType == "fanCtrl") {
@@ -8768,7 +8770,7 @@ def tstatConfigAutoPage(params) {
 						paragraph "${getFanSwitchDesc(false)}", state: getFanSwitchDesc() ? "complete" : null, image: getAppImg("blank_icon.png")
 					}
 				}
-				if(settings?."${pName}FanSwitches") {
+				if(settings["${pName}FanSwitches"]) {
 					section("Fan Event Triggers") {
 						paragraph "Event based triggers occur when the Thermostat sends an event.  Depending on your configured Poll time it may take 1 minute or more",
 								image: getAppImg("instruct_icon.png")
@@ -8780,13 +8782,14 @@ def tstatConfigAutoPage(params) {
 					if(getFanSwitchesSpdChk()) {
 						section("Fan Speed Options") {
 							input(name: "${pName}FanSwitchSpeedCtrl", type: "bool", title: "Enable Speed Control?", defaultValue: true, submitOnChange: true, image: getAppImg("speed_knob_icon.png"))
-							if(settings?."${pName}FanSwitchSpeedCtrl") {
+							if(settings["${pName}FanSwitchSpeedCtrl"]) {
 								input "${pName}FanSwitchLowSpeed", "decimal", title: "Low Speed Threshold (°${getTemperatureScale()})", required: true, defaultValue: 1.0, submitOnChange: true, image: getAppImg("fan_low_speed.png")
 								input "${pName}FanSwitchMedSpeed", "decimal", title: "Medium Speed Threshold (°${getTemperatureScale()})", required: true, defaultValue: 2.0, submitOnChange: true, image: getAppImg("fan_med_speed.png")
 								input "${pName}FanSwitchHighSpeed", "decimal", title: "High Speed Threshold (°${getTemperatureScale()})", required: true, defaultValue: 4.0, submitOnChange: true, image: getAppImg("fan_high_speed.png")
 							}
 						}
 					}
+					showUpdateSchedule(null,["tstatTemp", "remSen"])
 				}
 			}
 
@@ -8797,7 +8800,6 @@ def tstatConfigAutoPage(params) {
 				if(!getMyLockId()) {
 					setMyLockId(app.id)
 				}
-
 				if(atomicState?.remSenTstat) {
 					if(tstat.deviceNetworkId != atomicState?.remSenTstat) {
 						parent?.addRemoveVthermostat(atomicState.remSenTstat, false, getMyLockId())
@@ -8812,14 +8814,15 @@ def tstatConfigAutoPage(params) {
 					cannotLock = false
 				} else { cannotLock = true }
 
-		//   can check if any vthermostat is owned by us, and delete it
-		//   have issue request for vthermostat is still on as input below
+				//   can check if any vthermostat is owned by us, and delete it
+				//   have issue request for vthermostat is still on as input below
 
 				if(cannotLock) {
 					section("") {
 						paragraph "Cannot Lock thermostat for remote sensor - thermostat may already be in use.  Please Correct...", image: getAppImg("error_icon.png")
 					}
 				}
+
 				//getTstatCapabilities(tstat, remSenPrefix())
 				if(!cannotLock) {
 					section("Select the Allowed (Rule) Action Type:") {
@@ -8830,8 +8833,8 @@ def tstatConfigAutoPage(params) {
 						input(name: "remSenRuleType", type: "enum", title: "(Rule) Action Type", options: remSenRuleEnum(), required: true, submitOnChange: true, image: getAppImg("rule_icon.png"))
 					}
 					if(settings?.remSenRuleType) {
-						def dSenStr = "Default"
-						section("Choose $dSenStr Sensor(s) to use instead of the Thermostat's...") {
+						def senLblStr = "Default"
+						section("Choose ${senLblStr} Sensor(s) to use instead of the Thermostat's...") {
 							def daySenReq = (!settings?.remSensorDay) ? true : false
 							input "remSensorDay", "capability.temperatureMeasurement", title: "${dSenStr} Temp Sensors", submitOnChange: true, required: daySenReq,
 									multiple: true, image: getAppImg("temperature_icon.png")
@@ -8871,7 +8874,7 @@ def tstatConfigAutoPage(params) {
 									paragraph "Unable to ${(vthermostat ? "enable" : "disable")} Virtual Thermostat!!!.  Please Correct...", image: getAppImg("error_icon.png")
 								}
 							}
-							showUpdateSchedule(null,["motion", "tstatTemp"])
+							showUpdateSchedule(null,["motSen", "tstatTemp", "fanCtrl"])
 						}
 					}
 				}
@@ -8976,14 +8979,14 @@ def tstatConfigAutoPage(params) {
 				}
 				if((settings?.extTmpUseWeather || settings?.extTmpTempSensor)) {
 					section("Delay Values:") {
-		// TODO can these delays be set to 0?
+						// TODO can these delays be set to 0?
 						input name: "extTmpOffDelay", type: "enum", title: "Delay Off (in minutes)", defaultValue: 300, metadata: [values:longTimeSecEnum()], required: false, submitOnChange: true,
 								image: getAppImg("delay_time_icon.png")
 						input name: "extTmpOnDelay", type: "enum", title: "Delay Restore (in minutes)", defaultValue: 300, metadata: [values:longTimeSecEnum()], required: false, submitOnChange: true,
 								image: getAppImg("delay_time_icon.png")
 					}
 					section("Restoration Preferences (Optional):") {
-		// TODO can these delays be set to 0? to turn back off?
+						// TODO can these delays be set to 0? to turn back off?
 						input "${pName}OffTimeout", "enum", title: "Auto Restore after (Optional)", defaultValue: 43200, metadata: [values:longTimeSecEnum()], required: false, submitOnChange: true,
 								image: getAppImg("delay_time_icon.png")
 						if(!settings?."${pName}OffTimeout") { atomicState."${pName}timeOutScheduled" = false }
@@ -9146,7 +9149,7 @@ def editSchedule(cnt, soloSch=false, hideStr=null) {
 		if(settings?.schMotRemoteSensor && !("remSen" in hideStr)) {
 			input "${sLbl}remSensor", "capability.temperatureMeasurement", title: "Alternate Temp Sensors", description: "For Remote Sensor Automation", submitOnChange: false, required: false, multiple: true, image: getAppImg("temperature_icon.png")
 		}
-		if(!("motSen" in hideStr)) {
+		if(!("motSem" in hideStr)) {
 			paragraph null, title: "\nSet Alternate Setpoint Temps based on Motion..."
 			def mmot = settings["${sLbl}Motion"]
 			input "${sLbl}Motion", "capability.motionSensor", title: "Motion Sensors", description: "Enables alternate hvac settings based on motion", required: false, multiple: true, submitOnChange: true, image: getAppImg("motion_icon.png")
