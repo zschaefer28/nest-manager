@@ -7177,7 +7177,7 @@ def extTmpDpOrTempEvt(type) {
 			LogAction("${type} | External Temp Check scheduled for (${timeVal.valLabel}) HVAC mode: ${curMode}...", "info", true)
 			scheduleAutomationEval(val)
 		} else {
-			LogAction("${type}: Skipping Event...tempWithinThreshold: ${tempWithinThreshold}", "info", true)
+			LogAction("${type}: Skipping Event...no state change | tempWithinThreshold: ${tempWithinThreshold}", "info", true)
 		}
 	}
 }
@@ -9341,7 +9341,7 @@ def schMotCheck() {
 		atomicState?.lastschMotEval = getDtNow()
 
 		// This order is important...
-		// turn system on/off, then update remote sensors, then follow schedules, then update fans
+		// turn system on/off, then update schedule mode/temps, then remote sensors, then update fans
 
 		if(settings?.schMotWaterOff) {
 			if(isLeakWatConfigured()) { leakWatCheck() }
