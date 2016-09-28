@@ -3471,7 +3471,7 @@ def LogAction(msg, type = "debug", showAlways = false) {
 def Logger(msg, type) {
 	if(msg && type) {
 		def labelstr = ""
-		def debugAppendAppName = (setting?.debugAppendAppName == true || settings?.debugAppendAppName == null) ? true : false
+		def debugAppendAppName = (settings?.debugAppendAppName == true || settings?.debugAppendAppName == null) ? true : false
 		if(debugAppendAppName) { labelstr = "${app.label} | " }
 		switch(type) {
 			case "debug":
