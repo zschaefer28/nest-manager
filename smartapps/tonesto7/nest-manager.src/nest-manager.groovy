@@ -8872,7 +8872,7 @@ def schMotModePage() {
 							schInfo?.each { schItem ->
 								def schNum = schItem?.key
 								def schDesc = schItem?.value
-								def schInUse = (curSch.toInteger() == schNum.toInteger()) ? true : false
+								def schInUse = (curSch?.toInteger() == schNum?.toInteger()) ? true : false
 								if(schNum && schDesc) {
 									href "schMotEditSchedulePage", title: "", description: "${schDesc}\n\nTap to Modify Schedule...", params: ["sNum":schNum], state: (schInUse ? "complete" : "")
 								}
@@ -9132,7 +9132,7 @@ def editSchedule(cnt, soloSch=false, hideStr=null) {
 	if(act) {
 		input "${sLbl}name", "text", title: "Schedule Name", required: true, defaultValue: "Schedule ${cnt}", multiple: false, image: getAppImg("name_tag_icon.png")
 		if(settings?.schMotSetTstatTemp && !("tstatTemp" in hideStr)) {
-			paragraph null, title: "\nSet Temp Setpoint to these when this schedule is Active..."
+			paragraph null, title: "\nConfigure Setpoints and/or HVAC modes that will be set when this Schedule is in use..."
 			if(canHeat) {
 				input "${sLbl}HeatTemp", "decimal", title: "Heat Set Point(°${getTemperatureScale()})", description: "Range within ${tempRangeValues()}", required: true, range: tempRangeValues(), image: getAppImg("heat_icon.png")
 			}
@@ -9209,7 +9209,7 @@ def getScheduleDesc(num = null) {
 			def isMot = schData?.m0
 			def isRemSen = schData?.sen0
 
-			str += schData?.lbl ? " • ${schData?.lbl}${(actSchedNum.toInteger() == schNum.toInteger()) ? " (In Use)" : " (Not In Use)"}" : ""
+			str += schData?.lbl ? " • ${schData?.lbl}${(actSchedNum?.toInteger() == schNum?.toInteger()) ? " (In Use)" : " (Not In Use)"}" : ""
 
 			//restriction section
 			str += isRestrict ? 	"\n ${isSw || isTemp ? "├" : "└"} Restrictions:" : ""
