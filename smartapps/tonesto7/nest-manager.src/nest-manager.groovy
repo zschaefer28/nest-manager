@@ -4947,7 +4947,7 @@ def selectAutoPage() {
 				}
 			}
 			section("Thermostat Automations: Setpoints, Remote Sensor, External Temp, Contact Sensor, Leak Sensor, Fan Control") {
-				href "mainAutoPage", title: "Thermostat Automations", description: "", params: [autoType: "schMot"], image: getAppImg("mode_setpoints_icon.png")
+				href "mainAutoPage", title: "Thermostat Automations", description: "", params: [autoType: "schMot"], image: getAppImg("thermostat_automation_icon.png")
 			}
 		}
 	}
@@ -5023,7 +5023,7 @@ def mainAutoPage(params) {
 
 					sDesc += settings?.schMotTstat ? "\n\nTap to Modify..." : ""
 					def sModeDesc = isSchMotConfigured() ? "${sDesc}" : null
-					href "schMotModePage", title: "Thermostat Automation Config", description: sModeDesc ?: "Tap to Configure...", state: (sModeDesc ? "complete" : null), image: getAppImg("mode_setpoints_icon.png")
+					href "schMotModePage", title: "Thermostat Automation Config", description: sModeDesc ?: "Tap to Configure...", state: (sModeDesc ? "complete" : null), image: getAppImg("thermostat_automation_icon.png")
 				}
 
 				if(autoType == "watchDog" && !atomicState?.disableAutomation) {
@@ -8647,7 +8647,7 @@ def schMotModePage() {
 
 				section("Fan Circulation:") {
 					def desc = !settings?.schMotCirculateTstatFan ? (isFanCircConfigured() ? "Paused..." : "") : pauseMsg
-					input (name: "schMotCirculateTstatFan", type: "bool", title: "Run HVAC Fan for Circulation?", description: desc, required: false, defaultValue: false, submitOnChange: true, image: getAppImg("fan_control_icon.png"))
+					input (name: "schMotCirculateTstatFan", type: "bool", title: "Run HVAC Fan for Circulation?", description: desc, required: false, defaultValue: false, submitOnChange: true, image: getAppImg("fan_circulation_icon.png"))
 					if(settings?.schMotCirculateTstatFan) {
 						input("schMotFanRuleType", "enum", title: "(Rule) Action Type", options: remSenRuleEnum(true), required: true, image: getAppImg("rule_icon.png"))
 					}
