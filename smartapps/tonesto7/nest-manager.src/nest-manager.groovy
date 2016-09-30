@@ -36,18 +36,19 @@ definition(
 	appSetting "clientSecret"
 }
 
-def appVersion() { "3.4.3" }
-def appVerDate() { "9-28-2016" }
+def appVersion() { "3.4.4" }
+def appVerDate() { "9-30-2016" }
 def appVerInfo() {
 	def str = ""
 
-	str += "V3.4.3 (September 28th, 2016):"
+	str += "V3.4.4 (September 30th, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
 	str += "\n • UPDATED: Lot's of UI reworks for automations..."
 	str += "\n • UPDATED: Lot's of little bugfixes...."
 	str += "\n • UPDATED: Merged in eric's latest patch..."
 	str += "\n • UPDATED: Lot's of modifications to the thermostat UI design..."
 	str += "\n • UPDATED: Cleanup of Old Code and bugfixes..."
+	str += "\n • UPDATED: More bug fixes and cleanups..."
 
 	str += "\n\nV3.3.0 (September 19th, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
@@ -239,9 +240,9 @@ def mainPage() {
 	return dynamicPage(name: "mainPage", title: "", nextPage: (!setupComplete ? "reviewSetupPage" : null), refreshInterval: rfrshDash, install: setupComplete, uninstall: false) {
 		section("") {
 			href "changeLogPage", title: "", description: "${appInfoDesc()}", image: getAppImg("nest_manager%402x.png", true)
-			if (settings?.enableDashboard && atomicState?.dashboardInstalled && atomicState?.dashboardUrl) {
+			/*if (settings?.enableDashboard && atomicState?.dashboardInstalled && atomicState?.dashboardUrl) {
 				href "", title: "Nest Manager Dashboard", style: "external", url: "${atomicState?.dashboardUrl}dashboard", image: getAppImg("dashboard_icon.png"), required: false
-			}
+			}*/
 			if(atomicState?.appData && !appDevType() && isAppUpdateAvail()) {
 				href url: stIdeLink(), style:"external", required: false, title:"An Update is Available for ${appName()}!!!",
 						description:"Current: v${appVersion()} | New: ${atomicState?.appData?.updater?.versions?.app?.ver}\n\nTap to Open the IDE in your Mobile Browser...", state: "complete", image: getAppImg("update_icon.png")
@@ -283,7 +284,7 @@ def mainPage() {
 					href "nestInfoPage", title: "API | Diagnostics | Testing...", description: "Tap to view info...", image: getAppImg("api_diag_icon.png")
 				}
 			}
-			section("Web Dashboard Preferences:") {
+			/*section("Web Dashboard Preferences:") {
 				def dashAct = (settings?.enableDashboard && atomicState?.dashboardInstalled && atomicState?.dashboardUrl) ? true : false
 				def dashDesc = dashAct ? "Dashboard is (Active)\nTurn off to Remove" : "Toggle to Install.."
 				input "enableDashboard", "bool", title: "Enable Web Dashboard", submitOnChange: true, defaultValue: false, required: false, description: dashDesc, state: dashAct ? "complete" : null,
@@ -297,7 +298,7 @@ def mainPage() {
 					removeDashboardApp()
 					atomicState?.dashSetup = false
 				}
-			}
+			}*/
 			section("Remove All Apps, Automations, and Devices:") {
 				href "uninstallPage", title: "Uninstall this App", description: "Tap to Remove...", image: getAppImg("uninstall_icon.png")
 			}
@@ -5105,7 +5106,7 @@ def initAutoApp() {
 				atomicState."schedule${cnt}SwEnabled" = null
 				atomicState."schedule${cnt}MotionEnabled" = null
 				atomicState."schedule${cnt}SensorEnabled" = null
-				atomicState."schedule${cnt}FanCtrlEnabled" = null
+				//atomicState."schedule${cnt}FanCtrlEnabled" = null
 
 				def newscd = []
 				def act = settings["${sLbl}SchedActive"]
@@ -5130,14 +5131,14 @@ def initAutoApp() {
 						mhtemp: settings["${sLbl}MHeatTemp"],
 						mhvacm: settings["${sLbl}MHvacMode"],
 						mdelayOn: settings["${sLbl}MDelayValOn"],
-						mdelayOff: settings["${sLbl}MDelayValOff"],
+						mdelayOff: settings["${sLbl}MDelayValOff"]/*,
 						fan0: buildDeviceNameList(settings["${sLbl}Fans"], "and"),
 						ftemp: settings["${sLbl}FansUseTemp"],
 						ftempl: settings["${sLbl}FansLowTemp"],
 						ftemph: settings["${sLbl}FansHighTemp"],
 						fmot: settings["${sLbl}FansMotion"],
 						fmoton: settings["${sLbl}FansMDelayValOn"],
-						fmotoff: settings["${sLbl}FansMDelayValOff"]
+						fmotoff: settings["${sLbl}FansMDelayValOff"]*/
 					])
 					numact += 1
 				}
@@ -5146,7 +5147,7 @@ def initAutoApp() {
 				atomicState."schedule${cnt}SwEnabled" = (newscd?.s1 || newscd?.s0)  ? true : false
 				atomicState."schedule${cnt}MotionEnabled" = (newscd?.m0) ? true : false
 				atomicState."schedule${cnt}SensorEnabled" = (newscd?.sen0) ? true : false
-				atomicState."schedule${cnt}FanCtrlEnabled" = (newscd?.fan0) ? true : false
+				//atomicState."schedule${cnt}FanCtrlEnabled" = (newscd?.fan0) ? true : false
 				atomicState?."motion${cnt}InBtwn" = null // clear automation state of schedule in use motion state
 				cnt += 1
 			}
@@ -5435,12 +5436,12 @@ def subscribeToEvents() {
 									//log.trace "found $sen"
 								} else {
 									senlist << sen
-									subscribe(sen, "temperature", automationTempSenEvt)
+									subscribe(sen, "temperature", automationTempSenEvt) }
 								}
 							}
 						}
 					}
-					if(atomicState?."schedule${cnt}FanCtrlEnabled") {
+					/*if(atomicState?."schedule${cnt}FanCtrlEnabled") {
 						if(restrict?.fan0) {
 							for(fan in settings["${sLbl}Fans"]) {
 								if(swlist?.contains(fan)) {
@@ -5451,7 +5452,7 @@ def subscribeToEvents() {
 								}
 							}
 						}
-					}
+					}*/
 				}
 				cnt += 1
 			}
@@ -7756,7 +7757,7 @@ def nestModePresPage() {
 						image: getAppImg("presence_icon.png")
 				if(nModePresSensor) {
 					if(nModePresSensor.size() > 1) {
-						paragraph "Nest will be set 'Away' when all Presence sensors leave and will return to 'Home' when someone arrives", image: getAppImg("instruct_icon.png")
+						paragraph "Nest Location will be set to 'Away' when all Presence sensors leave and will return to 'Home' when someone arrives", title: "How this Works!", image: getAppImg("instruct_icon.png")
 					}
 					paragraph "${nModePresenceDesc()}", state: "complete", image: getAppImg("instruct_icon.png")
 				}
@@ -7810,7 +7811,8 @@ def nModePresenceDesc() {
 		str += "Presence Status:"
 		settings?.nModePresSensor?.each { dev ->
 			cnt = cnt+1
-			str += "${(cnt >= 1) ? "${(cnt == cCnt) ? "\n└" : "\n├"}" : "\n└"} ${dev?.label}: ${(dev?.label.length() > 10) ? "\n${(cCnt == 1 || cnt == cCnt) ? "    " : "│"}└ " : ""}(${dev?.currentPresence?.toString().capitalize()})"
+			def presState = dev?.currentPresence ? dev?.currentPresence?.toString().capitalize() : "No State"
+			str += "${(cnt >= 1) ? "${(cnt == cCnt) ? "\n└" : "\n├"}" : "\n└"} ${dev?.label}: ${(dev?.label.length() > 10) ? "\n${(cCnt == 1 || cnt == cCnt) ? "    " : "│"}└ " : ""}(${presState})"
 		}
 		return str
 	}
@@ -8601,20 +8603,20 @@ def schMotModePage() {
 		}
 
 		if(settings?.schMotTstat && !dupTstat) {
-			def pauseMsg = "Turn Off to Pause..."
+			def pauseMsg = "Toggle off to disable..."
 			updateScheduleStateMap()
 			section {
-				paragraph "The Option below allow you to configure your thermostat with automations that will help you save energy and keep your home feeling more comfortable", title: "Choose Automation Options:", required: false
+				paragraph "The options below allow you to configure your thermostat with automations that will help you save energy and keep your home feeling more comfortable", title: "Choose Automation Options:", required: false
 			}
 
 			section("Schedule Automation:") {
 				input (name: "schMotSetTstatTemp", type: "bool", title: "Use Schedules to modify Temp Setpoints based on Day, Time, ST Modes, Switches, and Motion?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("schedule_icon.png"))
-				def curSch = getCurrentSchedule()
-				def actSch = atomicState?.activeSchedData?.size()
-				def curSchData = actSch ? atomicState?.activeSchedData?."$curSch" : null
 				if(settings?.schMotSetTstatTemp) {
+					def actSch = atomicState?.activeSchedData?.size()
+					//def curSchData = actSch ? atomicState?.activeSchedData?."$curSch" : null
 					if (actSch) {
 						def schInfo = getScheduleDesc()
+						def curSch = getCurrentSchedule()
 						if (schInfo?.size()) {
 							schInfo?.each { schItem ->
 								def schNum = schItem?.key
@@ -8627,8 +8629,8 @@ def schMotModePage() {
 						}
 					}
 					def tDesc = ""
-					tDesc += isTstatSchedConfigured() ? "Tap to Add/Modify Schedules..." : "Tap to Configure..."
-					href "tstatConfigAutoPage", title: "Configure Setpoint Schedules...", description: tDesc, params: ["configType":"tstatSch"], image: getAppImg("configure_icon.png")
+					tDesc += isTstatSchedConfigured() ? "Tap to Add/Modify Schedules..." : null
+					href "tstatConfigAutoPage", title: "Configure Setpoint Schedules...", description: tDesc ?: "Not Configured...", params: ["configType":"tstatSch"], required: true, state: (!tDesc ? null : "" ), image: getAppImg("configure_icon.png")
 				}
 			}
 
@@ -8640,8 +8642,9 @@ def schMotModePage() {
 						def fanCtrlDescStr = ""
 						//fanCtrlDescStr += (atomicState?.schMotTstatHasFan) ? "\n • Current Fan Mode: (${schMotTstat?.currentThermostatFanMode.toString().capitalize()})" : ""
 						fanCtrlDescStr += getFanSwitchDesc() ? "${getFanSwitchDesc()}" : ""
-						def fanCtrlDesc = isFanCtrlConfigured() ? "${fanCtrlDescStr}\n\nTap to Modify..." : "Tap to Configure..."
-						href "tstatConfigAutoPage", title: "Fan Control Config...", description: fanCtrlDesc, params: ["configType":"fanCtrl"], state: (fanCtrlDesc ? "complete" : null), image: getAppImg("configure_icon.png")
+						def fanCtrlDesc = isFanCtrlConfigured() ? "${fanCtrlDescStr}\n\nTap to Modify..." : null
+						href "tstatConfigAutoPage", title: "Fan Control Config...", description: fanCtrlDesc ?: "Not Configured...", params: ["configType":"fanCtrl"], state: (fanCtrlDesc ? "complete" : null),
+								required: true, image: getAppImg("configure_icon.png")
 					}
 				}
 
@@ -8656,7 +8659,8 @@ def schMotModePage() {
 
 			section("Remote Sensor:") {
 				def desc = !settings?.schMotRemoteSensor ? (isRemSenConfigured() ? "Paused..." : "") : pauseMsg
-				input (name: "schMotRemoteSensor", type: "bool", title: "Use Alternate Temp Sensors and Fan Circulation to Control Zone temperature?", description: desc, required: false, defaultValue: false, submitOnChange: true, image: getAppImg("remote_sensor_icon.png"))
+				input (name: "schMotRemoteSensor", type: "bool", title: "Use Alternate Temp Sensors and Fan Circulation to Control Zone temperature?", description: desc, required: false, defaultValue: false, submitOnChange: true,
+						image: getAppImg("remote_sensor_icon.png"))
 				if(settings?.schMotRemoteSensor) {
 					def remSenDescStr = ""
 					remSenDescStr += settings?.remSenRuleType ? "Rule-Type: ${getEnumValue(remSenRuleEnum(), settings?.remSenRuleType)}" : ""
@@ -8674,8 +8678,9 @@ def schMotModePage() {
 					dayModeDesc += (settings?.remSensorDay && (settings?.remSenDayHeatTemp || settings?.remSenDayCoolTemp)) ? "\n• Default Desired Temps:\n   └ (H: ${settings?.remSenDayHeatTemp ?: 0}°${getTemperatureScale()}/C: ${settings?.remSenDayCoolTemp ?: 0}°${getTemperatureScale()})" : ""
 					remSenDescStr += settings?.remSensorDay ? "${dayModeDesc}" : ""
 
-					def remSenDesc = isRemSenConfigured() ? "${remSenDescStr}\n\nTap to Modify..." : "Tap to Configure..."
-					href "tstatConfigAutoPage", title: "Remote Sensors Config", description: remSenDesc, params: ["configType":"remSen"], state: (remSenDesc ? "complete" : null), image: getAppImg("configure_icon.png")
+					def remSenDesc = isRemSenConfigured() ? "${remSenDescStr}\n\nTap to Modify..." : null
+					href "tstatConfigAutoPage", title: "Remote Sensor Config", description: remSenDesc ?: "Not Configured...", params: ["configType":"remSen"], required: true, state: (remSenDesc ? "complete" : null),
+							image: getAppImg("configure_icon.png")
 				}
 			}
 
@@ -8693,8 +8698,9 @@ def schMotModePage() {
 					leakDesc += (settings["leakWatAllowSpeechNotif"] && (settings["leakWatSpeechDevices"] || settings["leakWatSpeechMediaPlayer"]) && getVoiceNotifConfigDesc(leakWatPrefix())) ?
 						"\n\nVoice Notifications:${getVoiceNotifConfigDesc(leakWatPrefix())}" : ""
 					leakDesc += (settings?.leakWatSensors) ? "\n\nTap to Modify..." : ""
-					def leakWatDesc = isLeakWatConfigured() ? "${leakDesc}" : "Tap to Configure..."
-					href "tstatConfigAutoPage", title: "Leak Sensors Config...", description: leakWatDesc, params: ["configType":"leakWat"], state: (leakWatDesc ? "complete" : null), image: getAppImg("configure_icon.png")
+					def leakWatDesc = isLeakWatConfigured() ? "${leakDesc}" : null
+					href "tstatConfigAutoPage", title: "Leak Sensors Config...", description: leakWatDesc ?: "Not Configured...", params: ["configType":"leakWat"], required: true, state: (leakWatDesc ? "complete" : null),
+							image: getAppImg("configure_icon.png")
 				}
 			}
 
@@ -8714,8 +8720,9 @@ def schMotModePage() {
 					conDesc += (settings["conWatAllowSpeechNotif"] && (settings["conWatSpeechDevices"] || settings["conWatSpeechMediaPlayer"]) && getVoiceNotifConfigDesc(conWatPrefix())) ?
 						"\n\nVoice Notifications:${getVoiceNotifConfigDesc(conWatPrefix())}" : ""
 					conDesc += (settings?.conWatContacts) ? "\n\nTap to Modify..." : ""
-					def conWatDesc = isConWatConfigured() ? "${conDesc}" : "Tap to Configure..."
-					href "tstatConfigAutoPage", title: "Contact Sensors Config...", description: conWatDesc, params: ["configType":"conWat"], state: (conWatDesc ? "complete" : null), image: getAppImg("configure_icon.png")
+					def conWatDesc = isConWatConfigured() ? "${conDesc}" : null
+					href "tstatConfigAutoPage", title: "Contact Sensors Config...", description: conWatDesc ?: "Not Configured...", params: ["configType":"conWat"], required: true, state: (conWatDesc ? "complete" : null),
+							image: getAppImg("configure_icon.png")
 				}
 			}
 
@@ -8735,8 +8742,9 @@ def schMotModePage() {
 					extDesc += (settings?."${extTmpPrefix()}Modes" || settings?."${extTmpPrefix()}Days" || (settings?."${extTmpPrefix()}StartTime" && settings?."${extTmpPrefix()}StopTime")) ?
 						"\n • Evaluation Allowed: (${autoScheduleOk(extTmpPrefix()) ? "ON" : "OFF"})" : ""
 					extDesc += ((settings?.extTmpTempSensor || settings?.extTmpUseWeather) ) ? "\n\nTap to Modify..." : ""
-					def extTmpDesc = isExtTmpConfigured() ? "${extDesc}" : "Tap to Configure..."
-					href "tstatConfigAutoPage", title: "External Temps Config...", description: extTmpDesc, params: ["configType":"extTmp"], state: (extTmpDesc ? "complete" : null), image: getAppImg("configure_icon.png")
+					def extTmpDesc = isExtTmpConfigured() ? "${extDesc}" : null
+					href "tstatConfigAutoPage", title: "External Temps Config...", description: extTmpDesc ?: "Not Configured...", params: ["configType":"extTmp"], required: true, state: (extTmpDesc ? "complete" : null),
+							image: getAppImg("configure_icon.png")
 				}
 			}
 
@@ -8762,8 +8770,8 @@ def tstatConfigAutoPage(params) {
 	def pDesc = null
 	switch(configType) {
 		case "tstatSch":
-			pName = tModePrefix()
-			pTitle = "Thermostat Setpoint Automation"
+			pName = schMotPrefix()
+			pTitle = "Thermostat Schedule Automation"
 			pDesc = "Configure Schedules and Setpoints"
 			break
 		case "fanCtrl":
@@ -8838,10 +8846,10 @@ def tstatConfigAutoPage(params) {
 							}
 						}
 					}
-					section("") {
+					/*section("") {
 						paragraph "Configure alternate Fans to control under each of your schedules.  You can set restriction for temp ranges and use motion as a trigger to run the schedules fans.", title: "Use With Schedules..."
 					}
-					showUpdateSchedule(null,["tstatTemp", "motSen", "remSen"])
+					showUpdateSchedule(null,["tstatTemp", "motSen", "remSen"])*/
 				}
 			}
 
@@ -8888,12 +8896,12 @@ def tstatConfigAutoPage(params) {
 						def senLblStr = "Default"
 						section("Choose ${senLblStr} Sensor(s) to use instead of the Thermostat's...") {
 							def daySenReq = (!settings?.remSensorDay) ? true : false
-							input "remSensorDay", "capability.temperatureMeasurement", title: "${dSenStr} Temp Sensors", submitOnChange: true, required: daySenReq,
+							input "remSensorDay", "capability.temperatureMeasurement", title: "${senLblStr} Temp Sensors", submitOnChange: true, required: daySenReq,
 									multiple: true, image: getAppImg("temperature_icon.png")
 							if(settings?.remSensorDay) {
 								def tmpVal = "Temp${(settings?.remSensorDay?.size() > 1) ? " (avg):" : ":"} (${getDeviceTempAvg(settings?.remSensorDay)}${tempScaleStr})"
 								if(settings?.remSensorDay.size() > 1) {
-									href "remSenShowTempsPage", title: "View ${dSenStr} Sensor Temps...", description: "${tmpVal}", state: "complete", image: getAppImg("blank_icon.png")
+									href "remSenShowTempsPage", title: "View ${senLblStr} Sensor Temps...", description: "${tmpVal}", state: "complete", image: getAppImg("blank_icon.png")
 									//paragraph "Multiple temp sensors will return the average of those sensors.", image: getAppImg("i_icon.png")
 								} else { paragraph "${tmpVal}", state: "complete", image: getAppImg("instruct_icon.png") }
 
@@ -8926,7 +8934,13 @@ def tstatConfigAutoPage(params) {
 									paragraph "Unable to ${(vthermostat ? "enable" : "disable")} Virtual Thermostat!!!.  Please Correct...", image: getAppImg("error_icon.png")
 								}
 							}
-							showUpdateSchedule(null,["motSen", "tstatTemp", "fanCtrl"])
+							if(settings?.schMotSetTstatTemp && atomicState?.activeSchedData.size() >= 1) {
+								showUpdateSchedule(null,["motSen", "tstatTemp", "fanCtrl", "restrict"])
+							} else {
+								section("Alternate Sensor Schedules") {
+									paragraph "You can select alternate sensors on schedules if you enable schedule automation and create a schedule. Once completed you can return here and update the options..."
+								}
+							}
 						}
 					}
 				}
@@ -9024,8 +9038,8 @@ def tstatConfigAutoPage(params) {
 					}
 				}
 				if(settings?.extTmpUseWeather || settings?.extTmpTempSensor) {
-					section("When the Threshold Temp is Reached\nTurn Off this Thermostat...") {
-						input name: "extTmpDiffVal", type: "decimal", title: "When Thermostat temp is within this many degrees of the external temp (${tempScaleStr})?", defaultValue: 1.0, submitOnChange: true, required: true,
+					section("When the threshold Temp is Reached\nTurn Off the Thermostat...") {
+						input name: "extTmpDiffVal", type: "decimal", title: "When difference between the thermostat and external temp is this many degrees (${tempScaleStr})?", defaultValue: 1.0, submitOnChange: true, required: true,
 								image: getAppImg("temp_icon.png")
 					}
 				}
@@ -9183,8 +9197,24 @@ def editSchedule(cnt, soloSch=false, hideStr=null) {
 
 	def act = settings["${sLbl}SchedActive"]
 	def actIcon = act ? "active" : "inactive"
+	/*def actSch = atomicState?.activeSchedData?.size()
+	//def curSchData = actSch ? atomicState?.activeSchedData?."$curSch" : null
+	if (actSch) {
+		def schInfo = getScheduleDesc()
+		def curSch = getCurrentSchedule()
+		if (schInfo?.size()) {
+			schInfo?.each { schItem ->
+				def schNum = schItem?.key
+				def schDesc = schItem?.value
+				def schInUse = (curSch?.toInteger() == schNum?.toInteger()) ? true : false
+				if(schNum && schDesc) {
+					href "schMotSchedulePage", title: "", description: "${schDesc}\n\nTap to Modify Schedule...", params: ["sNum":schNum], state: (schInUse ? "complete" : "")
+				}
+			}
+		}
+	}*/
 	//section(title: "Schedule ${scd} (${mstr})                                                 ", hideable: (soloSch ? false : true), hidden: ((act || scd == 1) ? false : true)) {
-	input "${sLbl}SchedActive", "bool", title: "Schedule Active", description: (cnt == 1 && !settings?."${sLbl}SchedActive" ? "Enable to Edit Schedule..." : null), required: true,
+	input "${sLbl}SchedActive", "bool", title: "Schedule Enabled", description: (cnt == 1 && !settings?."${sLbl}SchedActive" ? "Enable to Edit Schedule..." : null), required: true,
 			defaultValue: false, submitOnChange: true, image: getAppImg("${actIcon}_icon.png")
 	if(act) {
 		input "${sLbl}name", "text", title: "Schedule Name", required: true, defaultValue: "Schedule ${cnt}", multiple: false, image: getAppImg("name_tag_icon.png")
@@ -9215,10 +9245,12 @@ def editSchedule(cnt, soloSch=false, hideStr=null) {
 					input "${sLbl}MCoolTemp", "decimal", title: "Cool Setpoint with Motion (${tempScaleStr})", description: "Range within ${tempRangeValues()}", required: false, range: tempRangeValues(), image: getAppImg("cool_icon.png")
 				}
 				input "${sLbl}MHvacMode", "enum", title: "Set Hvac Mode with Motion:", required: false, description: "No change set", metadata: [values:tModeHvacEnum(canHeat,canCool)], multiple: false, image: getAppImg("hvac_mode_icon.png")
+				input "${sLbl}MRestrictionMode", "mode", title: "Ignore in these modes", description: "Any location mode", required: false, multiple: true, image: getAppImg("mode_icon.png")
 				input "${sLbl}MDelayValOn", "enum", title: "Delay Motion Setting Changes", required: false, defaultValue: 60, metadata: [values:longTimeSecEnum()], multiple: false, image: getAppImg("delay_time_icon.png")
 				input "${sLbl}MDelayValOff", "enum", title: "Delay disabling Motion Settings", required: false, defaultValue: 1800, metadata: [values:longTimeSecEnum()], multiple: false, image: getAppImg("delay_time_icon.png")
 			}
 		}
+/*
 		if(settings?.schMotOperateFan && !("fanCtrl" in hideStr)) {
 			paragraph null, title: "\nConfigure Fans that run only when Schedule is Active..."
 			def sFans = settings["${sLbl}Fans"]
@@ -9242,6 +9274,7 @@ def editSchedule(cnt, soloSch=false, hideStr=null) {
 				}
 			}
 		}
+*/
 		if(!("restrict" in hideStr)) {
 			paragraph null, title: "\nRestrict when This Schedule is Evaluated..."
 			input "${sLbl}restrictionMode", "mode", title: "Only execute in these modes", description: "Any location mode", required: false, multiple: true, image: getAppImg("mode_icon.png")
@@ -9327,13 +9360,13 @@ def getScheduleDesc(num = null) {
 			str += isMot && schData?.mdelayOn ? 	"\n ${isFanEn || isRemSen ? "│" : "   "} ${(schData?.mdelayOn || schData?.mdelayOff) ? "├" : "└"} Mot. On Delay: (${getEnumValue(longTimeSecEnum(), schData?.mdelayOn)})" : ""
 			str += isMot && schData?.mdelayOff ? 	"\n ${isFanEn || isRemSen ? "│" : "   "} └ Mot. Off Delay: (${getEnumValue(longTimeSecEnum(), schData?.mdelayOff)})" : ""
 
-			//Fan Control
+			/*//Fan Control
 			str += isFanEn ? 						"${isTemp || isRemSen || isRestrict ? "\n │\n" : "\n"} ${isRemSen ? "├" : "└"} Fan Control Settings:" : ""
 			str += isFanEn ?		 				"\n ${isRemSen ? "│" : "   "} ${(schData?.ftempl || schData?.ftemph) ? "├" : "└"} Fans: (${schData?.fan0.size()})" : ""
 			str += isFanEn && schData?.ftemp && schData?.ftempl && schData?.ftemph ? "\n ${isRemSen ? "│" : "   "} └ Temp Range: (Low: ${schData?.ftempl}${tempScaleStr} | High: ${schData?.ftemph}${tempScaleStr})" : ""
 
 			str += isFanEn && schData?.fmoton ? 	"\n ${isRemSen ? "│" : "   "} ${(schData?.fmoton || schData?.fmotOff) ? "├" : "└"} Mot. On Delay: (${getEnumValue(longTimeSecEnum(), schData?.fmoton)})" : ""
-			str += isFanEn && schData?.fmotoff ? 	"\n ${isRemSen ? "│" : "   "} └ Mot. Off Delay: (${getEnumValue(longTimeSecEnum(), schData?.fmotoff)})" : ""
+			str += isFanEn && schData?.fmotoff ? 	"\n ${isRemSen ? "│" : "   "} └ Mot. Off Delay: (${getEnumValue(longTimeSecEnum(), schData?.fmotoff)})" : ""*/
 
 			//Remote Sensor Info
 			str += isRemSen != null ?	"${isRemSen || isRestrict ? "\n │\n" : "\n"} └ Alternate Remote Sensor:" : ""
@@ -9383,14 +9416,14 @@ def updateScheduleStateMap() {
 						mhtemp: settings["${sLbl}MHeatTemp"],
 						mhvacm: settings["${sLbl}MHvacMode"],
 						mdelayOn: settings["${sLbl}MDelayValOn"],
-						mdelayOff: settings["${sLbl}MDelayValOff"],
+						mdelayOff: settings["${sLbl}MDelayValOff"]/*,
 						fan0: deviceInputToList(settings["${sLbl}Fans"]),
 						ftemp: settings["${sLbl}FansUseTemp"],
 						ftempl: settings["${sLbl}FansLowTemp"],
 						ftemph: settings["${sLbl}FansHighTemp"],
 						fmot: settings["${sLbl}FansMotion"],
 						fmoton: settings["${sLbl}FansMDelayValOn"],
-						fmotoff: settings["${sLbl}FansMDelayValOff"]
+						fmotoff: settings["${sLbl}FansMDelayValOff"]*/
 						])
 					numAct += 1
 					actSchedules?."${scdNum}" = newScd
@@ -9546,13 +9579,14 @@ def setNotificationPage(params) {
 						image: getAppImg("notification_icon.png")
 		}
 		if(settings["${pName}NotificationsOn"]) {
-			def notifDesc = !location.contactBookEnabled ? "Enable Push Messages Below..." : "(Manager App Recipients are Used by Default)\n\nYou can customize who receives notifications"
+			def notifDesc = !location.contactBookEnabled ? "Enable Push Messages Below..." : "(Manager App Recipients are used by default)"
 			section("${notifDesc}") {
-				if(location.contactBookEnabled) {
-					input("${pName}NotifRecips", "contact", title: "Select Contacts...\n(Optional)", required: false, multiple: true, submitOnChange: true, image: getAppImg("recipient_icon.png"))
-				} else {
+				if(!location.contactBookEnabled) {
 					input "${pName}UsePush", "bool", title: "Send Push Notitifications\n(Optional)", required: false, submitOnChange: true, defaultValue: false, image: getAppImg("notification_icon.png")
-					input ("${pName}NotifPhones", "phone", title: "Phone Number to Send SMS to...\n(Optional)", submitOnChange: true, required: false)
+				} else {
+					input("${pName}NotifRecips", "contact", title: "Select Recipients...\n(Optional)", required: false, multiple: true, submitOnChange: true, image: getAppImg("recipient_icon.png")) {
+						input ("${pName}NotifPhones", "phone", title: "Phone Number to Send SMS to...\n(Optional)", submitOnChange: true, required: false)
+					}
 				}
 			}
 		}
@@ -9782,7 +9816,7 @@ def getNotifConfigDesc(pName) {
 	def str = ""
 	if(settings?."${pName}NotificationsOn") {
 		str += ( getRecipientDesc(pName) || (settings?."${pName}AllowSpeechNotif" && (settings?."${pName}SpeechDevices" || settings?."${pName}SpeechMediaPlayer"))) ?
-			"Push Status:" : ""
+			"Notification Status:" : ""
 		str += (settings?."${pName}NotifRecips") ? "${str != "" ? "\n" : ""} • Contacts: (${settings?."${pName}NotifRecips"?.size()})" : ""
 		str += (settings?."${pName}UsePush") ? "\n • Push Messages: Enabled" : ""
 		str += (settings?."${pName}NotifPhones") ? "\n • SMS: (${settings?."${pName}NotifPhones"?.size()})" : ""
@@ -9857,16 +9891,18 @@ def getRecipientsNames(val) {
 	def n = ""
 	def i = 0
 	if(val) {
+		//def valLabel =
+		log.debug "val: $val"
 		val?.each { r ->
 			i = i + 1
-			n += "${(i == val?.size()) ? "${r}" : "${r},"}"
+			n += i == val?.size() ? "${r}" : "${r},"
 		}
 	}
 	return n?.toString().replaceAll("\\,", "\n")
 }
 
 def getRecipientDesc(pName) {
-	return ((settings?."${pName}NotifRecips") || (settings?."${pName}NotifPhones" || settings?."${pName}NotifUsePush")) ? "${getRecipientsNames(settings?."${pName}NotifRecips")}" : null
+	return ((settings?."${pName}NotifRecips") || (settings?."${pName}NotifPhones" || settings?."${pName}NotifUsePush")) ? getRecipientsNames(settings?."${pName}NotifRecips") : null
 }
 
 def setDayModeTimePage(params) {
@@ -10180,7 +10216,6 @@ void sendTTS(txt, pName) {
 		parent?.sendExceptionData(ex.message, "sendTTS", true, getAutoType())
 	}
 }
-
 
 def scheduleTimeoutRestore(pName) {
 	def timeOutVal = settings["${pName}OffTimeout"]?.toInteger()
