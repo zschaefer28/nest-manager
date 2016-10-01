@@ -36,12 +36,12 @@ definition(
 	appSetting "clientSecret"
 }
 
-def appVersion() { "3.4.5" }
+def appVersion() { "3.4.6" }
 def appVerDate() { "10-1-2016" }
 def appVerInfo() {
 	def str = ""
 
-	str += "V3.4.5 (October 1st, 2016):"
+	str += "V3.4.6 (October 1st, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
 	str += "\n • UPDATED: Lot's of UI reworks for automations..."
 	str += "\n • UPDATED: Lot's of little bugfixes...."
@@ -5374,7 +5374,7 @@ def subscribeToEvents() {
 							if(senlist?.contains(sen)) {
 								//log.trace "found $sen"
 							} else {
-								senlist << sen
+								senlist.push(sen)
 								subscribe(sen, "temperature", automationTempSenEvt)
 							}
 						}
@@ -5411,16 +5411,17 @@ def subscribeToEvents() {
 								if(swlist?.contains(sw)) {
 									//log.trace "found $sw"
 								} else {
-									swlist << sw
+									swlist.push(sw)
 									subscribe(sw, "switch", automationSwitchEvt)
 								}
 							}
+						}
 						if(restrict?.s0) {
 							for(sw in settings["${sLbl}restrictionSwitchOff"]) {
 								if(swlist?.contains(sw)) {
 									//log.trace "found $sw"
 								} else {
-									swlist << sw
+									swlist.push(sw)
 									subscribe(sw, "switch", automationSwitchEvt)
 								}
 							}
@@ -5432,7 +5433,7 @@ def subscribeToEvents() {
 								if(mtlist?.contains(mt)) {
 									//log.trace "found $mt"
 								} else {
-									mtlist << mt
+									mtlist.push(mt)
 									subscribe(mt, "motion", automationMotionEvt)
 								}
 							}
@@ -5444,24 +5445,12 @@ def subscribeToEvents() {
 								if(senlist?.contains(sen)) {
 									//log.trace "found $sen"
 								} else {
-									senlist << sen
-									subscribe(sen, "temperature", automationTempSenEvt) }
+									senlist.push(sen)
+									subscribe(sen, "temperature", automationTempSenEvt)
 								}
 							}
 						}
 					}
-					/*if(atomicState?."schedule${cnt}FanCtrlEnabled") {
-						if(restrict?.fan0) {
-							for(fan in settings["${sLbl}Fans"]) {
-								if(swlist?.contains(fan)) {
-									//log.trace "found $sen"
-								} else {
-									senlist << fan
-									subscribe(fan, "switch", automationFanSwitchEvt) }
-								}
-							}
-						}
-					}*/
 				}
 				cnt += 1
 			}
@@ -5853,7 +5842,7 @@ def getLastMotionInActiveSec(mySched) {
 }
 
 def automationMotionEvt(evt) {
-	LogAction("Event | Motion Sensor: ${evt?.displayName} Motion State is (${evt?.value.toString().toUpperCase()})", "trace", true)
+	LogAction("Event | Motion Sensor: '${evt?.displayName}' Motion is (${evt?.value.toString().toUpperCase()})", "trace", true)
 	if(atomicState?.disableAutomation) { return }
 	else {
 		storeLastEventData(evt)
@@ -5880,20 +5869,20 @@ def automationMotionEvt(evt) {
 							atomicState."${sLbl}MotionInActiveDt" = getDtNow()
 						}
 					}
-					LogAction("Event | Motion Sensor: Schedule: ${mySched}  Previous Active: ${oldActive}  Current Active: {$newActive}", "trace", true)
+					LogAction("Event | Motion Sensor: [ Current Schedule: (${mySched}) | Previous Active: (${oldActive}) | Current Status: ({$newActive}) ]", "trace", true)
 					dorunIn = true
 				}
 			}
 		}
 
-		LogAction(" Motion: delay: $delay  ${evt.displayName}   ${settings["${sLbl}Motion"]}", "trace", true)
+		LogAction(" Motion: [ Action Delay: ($delay) | Event Device: (${evt.displayName}) | Selected Sensors: ${settings["${sLbl}Motion"]} ]", "trace", true)
 		if(dorunIn) {
 			LogAction("Event | Scheduling Motion Check for (${delay} Seconds)", "info", true)
 			delay = delay > 20 ? delay : 20
 			delay = delay < 60 ? delay : 60
 			scheduleAutomationEval(delay)
 		} else {
-			LogAction("Event | Skipping Motion Check because Active sensor not in active schedule ${mySched}", "info", true)
+			LogAction("Event | Skipping Motion Check because motion sensor not in used in active schedule (${mySched})", "info", true)
 		}
 	}
 }
@@ -8403,24 +8392,24 @@ def checkOnMotion(mySched) {
 	if(settings["${sLbl}Motion"] && atomicState?."${sLbl}MotionActiveDt") {
 		motionOn = atomicState."${sLbl}MotionActive"
 
-		def lastactivemotionDt = Date.parse("E MMM dd HH:mm:ss z yyyy", atomicState?."${sLbl}MotionActiveDt").getTime()
-		def lastactivemotionSec = getLastMotionActiveSec(mySched)
+		def lastActiveMotionDt = Date.parse("E MMM dd HH:mm:ss z yyyy", atomicState?."${sLbl}MotionActiveDt").getTime()
+		def lastActiveMotionSec = getLastMotionActiveSec(mySched)
 
-		def lastinactivemotionDt
-		def lastinactivemotionSec
+		def lastInactiveMotionDt
+		def lastInactiveMotionSec
 
 		if(atomicState?."${sLbl}MotionInActiveDt") {
-			lastinactivemotionDt = Date.parse("E MMM dd HH:mm:ss z yyyy", atomicState?."${sLbl}MotionInActiveDt").getTime()
-			lastinactivemotionSec = getLastMotionInActiveSec(mySched)
+			lastInactiveMotionDt = Date.parse("E MMM dd HH:mm:ss z yyyy", atomicState?."${sLbl}MotionInActiveDt").getTime()
+			lastInactiveMotionSec = getLastMotionInActiveSec(mySched)
 		}
 
-		LogAction("checkOnMotion: [active: $lastactivemotionDt ($lastactivemotionSec) | inactive: $lastinactivemotionDt ($lastinactivemotionSec) | motionOn: $motionOn]", "trace", true)
+		LogAction("checkOnMotion: [ Active Dt: $lastActiveMotionDt ($lastActiveMotionSec sec.) | Inactive Dt: $lastInactiveMotionDt ($lastInactiveMotionSec sec.) | MotionOn: ($motionOn) ]", "trace", true)
 
-		if(lastactivemotionDt > lastinactivemotionDt) { return motionOn }
+		if(lastActiveMotionDt > lastInactiveMotionDt) { return motionOn }
 
-		def ontime = formatDt( (lastactivemotionDt + (settings."${sLbl}MDelayValOn"?.toInteger() ?: 15) * 1000) )		// default to 15s
-		def offtime = formatDt( (lastinactivemotionDt + (settings."${sLbl}MDelayValOff"?.toInteger() ?: 15*60) * 1000) )	// default to 15 min
-		LogAction("checkOnMotion: Event ${atomicState."${sLbl}MotionActiveDt"} ontime: $ontime     Event ${atomicState?."${sLbl}MotionInActiveDt"}  offtime: $offtime", "info", true)
+		def ontime = formatDt( (lastActiveMotionDt + (settings."${sLbl}MDelayValOn"?.toInteger() ?: 15) * 1000) )		// default to 15s
+		def offtime = formatDt( (lastInactiveMotionDt + (settings."${sLbl}MDelayValOff"?.toInteger() ?: 15*60) * 1000) )	// default to 15 min
+		LogAction("checkOnMotion: [ Event Date: (${atomicState."${sLbl}MotionActiveDt"}) | OnTime: ($ontime) | Inactive Dt: (${atomicState?."${sLbl}MotionInActiveDt"}) | OffTime: ($offtime) ]", "info", true)
 
 		return isTimeBetween(ontime,  offtime, getDtNow(), getTimeZone())
 	}
@@ -8446,7 +8435,7 @@ def setTstatTempCheck() {
 		def mySched = getCurrentSchedule()
 		def noSched = (mySched == null) ? true : false
 
-		LogAction("setTstatTempCheck: mySched: $mySched  noSched: $noSched ", "trace", true)
+		LogAction("setTstatTempCheck: [Current Schedule: ($mySched) | No Schedule: ($noSched)]", "trace", true)
 
 		if(away || noSched) {
 			if(away) {
