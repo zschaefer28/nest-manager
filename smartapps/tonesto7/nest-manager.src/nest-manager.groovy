@@ -36,12 +36,12 @@ definition(
 	appSetting "clientSecret"
 }
 
-def appVersion() { "3.4.4" }
-def appVerDate() { "9-30-2016" }
+def appVersion() { "3.4.5" }
+def appVerDate() { "10-1-2016" }
 def appVerInfo() {
 	def str = ""
 
-	str += "V3.4.4 (September 30th, 2016):"
+	str += "V3.4.5 (October 1st, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
 	str += "\n • UPDATED: Lot's of UI reworks for automations..."
 	str += "\n • UPDATED: Lot's of little bugfixes...."
@@ -902,14 +902,22 @@ def uninstManagerApp() {
 }
 
 def initWatchdogApp() {
-	//log.trace "initWatchdogApp"
-	def watDogApp = getChildApps().findAll { it?.getAutomationType() == "watchDog" }
-	if(!watDogApp) {
+	//log.trace "initWatchdogApp..."
+	def watDogApp = getChildApps()?.findAll { it?.getAutomationType() == "watchDog" }
+	if(watDogApp?.size() < 1) {
 		LogAction("Installing Nest Watchdog App...", "info", true)
 		addChildApp(textNamespace(), appName(), getWatchdogAppChildName(), [settings:[watchDogFlag: true]])
-	} else {
+	} else if (watDogApp?.size() >= 1) {
+		def cnt = 1
 		watDogApp?.each { chld ->
-			chld.update()
+			if(cnt == 1) {
+				cnt = cnt+1
+				//LogAction("Running Update Command on Watchdog...", "warn", true)
+				chld.update()
+			} else if (cnt > 1) {
+				LogAction("Deleting Extra Watchdog Instance(${chld})...", "warn", true)
+				deleteChildApp(chld)
+			}
 		}
 	}
 }
@@ -5131,15 +5139,16 @@ def initAutoApp() {
 						mhtemp: settings["${sLbl}MHeatTemp"],
 						mhvacm: settings["${sLbl}MHvacMode"],
 						mdelayOn: settings["${sLbl}MDelayValOn"],
-						mdelayOff: settings["${sLbl}MDelayValOff"]/*,
-						fan0: buildDeviceNameList(settings["${sLbl}Fans"], "and"),
-						ftemp: settings["${sLbl}FansUseTemp"],
-						ftempl: settings["${sLbl}FansLowTemp"],
-						ftemph: settings["${sLbl}FansHighTemp"],
-						fmot: settings["${sLbl}FansMotion"],
-						fmoton: settings["${sLbl}FansMDelayValOn"],
-						fmotoff: settings["${sLbl}FansMDelayValOff"]*/
+						mdelayOff: settings["${sLbl}MDelayValOff"]
 					])
+
+					/*fan0: buildDeviceNameList(settings["${sLbl}Fans"], "and"),
+					ftemp: settings["${sLbl}FansUseTemp"],
+					ftempl: settings["${sLbl}FansLowTemp"],
+					ftemph: settings["${sLbl}FansHighTemp"],
+					fmot: settings["${sLbl}FansMotion"],
+					fmoton: settings["${sLbl}FansMDelayValOn"],
+					fmotoff: settings["${sLbl}FansMDelayValOff"]*/
 					numact += 1
 				}
 				LogAction("initAutoApp: [scd: $scd | sLbl: $sLbl | act: $act | newscd: $newscd]", "info", true)
