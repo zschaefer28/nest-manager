@@ -5236,7 +5236,6 @@ def getSettingsData() {
 
 def getSettingVal(var) {
 	return settings[var] ?: null
-
 }
 
 def getStateVal(var) {
@@ -8730,8 +8729,7 @@ def schMotModePage() {
 					leakDesc += "\n • Last Mode: (${atomicState?.leakWatRestoreMode ? atomicState?.leakWatRestoreMode.toString().capitalize() : "Not Set"})"
 					leakDesc += (settings?.leakWatModes || settings?.leakWatDays || (settings?.leakWatStartTime && settings?.leakWatStopTime)) ?
 						"\n • Evaluation Allowed: (${autoScheduleOk(leakWatPrefix()) ? "ON" : "OFF"})" : ""
-					leakDesc += (settings["leakWatAllowSpeechNotif"] && (settings["leakWatSpeechDevices"] || settings["leakWatSpeechMediaPlayer"]) && getVoiceNotifConfigDesc(leakWatPrefix())) ?
-						"\n\nVoice Notifications:${getVoiceNotifConfigDesc(leakWatPrefix())}" : ""
+					leakDesc += getNotifConfigDesc(leakWatPrefix()) ? "\n\n${getNotifConfigDesc(leakWatPrefix())}" : ""
 					leakDesc += (settings?.leakWatSensors) ? "\n\nTap to Modify..." : ""
 					def leakWatDesc = isLeakWatConfigured() ? "${leakDesc}" : null
 					href "tstatConfigAutoPage", title: "Leak Sensors Config...", description: leakWatDesc ?: "Not Configured...", params: ["configType":"leakWat"], required: true, state: (leakWatDesc ? "complete" : null),
@@ -8748,12 +8746,11 @@ def schMotModePage() {
 					conDesc += settings?.conWatContacts ? "\n\nSettings:" : ""
 					conDesc += settings?.conWatOffDelay ? "\n • Off Delay: (${getEnumValue(longTimeSecEnum(), settings?.conWatOffDelay)})" : ""
 					conDesc += settings?.conWatOnDelay ? "\n • On Delay: (${getEnumValue(longTimeSecEnum(), settings?.conWatOnDelay)})" : ""
-					conDesc += settings?.conWatRestoreDelayBetween ? "\n • Delay Between Restores:\n   └(${getEnumValue(longTimeSecEnum(), settings?.conWatRestoreDelayBetween)})" : ""
+					conDesc += settings?.conWatRestoreDelayBetween ? "\n • Delay Between Restores:\n     └ (${getEnumValue(longTimeSecEnum(), settings?.conWatRestoreDelayBetween)})" : ""
 					conDesc += "\n • Last Mode: (${atomicState?.conWatRestoreMode ? atomicState?.conWatRestoreMode.toString().capitalize() : "Not Set"})"
 					conDesc += (settings?."${conWatPrefix()}Modes" || settings?."${conWatPrefix()}Days" || (settings?."${conWatPrefix()}StartTime" && settings?."${conWatPrefix()}StopTime")) ?
 						"\n • Evaluation Allowed: (${autoScheduleOk(conWatPrefix()) ? "ON" : "OFF"})" : ""
-					conDesc += (settings["conWatAllowSpeechNotif"] && (settings["conWatSpeechDevices"] || settings["conWatSpeechMediaPlayer"]) && getVoiceNotifConfigDesc(conWatPrefix())) ?
-						"\n\nVoice Notifications:${getVoiceNotifConfigDesc(conWatPrefix())}" : ""
+					conDesc += getNotifConfigDesc(conWatPrefix()) ? "\n\n${getNotifConfigDesc(conWatPrefix())}" : ""
 					conDesc += (settings?.conWatContacts) ? "\n\nTap to Modify..." : ""
 					def conWatDesc = isConWatConfigured() ? "${conDesc}" : null
 					href "tstatConfigAutoPage", title: "Contact Sensors Config...", description: conWatDesc ?: "Not Configured...", params: ["configType":"conWat"], required: true, state: (conWatDesc ? "complete" : null),
@@ -8776,6 +8773,7 @@ def schMotModePage() {
 					extDesc += "\n • Last Mode: (${atomicState?.extTmpRestoreMode ? atomicState?.extTmpRestoreMode.toString().capitalize() : "Not Set"})"
 					extDesc += (settings?."${extTmpPrefix()}Modes" || settings?."${extTmpPrefix()}Days" || (settings?."${extTmpPrefix()}StartTime" && settings?."${extTmpPrefix()}StopTime")) ?
 						"\n • Evaluation Allowed: (${autoScheduleOk(extTmpPrefix()) ? "ON" : "OFF"})" : ""
+					extDesc += getNotifConfigDesc(extTmpPrefix()) ? "\n\n${getNotifConfigDesc(extTmpPrefix())}" : ""
 					extDesc += ((settings?.extTmpTempSensor || settings?.extTmpUseWeather) ) ? "\n\nTap to Modify..." : ""
 					def extTmpDesc = isExtTmpConfigured() ? "${extDesc}" : null
 					href "tstatConfigAutoPage", title: "External Temps Config...", description: extTmpDesc ?: "Not Configured...", params: ["configType":"extTmp"], required: true, state: (extTmpDesc ? "complete" : null),
@@ -9044,8 +9042,8 @@ def tstatConfigAutoPage(params) {
 			}
 
 			if(configType == "conWat") {
-				section("When These Contacts are open, Turn Off this Thermostat") {
-					def req = (settings?.conWatContacts || settings?.schMotTstat) ? true : false
+				section("When these Contacts are open, Turn Off this Thermostat") {
+					def req = !settings?.conWatContacts ? true : false
 					input name: "conWatContacts", type: "capability.contactSensor", title: "Which Contact(s)?", multiple: true, submitOnChange: true, required: req,
 							image: getAppImg("contact_icon.png")
 					if(settings?.conWatContacts) {
@@ -10000,8 +9998,8 @@ def getVoiceNotifConfigDesc(pName) {
 		str += settings["${pName}SendToAskAlexaQueue"] ? "\n • Send to Ask Alexa: (True)" : ""
 		str += speaks ? "\n • Speech Devices:${speaks.size() > 1 ? "\n" : ""}${speaks}" : ""
 		str += medias ? "\n • Media Players:${medias.size() > 1 ? "\n" : ""}${medias}" : ""
-		str += (medias && settings?."${pName}SpeechVolumeLevel") ? "\n      Volume: (${settings?."${pName}SpeechVolumeLevel"})" : ""
-		str += (medias && settings?."${pName}SpeechAllowResume") ? "\n      Resume: (${settings?."${pName}SpeechAllowResume".toString().capitalize()})" : ""
+		str += (medias && settings?."${pName}SpeechVolumeLevel") ? "\n    ├ Volume: (${settings?."${pName}SpeechVolumeLevel"})" : ""
+		str += (medias && settings?."${pName}SpeechAllowResume") ? "\n    └ Resume: (${settings?."${pName}SpeechAllowResume".toString().capitalize()})" : ""
 		str += (settings?."${pName}UseCustomSpeechNotifMsg" && (medias || speaks)) ? "\n • Custom Message: (${settings?."${pName}UseCustomSpeechNotifMsg".toString().capitalize()})" : ""
 	}
 	return (str != "") ? "${str}" : null
