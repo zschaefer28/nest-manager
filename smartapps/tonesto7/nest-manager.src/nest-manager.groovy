@@ -10,7 +10,7 @@
 |    I apologize if i've missed anyone.  Please let me know and I will add your credits     |
 |                                                                                           |
 |    ### I really hope that we don't have a ton or forks being released to the community,   |
-|    ### I hope that we can collaborate and make app and device type that will accomodate   |
+|    ### I hope that we can collaborate and make app and device type that will accommodate  |
 |    ### every use case                                                                     |
 *********************************************************************************************/
 
@@ -6502,7 +6502,6 @@ def getSchFanSwitchDesc(devs, showOpt = false) {
 def getFanSwitchesSpdChk() {
 	def devCnt = 0
 	def pName = fanCtrlPrefix()
-	if(pName == "remSen") { pName = "remSenTstat" }
 	if(settings?."${pName}FanSwitches") {
 		settings?."${pName}FanSwitches"?.each { sw ->
 			if(checkFanSpeedSupport(sw)) { devCnt = devCnt+1 }
@@ -6611,8 +6610,6 @@ def doFanOperation(tempDiff) {
 
 		def hvacFanOn = false
 		 //1:"Heating/Cooling", 2:"With Fan Only"
-
-		//if(pName == "remSen") { pName = "remSenTstat" }
 
 		if( settings?."${pName}FanSwitchTriggerType".toInteger() ==  1) {
 			hvacFanOn = (curTstatOperState in ["heating", "cooling"]) ? true : false
@@ -8569,10 +8566,20 @@ def schMotModePage() {
 				def reqSenHeatSetPoint = getRemSenHeatSetTemp()
 				def reqSenCoolSetPoint = getRemSenCoolSetTemp()
 				def curZoneTemp = getRemoteSenTemp()
-				str += "Zone Status:\n• Temperature: (${getDeviceTemp(tstat)}°${getTemperatureScale()})"
-				str += "\n• Setpoints: (H: ${canHeat ? "${reqSenHeatSetPoint}°${getTemperatureScale()}" : "NA"}/C: ${canCool ? "${reqSenCoolSetPoint}°${getTemperatureScale()}" : "NA"})\n"
+
+				str += "Zone Status:\n• Temperature: (${curZoneTemp}°${getTemperatureScale()})"
+
+				def hstr = canHeat ? "H: ${reqSenHeatSetPoint}°${getTemperatureScale()}" : ""
+				def cstr = canHeat && canCool ? "/" : ""
+				cstr += canCool ? "C: ${reqSenCoolSetPoint}°${getTemperatureScale()}" : ""
+				str += "\n• Setpoints: (${hstr}${cstr})\n"
+
 				str += "\nThermostat Status:\n• Temperature: (${getDeviceTemp(tstat)}°${getTemperatureScale()})"
-				str += "\n• Setpoints: (H: ${canHeat ? "${getTstatSetpoint(tstat, "heat")}°${getTemperatureScale()}" : "NA"}/C: ${canCool ? "${getTstatSetpoint(tstat, "cool")}°${getTemperatureScale()}" : "NA"})"
+				hstr = canHeat ? "H: ${getTstatSetpoint(tstat, "heat")}°${getTemperatureScale()}" : ""
+				cstr = canHeat && canCool ? "/" : ""
+				cstr += canCool ? "C: ${getTstatSetpoint(tstat, "cool")}°${getTemperatureScale()}" : ""
+				str += "\n• Setpoints: (${hstr}${cstr})"
+
 				str += "\n• Mode: (${tstat ? ("${tstat?.currentThermostatOperatingState.toString().capitalize()}/${tstat?.currentThermostatMode.toString().capitalize()}") : "unknown"})"
 				str += (atomicState?.schMotTstatHasFan) ? "\n• FanMode: (${tstat?.currentThermostatFanMode.toString().capitalize()})" : "\n• No Fan on HVAC system"
 				str += "\n• Presence: (${getTstatPresence(tstat).toString().capitalize()})"
@@ -8925,8 +8932,8 @@ def tstatConfigAutoPage(params) {
 				if(!cannotLock) {
 					section("Select the Allowed (Rule) Action Type:") {
 						if(!settings?.remSenRuleType) {
-							paragraph "(Rule) Actions determine actions the automation takes when the temperature threshold is reached, using combinations of Heat/Cool/Fan to balance" +
-									" temperatures to improve comfort...", image: getAppImg("instruct_icon.png")
+							paragraph "(Rule) Actions determine actions taken when the temperature threshold is reached, to balance" +
+									" temperatures...", image: getAppImg("instruct_icon.png")
 						}
 						input(name: "remSenRuleType", type: "enum", title: "(Rule) Action Type", options: remSenRuleEnum(), required: true, submitOnChange: true, image: getAppImg("rule_icon.png"))
 					}
@@ -9710,15 +9717,18 @@ this is a parent only method today
 							if(settings["${pName}UseCustomSpeechNotifMsg"]) {
 								getNotifVariables(pName)
 								input "${pName}CustomOffSpeechMessage", "text", title: "Turn Off Message?", required: false, defaultValue: atomicState?."${pName}OffVoiceMsg" , submitOnChange: true, image: getAppImg("speech_icon.png")
+								atomicState?."${pName}OffVoiceMsg" = settings?."${pName}CustomOffSpeechMessage"
 								if(settings?."${pName}CustomOffSpeechMessage") {
-									atomicState?."${pName}OffVoiceMsg" = settings?."${pName}CustomOffSpeechMessage"
 									paragraph "Off Msg:\n" + voiceNotifString(atomicState?."${pName}OffVoiceMsg",pName)
 								}
 								input "${pName}CustomOnSpeechMessage", "text", title: "Restore On Message?", required: false, defaultValue: atomicState?."${pName}OnVoiceMsg", submitOnChange: true, image: getAppImg("speech_icon.png")
+								atomicState?."${pName}OnVoiceMsg" = settings?."${pName}CustomOnSpeechMessage"
 								if(settings?."${pName}CustomOnSpeechMessage") {
-									atomicState?."${pName}OnVoiceMsg" = settings?."${pName}CustomOnSpeechMessage"
 									paragraph "Restore On Msg:\n" + voiceNotifString(atomicState?."${pName}OnVoiceMsg",pName)
 								}
+							} else {
+								atomicState?."${pName}OffVoiceMsg" = ""
+								atomicState?."${pName}OnVoiceMsg" = ""
 							}
 						}
 					}
