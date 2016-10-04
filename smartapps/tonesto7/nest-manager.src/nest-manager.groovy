@@ -59,37 +59,6 @@ def appVerInfo() {
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
 	str += "\n • UPDATED: Automation Refactor with Schedules (ALPHA)..."
 
-	str += "\n\nV3.1.3 (September 12th, 2016):"
-	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
-	str += "\n • ADDED: Ask Alexa (@MichaelS) Support. Automations now have the ability to Add/Remove notifications from Nest Manager to the Ask Alexa Message Queue..."
-	str += "\n • FIXED: Found quite a few minor bugs that I fixed, and cleaned up unnecessary code and consolodated so some others to save some space..."
-
-	str += "\n\nV3.1.1 (September 1st, 2016):"
-	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
-	str += "\n • FIXED: Removed old unnecessary code and tweaked the UI a bit."
-	str += "\n • FIXED: Added in Visual element to manager app to show user when there ST account is missing required location info."
-	str += "\n • FIXED: Lot of tiny Automation bugfixes."
-	str += "\n • FIXED: Broken Automation Notifications."
-	str += "\n • FIXED: Error when trying to open Automation Statistics."
-
-	str += "\n\nV3.1.0 (August 26th, 2016):"
-	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
-	str += "\n • ADDED: Remote sensor automation virtual thermostat"
-	str += "\n • UPDATED: Analytics to support the new virtual thermostat."
-	str += "\n • ADDED: Lot and Lot's of bugfixes"
-
-	str += "\n\nV3.0.2 (August 17th, 2016):"
-	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
-	str += "\n • UPDATED: Timeout bugfixes"
-
-	str += "\n\nV3.0.1 (August 16th, 2016):"
-	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
-	str += "\n • UPDATED: Lot's of little bugfixes"
-
-	str += "\n\nV3.0.0 (August 16th, 2016):"
-	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
-	str += "\n • UPDATED: V3.0 Release."
-
 	return str
 }
 
@@ -246,9 +215,9 @@ def mainPage() {
 	return dynamicPage(name: "mainPage", title: "", nextPage: (!setupComplete ? "reviewSetupPage" : null), refreshInterval: rfrshDash, install: setupComplete, uninstall: false) {
 		section("") {
 			href "changeLogPage", title: "", description: "${appInfoDesc()}", image: getAppImg("nest_manager%402x.png", true)
-			/*if (settings?.enableDashboard && atomicState?.dashboardInstalled && atomicState?.dashboardUrl) {
+			if (settings?.enableDashboard && atomicState?.dashboardInstalled && atomicState?.dashboardUrl) {
 				href "", title: "Nest Manager Dashboard", style: "external", url: "${atomicState?.dashboardUrl}dashboard", image: getAppImg("dashboard_icon.png"), required: false
-			}*/
+			}
 			if(atomicState?.appData && !appDevType() && isAppUpdateAvail()) {
 				href url: stIdeLink(), style:"external", required: false, title:"An Update is Available for ${appName()}!!!",
 						description:"Current: v${appVersion()} | New: ${atomicState?.appData?.updater?.versions?.app?.ver}\n\nTap to Open the IDE in your Mobile Browser...", state: "complete", image: getAppImg("update_icon.png")
@@ -290,21 +259,7 @@ def mainPage() {
 					href "nestInfoPage", title: "API | Diagnostics | Testing...", description: "Tap to view info...", image: getAppImg("api_diag_icon.png")
 				}
 			}
-			/*section("Web Dashboard Preferences:") {
-				def dashAct = (settings?.enableDashboard && atomicState?.dashboardInstalled && atomicState?.dashboardUrl) ? true : false
-				def dashDesc = dashAct ? "Dashboard is (Active)\nTurn off to Remove" : "Toggle to Install.."
-				input "enableDashboard", "bool", title: "Enable Web Dashboard", submitOnChange: true, defaultValue: false, required: false, description: dashDesc, state: dashAct ? "complete" : null,
-						image: getAppImg("dashboard_icon.png")
-				if(settings?.enableDashboard) {
-					if(!dashAct) {
-						atomicState?.dashSetup = true
-						initDashboardApp()
-					}
-				} else {
-					removeDashboardApp()
-					atomicState?.dashSetup = false
-				}
-			}*/
+			webDashConfig()
 			section("Remove All Apps, Automations, and Devices:") {
 				href "uninstallPage", title: "Uninstall this App", description: "Tap to Remove...", image: getAppImg("uninstall_icon.png")
 			}
@@ -645,6 +600,8 @@ def automationGlobalPrefsPage() {
 	}
 }
 
+
+// ERIC IS THIS PAGE EVEN RELEVENT ANY MORE?
 /*
 def safetyValuesPage() {
 	dynamicPage(name: "safetyValuesPage", title: "Configure Location Safety Values", uninstall: false) {
@@ -731,6 +688,24 @@ def getSafetyValuesDesc() {
 		}
 	}
 	return (str != "") ? "${str}" : null
+}
+
+def webDashConfig() {
+	section("Web Dashboard Preferences:") {
+		def dashAct = (settings?.enableDashboard && atomicState?.dashboardInstalled && atomicState?.dashboardUrl) ? true : false
+		def dashDesc = dashAct ? "Dashboard is (Active)\nTurn off to Remove" : "Toggle to Install.."
+		input "enableDashboard", "bool", title: "Enable Web Dashboard", submitOnChange: true, defaultValue: false, required: false, description: dashDesc, state: dashAct ? "complete" : null,
+				image: getAppImg("dashboard_icon.png")
+		if(settings?.enableDashboard) {
+			if(!dashAct) {
+				atomicState?.dashSetup = true
+				initDashboardApp()
+			}
+		} else {
+			removeDashboardApp()
+			atomicState?.dashSetup = false
+		}
+	}
 }
 
 def setMyLockId(val) {
@@ -991,26 +966,23 @@ def getInstAutoTypesDesc() {
 					break
 				case "schMot":
 					schMotCnt = schMotCnt+1
-/*
 					def ai = a?.getAutomationsInstalled()
 					if(ai) {
-						ai?.each {
-							log.debug "it: $it | key: ${it?.key}"
-							it?.each { it2 ->
-								log.debug "it2: $it2"
-							}
-							if(it.key == "schMot") {
-								log.debug "it data: ${it?.value}"
-								if( ) { remSenCnt = 0 }
-								if( ) { fanCtrlCnt = 0 }
-								if( ) { fanCircCnt = 0 }
-								if( ) { conWatCnt = 0 }
-								if( ) { extTmpCnt = 0 }
-								if( ) { leakWatCnt = 0 }
+						ai?.each { aut ->
+							aut?.each { it2 ->
+								if(it2?.key == "schMot") {
+									log.debug "aut data: ${aut}"
+									if("tSched" in it2?.value) { tSchedCnt = tSchedCnt+1}
+									if("remSen" in it2?.value) { remSenCnt = remSenCnt+1 }
+									if("fanCtrl" in it2?.value) { fanCtrlCnt = fanCtrlCnt+1 }
+									if("fanCirc" in it2?.value) { fanCircCnt = fanCircCnt+1 }
+									if("conWat" in it2?.value) { conWatCnt = conWatCnt+1 }
+									if("extTmp" in it2?.value) { extTmpCnt = extTmpCnt+1 }
+									if("leakWat" in it2?.value) { leakWatCnt = leakWatCnt+1 }
+								}
 							}
 						}
 					}
-*/
 					break
 				case "watchDog":
 					watchDogCnt = watchDogCnt+1
@@ -1027,8 +999,12 @@ def getInstAutoTypesDesc() {
 	def inAutoList = []
 	inAutoList?.push("nestMode":nModeCnt)
 	inAutoList?.push("watchDog":watchDogCnt)
-	inAutoList?.push("webDash":dashCnt)
-	inAutoList?.push("schMot":schMotCnt)
+	inAutoList?.push("webDash":webDashCnt)
+	if(schMotCnt > 0) {
+		inAutoList?.push("schMot":["tSched":tSchedCnt, "remSen":remSenCnt, "fanCtrl":fanCtrlCnt, "fanCirc":fanCircCnt, "conWat":conWatCnt, "extTmp":extTmpCnt, "leakWat":leakWatCnt])
+	} else {
+		inAutoList?.push("schMot":schMotCnt)
+	}
 	//log.debug "inAutoList: $inAutoList"
 	atomicState?.installedAutomations = inAutoList
 
