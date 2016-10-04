@@ -38,12 +38,12 @@ definition(
 
 include 'asynchttp_v1'
 
-def appVersion() { "3.5.1" }
+def appVersion() { "3.5.2" }
 def appVerDate() { "10-4-2016" }
 def appVerInfo() {
 	def str = ""
 
-	str += "V3.5.1 (October 4th, 2016):"
+	str += "V3.5.2 (October 4th, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
 	str += "\n • UPDATED: Lot's more UI polish automations..."
 	str += "\n • UPDATED: Lot's of little bugfixes...."
@@ -103,6 +103,7 @@ preferences {
 	page(name: "automationKickStartPage")
 	page(name: "automationGlobalPrefsPage")
 	page(name: "automationStatisticsPage")
+	page(name: "automationSchedulePage")
 
 	//Automation Pages
 	page(name: "selectAutoPage" )
@@ -441,6 +442,10 @@ def automationsPage() {
 		}
 		if(isAutoAppInst()) {
 			section("") {
+				def schEn = getChildApps()?.findAll { it?.getActiveScheduleState() != null }
+				if(schEn.size()) {
+					href "automationSchedulePage", title: "View Automation Schedule(s)", description: "", image: getAppImg("schedule_icon.png")
+				}
 				href "automationStatisticsPage", title: "View Automation Statistics", description: "", image: getAppImg("app_analytics_icon.png")
 			}
 			section("Global Options:                                                                         ", hideable: true, hidden: false) {
@@ -456,6 +461,20 @@ def automationsPage() {
 			}
 			section("Advanced Options: (Tap + to Show)                                                          ", hideable: true, hidden: true) {
 				href "automationKickStartPage", title: "Re-Initialize All Automations", description: "Tap to call the Update() action on each automation.\nTap to Begin...", image: getAppImg("reset_icon.png")
+			}
+		}
+	}
+}
+
+def automationSchedulePage() {
+	dynamicPage(name: "automationSchedulePage", title: "View Schedule Data..", uninstall: false) {
+		def schMap = []
+		getChildApps()?.each {
+			def schData = it?.getScheduleDesc()
+			if(schData) {
+				section("it?.label") {
+					paragraph "${schData}", state: "complete"
+				}
 			}
 		}
 	}
@@ -534,10 +553,6 @@ def automationGlobalPrefsPage() {
 						description:"Tap to View Info", image: getAppImg("instruct_icon.png")
 			}
 			section(title: "Safety Preferences 									", hideable:true, hidden: false) {
-/*
-				href "safetyValuesPage", title: "Configure Safety Values?", description: (getSafetyValuesDesc() ? "${getSafetyValuesDesc()}\n\nTap to Modify..." : " Tap to configure..."),
-				state: (getSafetyValuesDesc() ? "complete" : null), image: getAppImg("thermostat_icon.png")
-*/
 				if(atomicState?.thermostats) {
 					atomicState?.thermostats?.each { ts ->
 						def dev = getChildDevice(ts?.key)
@@ -601,61 +616,6 @@ def automationGlobalPrefsPage() {
 		}
 	}
 }
-
-
-// ERIC IS THIS PAGE EVEN RELEVENT ANY MORE?
-/*
-def safetyValuesPage() {
-	dynamicPage(name: "safetyValuesPage", title: "Configure Location Safety Values", uninstall: false) {
-		if(atomicState?.thermostats) {
-			atomicState?.thermostats?.each { ts ->
-				def dev = getChildDevice(ts?.key)
-				def canHeat = dev?.currentState("canHeat")?.stringValue == "false" ? false : true
-				def canCool = dev?.currentState("canCool")?.stringValue == "false" ? false : true
-
-				def defmin
-				def defmax
-				def safeTemp = getSafetyTemps(dev)
-				if(safeTemp) {
-					defmin = safeTemp.min
-					defmax = safeTemp.max
-				}
-				def dew_max = getComfortDewpoint(dev)
-
- TODO
-      need to check / default to current setting in dth
-      should have method in dth to set safety temps (today they are sent from nest manager polls..)
-      should have method in dth to clear safety temps
-      need to check if safety temps are set and != to each other
-      need to ensure they are not the same (if not 0)
-
-				def str = ""
-				section(title: "${dev?.displayName}", hideable: true, hidden: false) {
-					str +=  "Safety Values:"
-					str +=  safeTemp ? "\n• Safefy Temps:\n	  └ Min: ${safeTemp.min}°${getTemperatureScale()}/Max: ${safeTemp.max}°${getTemperatureScale()}" : "Not Set"
-					str +=  dew_max ?  "\n• Comfort Max Dewpoint:\n  └ Max: ${dew_max}°${getTemperatureScale()}" : "Not Set"
-					paragraph "${str}", state: (str != "" ? "complete" : null), image: getAppImg("instruct_icon.png")
-
-					if(canHeat) {
-						input "${dev?.deviceNetworkId}_safety_temp_min", "decimal", title: "Min. Temp Desired °(${getTemperatureScale()})", description: "Range within ${tempRangeValues()}", range: tempRangeValues(),
-							required: false, image: getAppImg("heat_icon.png")
-					}
-					if(canCool) {
-						input "${dev?.deviceNetworkId}_safety_temp_max", "decimal", title: "Max. Temp Desired (°${getTemperatureScale()})", description: "Range within ${tempRangeValues()}", range: tempRangeValues(),
-							required: false,  image: getAppImg("cool_icon.png")
-					}
-					def tRange = (getTemperatureScale() == "C") ? "15..19" : "60..66"
-					input "${dev?.deviceNetworkId}_comfort_dewpoint_max", "decimal", title: "Max. Dewpoint Desired (${tRange} °${getTemperatureScale()})", required: false,  range: trange,
-							image: getAppImg("dewpoint_icon.png")
-					def hrange = "10..80"
-					input "${dev?.deviceNetworkId}_comfort_humidity_max", "number", title: "Max. Humidity Desired (%)", description: "Range within ${hrange}", range: hrange,
-							required: false, image: getAppImg("humidity_icon.png")
-				}
-			}
-		}
-	}
-}
-*/
 
 def getSafetyValuesDesc() {
 	def str = ""
@@ -1124,7 +1084,7 @@ def poll(force = false, type = null) {
 }
 
 def finishPoll(str, dev) {
-	LogAction("finishdPoll($str, $dev) received...", "info", true)
+	LogAction("finishPoll($str, $dev) received...", "info", true)
 	if(atomicState?.pollBlocked) { schedNextWorkQ(null); return }
 	if(dev || str || atomicState?.needChildUpd ) { updateChildData() }
 	updateWebStuff()
@@ -8316,6 +8276,10 @@ private checkRestriction(cnt) {
 	return restriction
 }
 
+def getActiveScheduleState() {
+	return atomicState?.activeSchedData ?: null
+}
+
 def getSchRestrictDoWOk(cnt) {
 	def apprestrict = atomicState?.activeSchedData
 	def result = true
@@ -8680,7 +8644,7 @@ def schMotModePage() {
 				def reqSenHeatSetPoint = getRemSenHeatSetTemp()
 				def reqSenCoolSetPoint = getRemSenCoolSetTemp()
 				def curZoneTemp = getRemoteSenTemp()
-				def tempSrcStr = (getCurrentSchedule() && atomicState?.remoteTempSourceStr == "Schedule") ? "Schedule ${getCurrentSchedule()} (${"${getSchedLbl(getCurrentSchedule())}" ?: "Not Found"})" : atomicState?.remoteTempSourceStr
+				def tempSrcStr = (getCurrentSchedule() && atomicState?.remoteTempSourceStr == "Schedule") ? "Schedule ${getCurrentSchedule()} (${"${getSchedLbl(getCurrentSchedule())}" ?: "Not Found"})" : "(${atomicState?.remoteTempSourceStr})"
 
 				str += tempSrcStr ? "Zone Status:\n• Temp Source:${tempSrcStr?.toString().length() > 15 ? "\n  └" : ""} ${tempSrcStr}" : ""
 				str += curZoneTemp ? "\n• Temperature: (${curZoneTemp}°${getTemperatureScale()})" : ""
@@ -9530,85 +9494,82 @@ def getScheduleDesc(num = null) {
 	def schData
 
 	def sCnt = 1
-	if(!num) {
-		schedData?.sort().each { scd ->
-			def str = ""
-			schNum = scd?.key
-			schData = scd?.value
-			def sLbl = "schMot_${schNum}_"
-			def isRestrict = (schData?.m || schData?.tf || schData?.tfc || schData?.tfo || schData?.tt || schData?.ttc || schData?.tto || schData?.w || schData?.s1 || schData?.s0)
-			def isTimeRes = (schData?.tf || schData?.tfc || schData?.tfo || schData?.tt || schData?.ttc || schData?.tto)
-			def isDayRes = schData?.w
-			def isTemp = (schData?.ctemp || schData?.htemp || schData?.hvacm)
-			def isSw = (schData?.s1 || schData?.s0)
-			def isMot = schData?.m0
-			def isRemSen = schData?.sen0
-			def isFanEn = schData?.fan0
-			def showPreBar = isSw || isTemp || isMot || isRemSen
+	schedData?.sort().each { scd ->
+		def str = ""
+		schNum = scd?.key
+		schData = scd?.value
+		def sLbl = "schMot_${schNum}_"
+		def isRestrict = (schData?.m || schData?.tf || schData?.tfc || schData?.tfo || schData?.tt || schData?.ttc || schData?.tto || schData?.w || schData?.s1 || schData?.s0)
+		def isTimeRes = (schData?.tf || schData?.tfc || schData?.tfo || schData?.tt || schData?.ttc || schData?.tto)
+		def isDayRes = schData?.w
+		def isTemp = (schData?.ctemp || schData?.htemp || schData?.hvacm)
+		def isSw = (schData?.s1 || schData?.s0)
+		def isMot = schData?.m0
+		def isRemSen = schData?.sen0
+		def isFanEn = schData?.fan0
+		def showPreBar = isSw || isTemp || isMot || isRemSen
 
 
-			str += schData?.lbl ? " • ${schData?.lbl}${(actSchedNum?.toInteger() == schNum?.toInteger()) ? " (In Use)" : " (Not In Use)"}" : ""
+		str += schData?.lbl ? " • ${schData?.lbl}${(actSchedNum?.toInteger() == schNum?.toInteger()) ? " (In Use)" : " (Not In Use)"}" : ""
 
-			//restriction section
-			str += isRestrict ? "\n ${isSw || isTemp ? "├" : "└"} Restrictions:" : ""
-			def mLen = schData?.m ? schData?.m?.toString().length() : 0
-			def mStr = ""
-			if (mLen > 15) {
-				def mdSize = 1
-				schData?.m?.each { md ->
-					mStr += md ? "\n ${isSw || isTemp ? "│ ${(isDayRes || isTimeRes || isSw) ? "│" : "    "}" : "   "} ${mdSize < schData?.m.size() ? "├" : "└"} ${md.toString()}" : ""
-					mdSize = mdSize+1
-				}
-			} else {
-				mStr += schData?.m.toString()
+		//restriction section
+		str += isRestrict ? "\n ${isSw || isTemp ? "├" : "└"} Restrictions:" : ""
+		def mLen = schData?.m ? schData?.m?.toString().length() : 0
+		def mStr = ""
+		if (mLen > 15) {
+			def mdSize = 1
+			schData?.m?.each { md ->
+				mStr += md ? "\n ${isSw || isTemp ? "│ ${(isDayRes || isTimeRes || isSw) ? "│" : "    "}" : "   "} ${mdSize < schData?.m.size() ? "├" : "└"} ${md.toString()}" : ""
+				mdSize = mdSize+1
 			}
-			str += schData?.m ? "\n ${isSw || isTemp ? "│" : "   "} ${(isTimeRes || schData?.w) ? "├" : "└"} Mode${schData?.m?.size() > 1 ? "s" : ""}:${isInMode(schData?.m) ? " (OK)" : " (NOT OK)"}" : ""
-			str += schData?.m ? "\n ${isSw || isTemp ? "│" : "   "} │ └ $mStr" : ""
-
-			def dayStr = getAbrevDay(schData?.w)
-			str += isTimeRes ? 		"\n ${isSw || isTemp ? "│" : " "} ${schData?.w ? "├" : "└"} ${getScheduleTimeDesc(schData?.tf, schData?.tfc, schData?.tfo, schData?.tt, schData?.ttc, schData?.tto, (isSw || isTemp))}" : ""
-			str += schData?.w ?  	"\n ${isSw || isTemp ? "│" : " "} ${schData?.s1 ? "├" : "└"} Days:${getSchRestrictDoWOk(schNum) ? " (OK)" : " (NOT OK)"}" : ""
-			str += schData?.w ?		"\n ${isSw || isTemp ? "│" : " "} ${isSw ? "│" :"    "} └ ${dayStr}" : ""
-			str += schData?.s1 ?	"\n ${isSw || isTemp ? "│" : " "} ${schData?.s0 ? "├" : "└"} Switches On:${isSwitchOn(settings["${sLbl}restrictionSwitchOn"]) ? " (OK)" : " (NOT OK)"}" : ""
-			str += schData?.s1 ? 	"\n ${isSw || isTemp ? "│" : " "} ${schData?.s0 ? "│" : "    "} └ (${schData?.s1.size()} Selected)" : ""
-			str += schData?.s0 ?	"\n ${isSw || isTemp ? "│" : " "} └ Switches Off:${!isSwitchOn(settings["${sLbl}restrictionSwitchOff"]) ? " (OK)" : " (NOT OK)"}" : ""
-			str += schData?.s0 ? 	"\n ${isSw || isTemp ? "│" : " "}      └ (${schData?.s0.size()} Selected)" : ""
-
-			//Temp Setpoints
-			str += isTemp  ? 		"${isRestrict ? "\n │\n" : "\n"} ${(isMot || isRemSen) ? "├" : "└"} Temp Setpoints:" : ""
-			str += schData?.ctemp ? "\n ${isMot || isRemSen ? "│" : "   "}  ${schData?.htemp ? "├" : "└"} Cool Setpoint: (${schData?.ctemp}${tempScaleStr})" : ""
-			str += schData?.htemp ? "\n ${isMot || isRemSen ? "│" : "   "}  ${schData?.hvacm ? "├" : "└"} Heat Setpoint: (${schData?.htemp}${tempScaleStr})" : ""
-			str += schData?.hvacm ? "\n ${isMot || isRemSen ? "│" : "   "}  └ HVAC Mode: (${schData?.hvacm.toString().capitalize()})" : ""
-
-			//Motion Info
-			str += isMot ?						"${isTemp || isFanEn || isRemSen || isRestrict ? "\n │\n" : "\n"} ${isRemSen ? "├" : "└"} Motion Settings:" : ""
-			str += isMot ?		 				"\n ${isRemSen ? "│" : "   "} ${(schData?.mctemp || schData?.mhtemp) ? "├" : "└"} Motion Sensors: (${schData?.m0.size()})" : ""
-			str += isMot ?						"\n ${isRemSen ? "│" : "   "} ${schData?.mctemp || schData?.mhtemp ? "│" : ""} └ (${isMotionActive(settings["${sLbl}Motion"]) ? "Active" : "None Active"})" : ""
-			str += isMot && schData?.mctemp ? 	"\n ${isRemSen ? "│" : "   "} ${(schData?.mctemp || schData?.mhtemp) ? "├" : "└"} Mot. Cool Setpoint: (${schData?.mctemp}${tempScaleStr})" : ""
-			str += isMot && schData?.mhtemp ? 	"\n ${isRemSen ? "│" : "   "} ${schData?.mdelayOn || schData?.mdelayOff ? "├" : "└"} Mot. Heat Setpoint: (${schData?.mhtemp}${tempScaleStr})" : ""
-			str += isMot && schData?.mhvacm ? 	"\n ${isRemSen ? "│" : "   "} ${(schData?.mdelayOn || schData?.mdelayOff) ? "├" : "└"} Mot. HVAC Mode: (${schData?.mhvacm.toString().capitalize()})" : ""
-			str += isMot && schData?.mdelayOn ? "\n ${isRemSen ? "│" : "   "} ${schData?.mdelayOff ? "├" : "└"} Mot. On Delay: (${getEnumValue(longTimeSecEnum(), schData?.mdelayOn)})" : ""
-			str += isMot && schData?.mdelayOff ?"\n ${isRemSen ? "│" : "   "} └ Mot. Off Delay: (${getEnumValue(longTimeSecEnum(), schData?.mdelayOff)})" : ""
-
-			/*//Fan Control
-			str += isFanEn ? 						"${isTemp || isRemSen || isRestrict ? "\n │\n" : "\n"} ${isRemSen ? "├" : "└"} Fan Control Settings:" : ""
-			str += isFanEn ?		 				"\n ${isRemSen ? "│" : "   "} ${(schData?.ftempl || schData?.ftemph) ? "├" : "└"} Fans: (${schData?.fan0.size()})" : ""
-			str += isFanEn && schData?.ftemp && schData?.ftempl && schData?.ftemph ? "\n ${isRemSen ? "│" : "   "} └ Temp Range: (Low: ${schData?.ftempl}${tempScaleStr} | High: ${schData?.ftemph}${tempScaleStr})" : ""
-
-			str += isFanEn && schData?.fmoton ? 	"\n ${isRemSen ? "│" : "   "} ${(schData?.fmoton || schData?.fmotOff) ? "├" : "└"} Mot. On Delay: (${getEnumValue(longTimeSecEnum(), schData?.fmoton)})" : ""
-			str += isFanEn && schData?.fmotoff ? 	"\n ${isRemSen ? "│" : "   "} └ Mot. Off Delay: (${getEnumValue(longTimeSecEnum(), schData?.fmotoff)})" : ""*/
-
-			//Remote Sensor Info
-			str += isRemSen ?	"${isRemSen || isRestrict ? "\n │\n" : "\n"} └ Alternate Remote Sensor:" : ""
-			//str += isRemSen ? 	"\n      ├ Temp Sensors: (${schData?.sen0.size()})" : ""
-			settings["${sLbl}remSensor"]?.each { t ->
-				str += "\n      ├ ${t?.label}: ${(t?.label.length() > 10) ? "\n      │ └ " : ""}(${getDeviceTemp(t)}°${getTemperatureScale()})"
-			}
-			str += isRemSen && schData?.sen0 ? "\n      └ Temp${(settings["${sLbl}remSensor"]?.size() > 1) ? " (avg):" : ":"} (${getDeviceTempAvg(settings["${sLbl}remSensor"])}${tempScaleStr})" : ""
-			//log.debug "str: \n$str"
-			if(str != "") { result[schNum] = str }
+		} else {
+			mStr += schData?.m.toString()
 		}
+		str += schData?.m ? "\n ${isSw || isTemp ? "│" : "   "} ${(isTimeRes || schData?.w) ? "├" : "└"} Mode${schData?.m?.size() > 1 ? "s" : ""}:${isInMode(schData?.m) ? " (OK)" : " (NOT OK)"}" : ""
+		str += schData?.m ? "\n ${isSw || isTemp ? "│" : "   "} │ └ $mStr" : ""
 
+		def dayStr = getAbrevDay(schData?.w)
+		str += isTimeRes ? 		"\n ${isSw || isTemp ? "│" : " "} ${schData?.w ? "├" : "└"} ${getScheduleTimeDesc(schData?.tf, schData?.tfc, schData?.tfo, schData?.tt, schData?.ttc, schData?.tto, (isSw || isTemp))}" : ""
+		str += schData?.w ?  	"\n ${isSw || isTemp ? "│" : " "} ${schData?.s1 ? "├" : "└"} Days:${getSchRestrictDoWOk(schNum) ? " (OK)" : " (NOT OK)"}" : ""
+		str += schData?.w ?		"\n ${isSw || isTemp ? "│" : " "} ${isSw ? "│" :"    "} └ ${dayStr}" : ""
+		str += schData?.s1 ?	"\n ${isSw || isTemp ? "│" : " "} ${schData?.s0 ? "├" : "└"} Switches On:${isSwitchOn(settings["${sLbl}restrictionSwitchOn"]) ? " (OK)" : " (NOT OK)"}" : ""
+		str += schData?.s1 ? 	"\n ${isSw || isTemp ? "│" : " "} ${schData?.s0 ? "│" : "    "} └ (${schData?.s1.size()} Selected)" : ""
+		str += schData?.s0 ?	"\n ${isSw || isTemp ? "│" : " "} └ Switches Off:${!isSwitchOn(settings["${sLbl}restrictionSwitchOff"]) ? " (OK)" : " (NOT OK)"}" : ""
+		str += schData?.s0 ? 	"\n ${isSw || isTemp ? "│" : " "}      └ (${schData?.s0.size()} Selected)" : ""
+
+		//Temp Setpoints
+		str += isTemp  ? 		"${isRestrict ? "\n │\n" : "\n"} ${(isMot || isRemSen) ? "├" : "└"} Temp Setpoints:" : ""
+		str += schData?.ctemp ? "\n ${isMot || isRemSen ? "│" : "   "}  ${schData?.htemp ? "├" : "└"} Cool Setpoint: (${schData?.ctemp}${tempScaleStr})" : ""
+		str += schData?.htemp ? "\n ${isMot || isRemSen ? "│" : "   "}  ${schData?.hvacm ? "├" : "└"} Heat Setpoint: (${schData?.htemp}${tempScaleStr})" : ""
+		str += schData?.hvacm ? "\n ${isMot || isRemSen ? "│" : "   "}  └ HVAC Mode: (${schData?.hvacm.toString().capitalize()})" : ""
+
+		//Motion Info
+		str += isMot ?						"${isTemp || isFanEn || isRemSen || isRestrict ? "\n │\n" : "\n"} ${isRemSen ? "├" : "└"} Motion Settings:" : ""
+		str += isMot ?		 				"\n ${isRemSen ? "│" : "   "} ${(schData?.mctemp || schData?.mhtemp) ? "├" : "└"} Motion Sensors: (${schData?.m0.size()})" : ""
+		str += isMot ?						"\n ${isRemSen ? "│" : "   "} ${schData?.mctemp || schData?.mhtemp ? "│" : ""} └ (${isMotionActive(settings["${sLbl}Motion"]) ? "Active" : "None Active"})" : ""
+		str += isMot && schData?.mctemp ? 	"\n ${isRemSen ? "│" : "   "} ${(schData?.mctemp || schData?.mhtemp) ? "├" : "└"} Mot. Cool Setpoint: (${schData?.mctemp}${tempScaleStr})" : ""
+		str += isMot && schData?.mhtemp ? 	"\n ${isRemSen ? "│" : "   "} ${schData?.mdelayOn || schData?.mdelayOff ? "├" : "└"} Mot. Heat Setpoint: (${schData?.mhtemp}${tempScaleStr})" : ""
+		str += isMot && schData?.mhvacm ? 	"\n ${isRemSen ? "│" : "   "} ${(schData?.mdelayOn || schData?.mdelayOff) ? "├" : "└"} Mot. HVAC Mode: (${schData?.mhvacm.toString().capitalize()})" : ""
+		str += isMot && schData?.mdelayOn ? "\n ${isRemSen ? "│" : "   "} ${schData?.mdelayOff ? "├" : "└"} Mot. On Delay: (${getEnumValue(longTimeSecEnum(), schData?.mdelayOn)})" : ""
+		str += isMot && schData?.mdelayOff ?"\n ${isRemSen ? "│" : "   "} └ Mot. Off Delay: (${getEnumValue(longTimeSecEnum(), schData?.mdelayOff)})" : ""
+
+		/*//Fan Control
+		str += isFanEn ? 						"${isTemp || isRemSen || isRestrict ? "\n │\n" : "\n"} ${isRemSen ? "├" : "└"} Fan Control Settings:" : ""
+		str += isFanEn ?		 				"\n ${isRemSen ? "│" : "   "} ${(schData?.ftempl || schData?.ftemph) ? "├" : "└"} Fans: (${schData?.fan0.size()})" : ""
+		str += isFanEn && schData?.ftemp && schData?.ftempl && schData?.ftemph ? "\n ${isRemSen ? "│" : "   "} └ Temp Range: (Low: ${schData?.ftempl}${tempScaleStr} | High: ${schData?.ftemph}${tempScaleStr})" : ""
+
+		str += isFanEn && schData?.fmoton ? 	"\n ${isRemSen ? "│" : "   "} ${(schData?.fmoton || schData?.fmotOff) ? "├" : "└"} Mot. On Delay: (${getEnumValue(longTimeSecEnum(), schData?.fmoton)})" : ""
+		str += isFanEn && schData?.fmotoff ? 	"\n ${isRemSen ? "│" : "   "} └ Mot. Off Delay: (${getEnumValue(longTimeSecEnum(), schData?.fmotoff)})" : ""*/
+
+		//Remote Sensor Info
+		str += isRemSen ?	"${isRemSen || isRestrict ? "\n │\n" : "\n"} └ Alternate Remote Sensor:" : ""
+		//str += isRemSen ? 	"\n      ├ Temp Sensors: (${schData?.sen0.size()})" : ""
+		settings["${sLbl}remSensor"]?.each { t ->
+			str += "\n      ├ ${t?.label}: ${(t?.label.length() > 10) ? "\n      │ └ " : ""}(${getDeviceTemp(t)}°${getTemperatureScale()})"
+		}
+		str += isRemSen && schData?.sen0 ? "\n      └ Temp${(settings["${sLbl}remSensor"]?.size() > 1) ? " (avg):" : ":"} (${getDeviceTempAvg(settings["${sLbl}remSensor"])}${tempScaleStr})" : ""
+		//log.debug "str: \n$str"
+		if(str != "") { result[schNum] = str }
 	}
 	return (result?.size() >= 1) ? result : null
 }
