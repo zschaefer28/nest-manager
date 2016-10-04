@@ -36,6 +36,8 @@ definition(
 	appSetting "clientSecret"
 }
 
+include 'asynchttp_v1'
+
 def appVersion() { "3.5.1" }
 def appVerDate() { "10-4-2016" }
 def appVerInfo() {
@@ -1107,19 +1109,26 @@ def poll(force = false, type = null) {
 		else if(!force) {
 			if(ok2PollStruct()) {
 				LogAction("Updating Structure Data...(Last Updated: ${getLastStructPollSec()} seconds ago)", "info", true)
-				str = getApiData("str")
+				str = queueGetApiData("str")
+				//str = getApiData("str")
 			}
 			if(ok2PollDevice()) {
 				LogAction("Updating Device Data...(Last Updated: ${getLastDevicePollSec()} seconds ago)", "info", true)
-				dev = getApiData("dev")
+				dev = queueGetApiData("dev")
+				//dev = getApiData("dev")
 			}
+			return
 		}
-		if(atomicState?.pollBlocked) { schedNextWorkQ(null); return }
-		if(dev || str || atomicState?.needChildUpd ) { updateChildData() }
-
-		updateWebStuff()
-		notificationCheck() //Checks if a notification needs to be sent for a specific event
+		finishPoll(str, dev)
 	}
+}
+
+def finishPoll(str, dev) {
+	LogAction("finishdPoll($str, $dev) received...", "info", true)
+	if(atomicState?.pollBlocked) { schedNextWorkQ(null); return }
+	if(dev || str || atomicState?.needChildUpd ) { updateChildData() }
+	updateWebStuff()
+	notificationCheck() //Checks if a notification needs to be sent for a specific event
 }
 
 def forcedPoll(type = null) {
@@ -1219,6 +1228,106 @@ def getApiData(type = null) {
 		}
 	}
 	return result
+}
+
+def queueGetApiData(type = null, newUrl = null) {
+	//log.trace "queueGetApiData($type)"
+	LogAction("queueGetApiData($type,$newUrl)", "info", false)
+	def result = false
+	if(!type) { return result }
+
+	def tPath = (type == "str") ? "/structures" : "/devices"
+	try {
+		def theUrl = newUrl ?: getNestApiUrl()
+		def params = [
+			uri: theUrl,
+			path: "$tPath",
+			headers: ["Content-Type": "text/json", "Authorization": "Bearer ${atomicState?.authToken}"]
+		]
+		if(type == "str") {
+			atomicState.qstrRequested = true
+			asynchttp_v1.get(processResponse, params, [ type: "str"])
+			result = true
+		}
+		else if(type == "dev") {
+			atomicState.qdevRequested = true
+			asynchttp_v1.get(processResponse, params, [ type: "dev"])
+			result = true
+		}
+	} catch(ex) {
+		log.error "queueGetApiData (type: $type) Exception:", ex
+		sendExceptionData(ex.message, "queueGetApiData")
+	}
+	return result
+}
+
+def processResponse(resp, data) {
+	LogAction("processResponse(${data?.type})", "info", false)
+	def str = false
+	def dev = false
+	def type = data?.type
+
+	try {
+		if(!type) { return }
+
+		if(resp?.status == 307) {
+			//log.trace "resp: ${resp.headers}"
+			def newUrl = resp?.headers?.Location?.split("\\?")
+			//LogTrace("NewUrl: ${newUrl[0]}")
+			queueGetApiData(type, newUrl[0])
+			return
+		}
+
+		if(resp?.status == 200) {
+			apiIssueEvent(false)
+			if(type == "str") {
+				atomicState?.lastStrucDataUpd = getDtNow()
+				atomicState.needStrPoll = false
+				LogTrace("API Structure Resp.Data: ${resp?.json}")
+				//log.trace "API Structure Resp.Data: ${resp?.json}"
+				if(!resp?.json?.equals(atomicState?.structData) || !atomicState?.structData) {
+					LogAction("API Structure Data HAS Changed... Updating State data...", "debug", true)
+					atomicState?.structData = resp?.json
+					atomicState.needChildUpd = true
+					str = true
+				}
+				atomicState.qstrRequested = false
+			}
+			if(type == "dev") {
+				atomicState?.lastDevDataUpd = getDtNow()
+				atomicState?.needDevPoll = false
+				LogTrace("API Device Resp.Data: ${resp?.json}")
+				//log.trace "API Device Resp.Data: ${resp?.json}"
+				if(!resp?.json?.equals(atomicState?.deviceData) || !atomicState?.deviceData) {
+					LogAction("API Device Data HAS Changed... Updating State data...", "debug", true)
+					atomicState?.deviceData = resp?.json
+					dev = true
+				}
+				atomicState.qdevRequested = false
+			}
+		} else {
+			def tstr = (type == "str") ? "Structure" : "Device"
+			LogAction("processResponse - Received a different Response than expected for $tstr poll: Resp (${resp?.status})", "error", true)
+			if(resp.hasError()) {
+				log.debug "raw response: $resp.errorData"
+			}
+			apiIssueEvent(true)
+			atomicState.needChildUpd = true
+			atomicState.qstrRequested = false
+			atomicState.qdevRequested = false
+		}
+		if((atomicState?.qdevRequested == false && atomicState?.qstrRequested == false) && (dev || atomicState?.needChildUpd)) { finishPoll(true, true) }
+
+	} catch (e) {
+		apiIssueEvent(true)
+		atomicState.needChildUpd = true
+		atomicState.qstrRequested = false
+		atomicState.qdevRequested = false
+		log.error "processResponse (type: $type) Exception:", e
+		if(type == "str") { atomicState.needStrPoll = true }
+		else if(type == "dev") { atomicState?.needDevPoll = true }
+		sendExceptionData(ex.message, "processResponse_${type}")
+	}
 }
 
 def schedUpdateChild() {
