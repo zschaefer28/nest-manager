@@ -23,7 +23,7 @@ import java.text.SimpleDateFormat
 
 preferences { }
 
-def devVer() { return "1.1.1" }
+def devVer() { return "1.1.2" }
 
 metadata {
     definition (name: "${textDevName()}", author: "Anthony S.", namespace: "tonesto7") {
@@ -276,7 +276,7 @@ def deviceVerEvent(ver) {
     def curData = device.currentState("devTypeVer")?.value.toString()
     def pubVer = ver ?: null
     def dVer = devVer() ?: null
-    def newData = isCodeUpdateAvailable(pubVer, dVer) ? "${dVer}(New: v${pubVer})" : "${dVer}" as String 
+    def newData = isCodeUpdateAvailable(pubVer, dVer) ? "${dVer}(New: v${pubVer})" : "${dVer}" as String
     state?.devTypeVer = newData
     state?.updateAvailable = isCodeUpdateAvailable(pubVer, dVer)
     if(!curData?.equals(newData)) {
@@ -307,7 +307,7 @@ def lastOnlineEvent(dt) {
     state?.lastOnl = lastOnl
     if(!lastOnlVal.equals(lastOnl?.toString())) {
         Logger("UPDATED | Last Online was: (${lastOnl}) | Original State: (${lastOnlVal})")
-        sendEvent(name: 'lastOnline', value: lastOnl, displayed: true, isStateChange: true)
+        sendEvent(name: 'lastOnline', value: lastOnl, displayed: false, isStateChange: true)
     } else { Logger("Last Manual Test was: (${lastOnl}) | Original State: (${lastOnlVal})") }
 }
 
