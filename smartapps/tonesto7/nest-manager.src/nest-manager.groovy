@@ -36,12 +36,12 @@ definition(
 	appSetting "clientSecret"
 }
 
-def appVersion() { "3.5.0" }
-def appVerDate() { "10-3-2016" }
+def appVersion() { "3.5.1" }
+def appVerDate() { "10-4-2016" }
 def appVerInfo() {
 	def str = ""
 
-	str += "V3.5.0 (October 3rd, 2016):"
+	str += "V3.5.1 (October 4th, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
 	str += "\n • UPDATED: Lot's more UI polish automations..."
 	str += "\n • UPDATED: Lot's of little bugfixes...."
@@ -6273,21 +6273,25 @@ def getTstatSetpoint(tstat, type) {
 def getRemoteSenTemp() {
 	def mySched = getCurrentSchedule()
 	if(!atomicState.remoteTempSourceStr) { atomicState.remoteTempSourceStr = null }
+	if(!atomicState.currentSchedNum) { atomicState.currentSchedNum = null }
 	def sens
 	if(mySched) {
 		def sLbl = "schMot_${mySched}_"
 		if(settings["${sLbl}remSensor"]) {
-			atomicState.remoteTempSourceStr = "Schedule ${mySched}"
+			atomicState.remoteTempSourceStr = "Schedule"
+			atomicState.currentSchedNum = mySched
 			sens = settings["${sLbl}remSensor"]
 			return getDeviceTempAvg(sens).toDouble()
 		}
 	}
 	if(remSensorDay) {
 		atomicState.remoteTempSourceStr = "Remote Sensor"
+		atomicState.currentSchedNum = null
 		return getDeviceTempAvg(remSensorDay).toDouble()
 	}
 	else {
 		atomicState.remoteTempSourceStr = "Thermostat"
+		atomicState.currentSchedNum = null
 		return getDeviceTemp(schMotTstat).toDouble()
 /*
 	else {
@@ -8551,6 +8555,8 @@ def schMotModePage() {
 		def dupTstat2
 		def dupTstat3
 		def tStatPhys
+		def tempScale = getTemperatureScale()
+		def tempScaleStr = "°${tempScale}"
 		section("Configure your Thermostat") {
 			input name: "schMotTstat", type: "capability.thermostat", title: "Select your Thermostat?", multiple: false, submitOnChange: true, required: true, image: getAppImg("thermostat_icon.png")
 			def tstat = settings?.schMotTstat
@@ -8565,26 +8571,27 @@ def schMotModePage() {
 				def reqSenHeatSetPoint = getRemSenHeatSetTemp()
 				def reqSenCoolSetPoint = getRemSenCoolSetTemp()
 				def curZoneTemp = getRemoteSenTemp()
-				def tempSrcStr = atomicState?.remoteTempSourceStr
+				def tempSrcStr = (getCurrentSchedule() && atomicState?.remoteTempSourceStr == "Schedule") ? "Schedule ${getCurrentSchedule()} (${"${getSchedLbl(getCurrentSchedule())}" ?: "Not Found"})" : atomicState?.remoteTempSourceStr
 
-				str += "Zone Status:\n• Temp Source: (${tempSrcStr})\n• Temperature: (${curZoneTemp}°${getTemperatureScale()})"
+				str += tempSrcStr ? "Zone Status:\n• Temp Source:${tempSrcStr?.toString().length() > 15 ? "\n  └" : ""} ${tempSrcStr}" : ""
+				str += curZoneTemp ? "\n• Temperature: (${curZoneTemp}°${getTemperatureScale()})" : ""
 
 				def hstr = canHeat ? "H: ${reqSenHeatSetPoint}°${getTemperatureScale()}" : ""
 				def cstr = canHeat && canCool ? "/" : ""
 				cstr += canCool ? "C: ${reqSenCoolSetPoint}°${getTemperatureScale()}" : ""
 				str += "\n• Setpoints: (${hstr}${cstr})\n"
 
-				str += "\nThermostat Status:\n• Temperature: (${getDeviceTemp(tstat)}°${getTemperatureScale()})"
-				hstr = canHeat ? "H: ${getTstatSetpoint(tstat, "heat")}°${getTemperatureScale()}" : ""
+				str += "\nThermostat Status:\n• Temperature: (${getDeviceTemp(tstat)}${tempScaleStr})"
+				hstr = canHeat ? "H: ${getTstatSetpoint(tstat, "heat")}${tempScaleStr}" : ""
 				cstr = canHeat && canCool ? "/" : ""
-				cstr += canCool ? "C: ${getTstatSetpoint(tstat, "cool")}°${getTemperatureScale()}" : ""
+				cstr += canCool ? "C: ${getTstatSetpoint(tstat, "cool")}${tempScaleStr}" : ""
 				str += "\n• Setpoints: (${hstr}${cstr})"
 
 				str += "\n• Mode: (${tstat ? ("${tstat?.currentThermostatOperatingState.toString().capitalize()}/${tstat?.currentThermostatMode.toString().capitalize()}") : "unknown"})"
 				str += (atomicState?.schMotTstatHasFan) ? "\n• FanMode: (${tstat?.currentThermostatFanMode.toString().capitalize()})" : "\n• No Fan on HVAC system"
 				str += "\n• Presence: (${getTstatPresence(tstat).toString().capitalize()})"
 				def safetyTemps = getSafetyTemps(tstat)
-			       	str +=  safetyTemps ? "\n• Safefy Temps: \n     └ Min: ${safetyTemps.min}°${getTemperatureScale()}/Max: ${safetyTemps.max}°${getTemperatureScale()}" : ""
+			       	str +=  safetyTemps ? "\n• Safefy Temps: \n     └ Min: ${safetyTemps.min}°${getTemperatureScale()}/Max: ${safetyTemps.max}${tempScaleStr}" : ""
 			       	str +=  "\n• Virtual: (${tstat?.currentNestType.toString() == "virtual" ? "True" : "False"})"
 				paragraph "${str}", title: "${tstat.displayName} Zone Status", state: (str != "" ? "complete" : null), image: getAppImg("info_icon2.png")
 
@@ -8612,7 +8619,7 @@ def schMotModePage() {
 				input "schMotTstatMir", "capability.thermostat", title: "Mirror Changes to these Thermostats", multiple: true, submitOnChange: true, required: false, image: getAppImg("thermostat_icon.png")
 				if(tstatMir && !dupTstat) {
 					tstatMir?.each { t ->
-						paragraph "Thermostat Temp: ${getDeviceTemp(t)}${getTemperatureScale()}", image: " "
+						paragraph "Thermostat Temp: ${getDeviceTemp(t)}${tempScaleStr}", image: " "
 					}
 				}
 			}
@@ -8670,12 +8677,12 @@ def schMotModePage() {
 				if(settings?.schMotRemoteSensor) {
 					def remSenDescStr = ""
 					remSenDescStr += settings?.remSenRuleType ? "Rule-Type: ${getEnumValue(remSenRuleEnum(), settings?.remSenRuleType)}" : ""
-					remSenDescStr += settings?.remSenTempDiffDegrees ? ("\n • Threshold: (${settings?.remSenTempDiffDegrees}°${getTemperatureScale()})") : ""
-					remSenDescStr += settings?.remSenTstatTempChgVal ? ("\n • Adjust Temp: (${settings?.remSenTstatTempChgVal}°${getTemperatureScale()})") : ""
+					remSenDescStr += settings?.remSenTempDiffDegrees ? ("\n • Threshold: (${settings?.remSenTempDiffDegrees}${tempScaleStr}") : ""
+					remSenDescStr += settings?.remSenTstatTempChgVal ? ("\n • Adjust Temp: (${settings?.remSenTstatTempChgVal}${tempScaleStr})") : ""
 
-					def hstr = remSenHeatTempsReq() ? "H: ${settings?.remSenDayHeatTemp ?: 0}°${getTemperatureScale()}" : ""
+					def hstr = remSenHeatTempsReq() ? "H: ${settings?.remSenDayHeatTemp ?: 0}${tempScaleStr}" : ""
 					def cstr = remSenHeatTempsReq() && remSenCoolTempsReq() ? "/" : ""
-					cstr += remSenCoolTempsReq() ? "C: ${settings?.remSenDayCoolTemp ?: 0}°${getTemperatureScale()}" : ""
+					cstr += remSenCoolTempsReq() ? "C: ${settings?.remSenDayCoolTemp ?: 0}${tempScaleStr}" : ""
 					remSenDescStr += (settings?.remSensorDay && (settings?.remSenDayHeatTemp || settings?.remSenDayCoolTemp)) ? "\n • Default Temps:\n   └ (${hstr}${cstr})" : ""
 
 
@@ -8684,8 +8691,14 @@ def schMotModePage() {
 
 					//remote sensor/Day
 					def dayModeDesc = ""
-					dayModeDesc += settings?.remSensorDay ? "\n\nDefault Sensor:\n ${settings.remSensorDay}" : ""
-					dayModeDesc += settings?.remSensorDay ? "\n • Temp${(settings?.remSensorDay?.size() > 1) ? " (avg):" : ":"} (${getDeviceTempAvg(settings?.remSensorDay)}°${getTemperatureScale()})" : ""
+					dayModeDesc += settings?.remSensorDay ? "\n\nDefault Sensor${settings?.remSensorDay?.size() > 1 ? "s" : ""}:" : ""
+					//dayModeDesc += settings?.remSensorDay ? "\n ${settings.remSensorDay}" : ""
+					def rCnt = settings?.remSensorDay?.size()
+					settings?.remSensorDay?.each { t ->
+						dayModeDesc += "\n ├ ${t?.label}: ${(t?.label.length() > 10) ? "\n │ └ " : ""}(${getDeviceTemp(t)}${tempScaleStr})"
+					}
+					dayModeDesc += settings?.remSensorDay ? "\n └ Temp${(settings?.remSensorDay?.size() > 1) ? " (avg):" : ":"} (${getDeviceTempAvg(settings?.remSensorDay)}${tempScaleStr})" : ""
+					//dayModeDesc += settings?.remSensorDay ? "\n • Temp${(settings?.remSensorDay?.size() > 1) ? " (avg):" : ":"} (${getDeviceTempAvg(settings?.remSensorDay)}${tempScaleStr})" : ""
 					remSenDescStr += settings?.remSensorDay ? "${dayModeDesc}" : ""
 
 					def remSenDesc = isRemSenConfigured() ? "${remSenDescStr}\n\nTap to Modify..." : null
@@ -8740,10 +8753,10 @@ def schMotModePage() {
 				if(settings?.schMotExternalTempOff) {
 					def extDesc = ""
 					extDesc += (settings?.extTmpUseWeather || settings?.extTmpTempSensor) ? "Settings:" : ""
-					extDesc += (!settings?.extTmpUseWeather && settings?.extTmpTempSensor) ? "\n • Sensor: (${getExtTmpTemperature()}°${getTemperatureScale()})" : ""
-					extDesc += (settings?.extTmpUseWeather && !settings?.extTmpTempSensor) ? "\n • Weather: (${getExtTmpTemperature()}°${getTemperatureScale()})" : ""
+					extDesc += (!settings?.extTmpUseWeather && settings?.extTmpTempSensor) ? "\n • Sensor: (${getExtTmpTemperature()}${tempScaleStr})" : ""
+					extDesc += (settings?.extTmpUseWeather && !settings?.extTmpTempSensor) ? "\n • Weather: (${getExtTmpTemperature()}${tempScaleStr})" : ""
 					//TODO need this in schedule
-					extDesc += settings?.extTmpDiffVal ? "\n • Threshold: (${settings?.extTmpDiffVal}°${getTemperatureScale()})" : ""
+					extDesc += settings?.extTmpDiffVal ? "\n • Threshold: (${settings?.extTmpDiffVal}${tempScaleStr})" : ""
 					extDesc += settings?.extTmpOffDelay ? "\n • Off Delay: (${getEnumValue(longTimeSecEnum(), settings?.extTmpOffDelay)})" : ""
 					extDesc += settings?.extTmpOnDelay ? "\n • On Delay: (${getEnumValue(longTimeSecEnum(), settings?.extTmpOnDelay)})" : ""
 					extDesc += "\n • Last Mode: (${atomicState?.extTmpRestoreMode ? atomicState?.extTmpRestoreMode.toString().capitalize() : "Not Set"})"
@@ -8767,6 +8780,20 @@ def schMotModePage() {
 			}
 		}
 	}
+}
+
+def getSchedLbl(num) {
+	def result = ""
+	if(num) {
+		def schData = atomicState?.activeSchedData
+		schData?.each { sch ->
+			if(num?.toInteger() == sch?.key.toInteger()) {
+				log.debug "Label:(${sch?.value?.lbl})"
+				result = sch?.value?.lbl
+			}
+		}
+	}
+	return result
 }
 
 def tstatConfigAutoPage(params) {
@@ -8950,30 +8977,34 @@ def tstatConfigAutoPage(params) {
 									href "remSenShowTempsPage", title: "View ${senLblStr} Sensor Temps...", description: "${tmpVal}", state: "complete", image: getAppImg("blank_icon.png")
 									//paragraph "Multiple temp sensors will return the average of those sensors.", image: getAppImg("i_icon.png")
 								} else { paragraph "${tmpVal}", state: "complete", image: getAppImg("instruct_icon.png") }
-
+							}
+						}
+						if(settings?.remSensorDay) {
+							section("Desired Setpoints...") {
+								paragraph "These temps are used when remote sensors are enabled and no schedules are created or active", title: "What are these temps for?", image: getAppImg("info_icon2.png")
+								def tempStr = "Default "
+								if(remSenHeatTempsReq()) {
+									defHeat = getGlobalDesiredHeatTemp()
+									defHeat = defHeat ?: tStatHeatSp
+									input "remSenDayHeatTemp", "decimal", title: "Desired ${tempStr}Heat Temp (${tempScaleStr})", description: "Range within ${tempRangeValues()}", range: tempRangeValues(),
+											required: true, defaultValue: defHeat, image: getAppImg("heat_icon.png")
+								}
+								if(remSenCoolTempsReq()) {
+									defCool = getGlobalDesiredCoolTemp()
+									defCool = defCool ?: tStatCoolSp
+									input "remSenDayCoolTemp", "decimal", title: "Desired ${tempStr}Cool Temp (${tempScaleStr})", description: "Range within ${tempRangeValues()}", range: tempRangeValues(),
+											required: true, defaultValue: defCool, image: getAppImg("cool_icon.png")
+								}
+							}
+							section("Remote Sensor Settings...") {
 								paragraph "Action Threshold Temp:\nIs the temp difference trigger for Action Type.", image: getAppImg("instruct_icon.png")
 								input "remSenTempDiffDegrees", "decimal", title: "Action Threshold Temp (${tempScaleStr})", required: true, defaultValue: 2.0, image: getAppImg("temp_icon.png")
 								if(settings?.remSenRuleType != "Circ") {
 									paragraph "Temp Increments:\nIs the amount the thermostat temp is adjusted +/- to enable the HVAC system.", image: getAppImg("instruct_icon.png")
 									input "remSenTstatTempChgVal", "decimal", title: "Change Temp Increments (${tempScaleStr})", required: true, defaultValue: 5.0, image: getAppImg("temp_icon.png")
 								}
-
-								def tempStr = "Default "
-								if(remSenHeatTempsReq()) {
-									defHeat = getGlobalDesiredHeatTemp()
-									defHeat = defHeat ?: tStatHeatSp
-									input "remSenDayHeatTemp", "decimal", title: "Desired ${tempStr}Heat Temp (${tempScaleStr})", description: "Range within ${tempRangeValues()}", range: tempRangeValues(),
-										required: true, defaultValue: defHeat, image: getAppImg("heat_icon.png")
-								}
-								if(remSenCoolTempsReq()) {
-									defCool = getGlobalDesiredCoolTemp()
-									defCool = defCool ?: tStatCoolSp
-									input "remSenDayCoolTemp", "decimal", title: "Desired ${tempStr}Cool Temp (${tempScaleStr})", description: "Range within ${tempRangeValues()}", range: tempRangeValues(),
-										required: true, defaultValue: defCool, image: getAppImg("cool_icon.png")
-								}
 							}
-						}
-						if(settings?.remSensorDay) {
+
 							section("(Optional) Create a Virtual Nest Thermostat:") {
 								input(name: "vthermostat", type: "bool", title:"Create Virtual Nest Thermostat", required: false, submitOnChange: true, image: getAppImg("thermostat_icon.png"))
 								if(settings?.vthermostat != null  && !parent?.addRemoveVthermostat(tstat.deviceNetworkId, vthermostat, getMyLockId())) {
@@ -9282,7 +9313,7 @@ def editSchedule(cnt, soloSch=false, hideStr=null) {
 
 	// RULE - YOU ALWAYS HAVE TEMPS in A SCHEDULE
 	// RULE - you ALWAYS OFFER OPTION OF MOTION TEMPS in A SCHEDULE
-		// RULE - if MOTION is ENABLED, it MUST HAVE MOTION TEMPS
+	// RULE - if MOTION is ENABLED, it MUST HAVE MOTION TEMPS
 	// RULE - you ALWAYS OFFER RESTRICTION OPTIONS in A SCHEDULE
 	// RULE - if REMSEN is ON, you offer remote sensors options
 
@@ -9428,14 +9459,14 @@ def getScheduleDesc(num = null) {
 			def dayStr = getAbrevDay(schData?.w)
 			str += isTimeRes ? 		"\n ${isSw || isTemp ? "│" : " "} ${schData?.w ? "├" : "└"} ${getScheduleTimeDesc(schData?.tf, schData?.tfc, schData?.tfo, schData?.tt, schData?.ttc, schData?.tto, (isSw || isTemp))}" : ""
 			str += schData?.w ?  	"\n ${isSw || isTemp ? "│" : " "} ${schData?.s1 ? "├" : "└"} Days:${getSchRestrictDoWOk(schNum) ? " (OK)" : " (NOT OK)"}" : ""
-			str += schData?.w ?		"\n ${isSw || isTemp ? "│" : " "} │ └ ${dayStr}" : ""
+			str += schData?.w ?		"\n ${isSw || isTemp ? "│" : " "} ${isSw ? "│" :"    "} └ ${dayStr}" : ""
 			str += schData?.s1 ?	"\n ${isSw || isTemp ? "│" : " "} ${schData?.s0 ? "├" : "└"} Switches On:${isSwitchOn(settings["${sLbl}restrictionSwitchOn"]) ? " (OK)" : " (NOT OK)"}" : ""
-			str += schData?.s1 ? 	"\n ${isSw || isTemp ? "│" : " "} │ └ (${schData?.s1.size()} Selected)" : ""
+			str += schData?.s1 ? 	"\n ${isSw || isTemp ? "│" : " "} ${schData?.s0 ? "│" : "    "} └ (${schData?.s1.size()} Selected)" : ""
 			str += schData?.s0 ?	"\n ${isSw || isTemp ? "│" : " "} └ Switches Off:${!isSwitchOn(settings["${sLbl}restrictionSwitchOff"]) ? " (OK)" : " (NOT OK)"}" : ""
 			str += schData?.s0 ? 	"\n ${isSw || isTemp ? "│" : " "}      └ (${schData?.s0.size()} Selected)" : ""
 
 			//Temp Setpoints
-			str += isTemp  ? 		"${isRestrict ? "\n │\n" : "\n"} ${isMot ? "├" : "└"} Temp Setpoints:" : ""
+			str += isTemp  ? 		"${isRestrict ? "\n │\n" : "\n"} ${(isMot || isRemSen) ? "├" : "└"} Temp Setpoints:" : ""
 			str += schData?.ctemp ? "\n ${isMot || isRemSen ? "│" : "   "}  ${schData?.htemp ? "├" : "└"} Cool Setpoint: (${schData?.ctemp}${tempScaleStr})" : ""
 			str += schData?.htemp ? "\n ${isMot || isRemSen ? "│" : "   "}  ${schData?.hvacm ? "├" : "└"} Heat Setpoint: (${schData?.htemp}${tempScaleStr})" : ""
 			str += schData?.hvacm ? "\n ${isMot || isRemSen ? "│" : "   "}  └ HVAC Mode: (${schData?.hvacm.toString().capitalize()})" : ""
@@ -9460,10 +9491,11 @@ def getScheduleDesc(num = null) {
 
 			//Remote Sensor Info
 			str += isRemSen ?	"${isRemSen || isRestrict ? "\n │\n" : "\n"} └ Alternate Remote Sensor:" : ""
-			str += isRemSen ? 	"\n     ├ Temp Sensors: (${schData?.sen0.size()})" : ""
-			str += isRemSen && schData?.sen0 ? "\n     └ Temp${(settings["${sLbl}remSensor"]?.size() > 1) ? " (avg):" : ":"} (${getDeviceTempAvg(settings["${sLbl}remSensor"])}${tempScaleStr})" : ""
-
-			sCnt = sCnt+1
+			//str += isRemSen ? 	"\n      ├ Temp Sensors: (${schData?.sen0.size()})" : ""
+			settings["${sLbl}remSensor"]?.each { t ->
+				str += "\n      ├ ${t?.label}: ${(t?.label.length() > 10) ? "\n      │ └ " : ""}(${getDeviceTemp(t)}°${getTemperatureScale()})"
+			}
+			str += isRemSen && schData?.sen0 ? "\n      └ Temp${(settings["${sLbl}remSensor"]?.size() > 1) ? " (avg):" : ":"} (${getDeviceTempAvg(settings["${sLbl}remSensor"])}${tempScaleStr})" : ""
 			//log.debug "str: \n$str"
 			if(str != "") { result[schNum] = str }
 		}
