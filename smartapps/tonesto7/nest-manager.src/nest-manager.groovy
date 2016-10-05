@@ -47,6 +47,7 @@ def appVerInfo() {
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
 	str += "\n • UPDATED: Lot's more UI polish automations..."
 	str += "\n • UPDATED: Lot's of little bugfixes...."
+	str += "\n • UPDATED: Beta Test of async http polling...."
 
 	str += "\n\nV3.4.6 (October 1st, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
@@ -470,10 +471,22 @@ def automationSchedulePage() {
 	dynamicPage(name: "automationSchedulePage", title: "View Schedule Data..", uninstall: false) {
 		def schMap = []
 		getChildApps()?.each {
-			def schData = it?.getScheduleDesc()
-			if(schData) {
-				section("it?.label") {
-					paragraph "${schData}", state: "complete"
+			def actSch = it?.getScheduleDesc() ?: null
+			if (actSch?.size()) {
+				def schInfo = it?.getScheduleDesc()
+				def curSch = it?.getCurrentSchedule()
+				if (schInfo?.size()) {
+					schInfo?.each { schItem ->
+						def schNum = schItem?.key
+						def schDesc = schItem?.value
+						def schInUse = (curSch?.toInteger() == schNum?.toInteger()) ? true : false
+						if(schNum && schDesc) {
+							section("${it?.label}") {
+								paragraph "${schDesc}", state: schInUse ? "complete" : ""
+							}
+							//href "schMotSchedulePage", title: "", description: "${schDesc}\n\nTap to Modify Schedule...", params: ["sNum":schNum], state: (schInUse ? "complete" : "")
+						}
+					}
 				}
 			}
 		}
@@ -7815,8 +7828,8 @@ def nestModePresPage() {
 			}
 		}
 		if(!nModePresSensor && !nModeHomeModes && !nModeAwayModes) {
-			section("(Optional) Set Nest Presence using a Switch:") {
-				input "nModeSwitch", "capability.switch", title: "Select a Switch", required: false, multiple: false, submitOnChange: true, image: getAppImg("wall_switch_icon.png")
+			section("(Optional) Set Nest Presence based on the state of a Switch:") {
+				input "nModeSwitch", "capability.switch", title: "Select a Switch", required: false, multiple: false, submitOnChange: true, image: getAppImg("switch_on_icon.png")
 				if(nModeSwitch) {
 					input "nModeSwitchOpt", "enum", title: "Switch State to Trigger 'Away'?", required: true, defaultValue: "On", options: ["On", "Off"], submitOnChange: true, image: getAppImg("settings_icon.png")
 				}
@@ -7824,10 +7837,10 @@ def nestModePresPage() {
 		}
 		if((nModeHomeModes && nModeAwayModes) || nModePresSensor || nModeSwitch) {
 			section("Delay Changes:") {
-				input (name: "nModeDelay", type: "bool", title: "Delay Changes?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("switch_icon.png"))
+				input (name: "nModeDelay", type: "bool", title: "Delay Changes?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("delay_time_icon.png"))
 				if(nModeDelay) {
-					input "nModeDelayVal", "enum", title: "Delay before Changing?", required: false, defaultValue: 60, metadata: [values:longTimeSecEnum()],
-							submitOnChange: true, image: getAppImg("delay_time_icon.png")
+					input "nModeDelayVal", "enum", title: "Delay before change?", required: false, defaultValue: 60, metadata: [values:longTimeSecEnum()],
+							submitOnChange: true, image: getAppImg("configure_icon.png")
 				}
 				if(parent?.settings?.cameras) {
 					input (name: "nModeCamOnAway", type: "bool", title: "Turn On Nest Cams when Away?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("camera_green_icon.png"))
@@ -9879,7 +9892,7 @@ this is a parent only method today
 							}
 
 
-							input "${pName}SpeechOnRestore", "bool", title: "Speak when returning HVAC to On for ${desc}?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("speech_icon.png")
+							input "${pName}SpeechOnRestore", "bool", title: "Speak when restoring HVAC on (${desc})?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("speech_icon.png")
 	// TODO There are more messages and errors than ON / OFF
 							input "${pName}UseCustomSpeechNotifMsg", "bool", title: "Customize Notitification Message?", required: false, defaultValue: (settings?."${pName}AllowSpeechNotif" ? false : true), submitOnChange: true,
 								image: getAppImg("speech_icon.png")
@@ -10075,7 +10088,7 @@ def getVoiceNotifConfigDesc(pName) {
 		def medias = getInputToStringDesc(settings?."${pName}SpeechMediaPlayer", true)
 		str += settings["${pName}SendToAskAlexaQueue"] ? "\n • Send to Ask Alexa: (True)" : ""
 		str += speaks ? "\n • Speech Devices:${speaks.size() > 1 ? "\n" : ""}${speaks}" : ""
-		str += medias ? "\n • Media Players:${medias.size() > 1 ? "\n" : ""}${medias}" : ""
+		str += medias ? "\n • Media Players:${medias.size() > 1 ? "" : ""}${medias}" : ""
 		str += (medias && settings?."${pName}SpeechVolumeLevel") ? "\n    ├ Volume: (${settings?."${pName}SpeechVolumeLevel"})" : ""
 		str += (medias && settings?."${pName}SpeechAllowResume") ? "\n    └ Resume: (${settings?."${pName}SpeechAllowResume".toString().capitalize()})" : ""
 		str += (settings?."${pName}UseCustomSpeechNotifMsg" && (medias || speaks)) ? "\n • Custom Message: (${settings?."${pName}UseCustomSpeechNotifMsg".toString().capitalize()})" : ""
