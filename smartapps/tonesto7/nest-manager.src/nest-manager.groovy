@@ -9378,9 +9378,8 @@ def showUpdateSchedule(sNum=null,hideStr=null) {
 				act = settings["${sLbl}SchedActive"]
 				def scdn =  settings["${sLbl}name"]
 				def mstr = scdn? "${scdn} "+ (act ? "Enabled":"Disabled") : "Tap to Enable"
-				section(title: "Schedule ${scd} (${mstr})                                                 ", hideable: (sNum ? false : true), hidden: ((act || scd == 1) ? false : true)) {
-					editSchedule(scd, true, hideStr)
-				}
+				def titleStr = "Schedule ${scd} (${mstr})"
+				editSchedule("secData":["scd":scd, "titleStr":titleStr, "hideable":(sNum ? false : true), "hidden":((act || scd == 1) ? false : true), "hideStr":hideStr])
 			}
 		} else {
 			lact = act
@@ -9388,36 +9387,42 @@ def showUpdateSchedule(sNum=null,hideStr=null) {
 			if (lact || act) {
 				def scdn =  settings["${sLbl}name"]
 				def mstr = scdn ? (act ? "Enabled": "Disabled") : "Tap to Enable"
-				section(title: "Schedule ${scd} (${mstr})                                                 ", hideable: true, hidden: ((act || scd == 1) ? false : true)) {
-					editSchedule(scd, false, hideStr)
-				}
+				def titleStr = "Schedule ${scd} (${mstr})"
+				editSchedule("secData":["scd":scd, "titleStr":titleStr, "hideable":true, "hidden":((act || scd == 1) ? false : true), "hideStr":hideStr])
 			}
 		}
 	}
 }
 
-def editSchedule(cnt, soloSch=false, hideStr=null) {
-	LogAction("editSchedule ($cnt, $hideStr)", "trace", false)
+def editSchedule(schedData) {
+	def cnt = schedData?.secData?.scd
+	LogAction("editSchedule (${schedData?.secData})", "trace", false)
+
 	def sLbl = "schMot_${cnt}_"
 	def canHeat = atomicState?.schMotTstatCanHeat
 	def canCool = atomicState?.schMotTstatCanCool
 	def tempScaleStr = "°${getTemperatureScale()}"
-
-	// RULE - YOU ALWAYS HAVE TEMPS in A SCHEDULE
-	// RULE - you ALWAYS OFFER OPTION OF MOTION TEMPS in A SCHEDULE
-	// RULE - if MOTION is ENABLED, it MUST HAVE MOTION TEMPS
-	// RULE - you ALWAYS OFFER RESTRICTION OPTIONS in A SCHEDULE
-	// RULE - if REMSEN is ON, you offer remote sensors options
-
-
 	def act = settings["${sLbl}SchedActive"]
 	def actIcon = act ? "active" : "inactive"
-	input "${sLbl}SchedActive", "bool", title: "Schedule Enabled", description: (cnt == 1 && !settings?."${sLbl}SchedActive" ? "Enable to Edit Schedule..." : null), required: true,
-			defaultValue: false, submitOnChange: true, image: getAppImg("${actIcon}_icon.png")
+
+	section(title: "\n\n${schedData?.secData?.titleStr}                                                 ", hideable:schedData?.secData?.hideable, hidden: schedData?.secData?.hidden) {
+
+		// RULE - YOU ALWAYS HAVE TEMPS in A SCHEDULE
+		// RULE - you ALWAYS OFFER OPTION OF MOTION TEMPS in A SCHEDULE
+		// RULE - if MOTION is ENABLED, it MUST HAVE MOTION TEMPS
+		// RULE - you ALWAYS OFFER RESTRICTION OPTIONS in A SCHEDULE
+		// RULE - if REMSEN is ON, you offer remote sensors options
+
+		input "${sLbl}SchedActive", "bool", title: "Schedule Enabled", description: (cnt == 1 && !settings?."${sLbl}SchedActive" ? "Enable to Edit Schedule..." : null), required: true,
+				defaultValue: false, submitOnChange: true, image: getAppImg("${actIcon}_icon.png")
+		if(act) {
+			input "${sLbl}name", "text", title: "Schedule Name", required: true, defaultValue: "Schedule ${cnt}", multiple: false, image: getAppImg("name_tag_icon.png")
+		}
+	}
 	if(act) {
-		input "${sLbl}name", "text", title: "Schedule Name", required: true, defaultValue: "Schedule ${cnt}", multiple: false, image: getAppImg("name_tag_icon.png")
 		//if(settings?.schMotSetTstatTemp && !("tstatTemp" in hideStr)) {
-			paragraph "Configure Setpoints and HVAC modes that will be set when this Schedule is in use...", title: "Thermostat Setpoints and Mode"
+		section("Setpoint Configuration:") {
+			paragraph "Configure Setpoints and HVAC modes that will be set when this Schedule is in use...", title: "Setpoints and Mode"
 			if(canHeat) {
 				input "${sLbl}HeatTemp", "decimal", title: "Heat Set Point(${tempScaleStr})", description: "Range within ${tempRangeValues()}", required: true, range: tempRangeValues(), image: getAppImg("heat_icon.png")
 			}
@@ -9425,17 +9430,20 @@ def editSchedule(cnt, soloSch=false, hideStr=null) {
 				input "${sLbl}CoolTemp", "decimal", title: "Cool Set Point (${tempScaleStr})", description: "Range within ${tempRangeValues()}", required: true, range: tempRangeValues(), image: getAppImg("cool_icon.png")
 			}
 			input "${sLbl}HvacMode", "enum", title: "Set Hvac Mode:", required: false, description: "No change set", metadata: [values:tModeHvacEnum(canHeat,canCool)], multiple: false, image: getAppImg("hvac_mode_icon.png")
-		//}
+		}
 
 		if(settings?.schMotRemoteSensor && !("remSen" in hideStr)) {
-			paragraph "Configure alternate Remote Temp sensors that are active with this schedule...", title: "Alternate Remote Sensors\n(Optional)"
-			input "${sLbl}remSensor", "capability.temperatureMeasurement", title: "Alternate Temp Sensors", description: "For Remote Sensor Automation", submitOnChange: true, required: false, multiple: true, image: getAppImg("temperature_icon.png")
-			if(settings?."${sLbl}remSensor" != null) {
-				def tmpVal = "Temp${(settings["${sLbl}remSensor"]?.size() > 1) ? " (avg):" : ":"} (${getDeviceTempAvg(settings["${sLbl}remSensor"])}${tempScaleStr})"
-				paragraph "${tmpVal}", state: "complete", image: getAppImg("instruct_icon.png")
+			section("Remote Sensor Options:") {
+				paragraph "Configure alternate Remote Temp sensors that are active with this schedule...", title: "Alternate Remote Sensors\n(Optional)"
+				input "${sLbl}remSensor", "capability.temperatureMeasurement", title: "Alternate Temp Sensors", description: "For Remote Sensor Automation", submitOnChange: true, required: false, multiple: true, image: getAppImg("temperature_icon.png")
+				if(settings?."${sLbl}remSensor" != null) {
+					def tmpVal = "Temp${(settings["${sLbl}remSensor"]?.size() > 1) ? " (avg):" : ":"} (${getDeviceTempAvg(settings["${sLbl}remSensor"])}${tempScaleStr})"
+					paragraph "${tmpVal}", state: "complete", image: getAppImg("instruct_icon.png")
+				}
 			}
 		}
 		//if(!("motSen" in hideStr)) {
+		section("Motion Sensor Setpoints:") {
 			paragraph "Set alternate setpoint temps based on Motion...", title: "Motion Sensors (Optional)"
 			def mmot = settings["${sLbl}Motion"]
 			input "${sLbl}Motion", "capability.motionSensor", title: "Motion Sensors", description: "Enables alternate hvac settings based on motion", required: false, multiple: true, submitOnChange: true, image: getAppImg("motion_icon.png")
@@ -9452,7 +9460,7 @@ def editSchedule(cnt, soloSch=false, hideStr=null) {
 				input "${sLbl}MDelayValOn", "enum", title: "Delay Motion Setting Changes", required: false, defaultValue: 60, metadata: [values:longTimeSecEnum()], multiple: false, image: getAppImg("delay_time_icon.png")
 				input "${sLbl}MDelayValOff", "enum", title: "Delay disabling Motion Settings", required: false, defaultValue: 1800, metadata: [values:longTimeSecEnum()], multiple: false, image: getAppImg("delay_time_icon.png")
 			}
-		//}
+		}
 /*
 		if(settings?.schMotOperateFan && !("fanCtrl" in hideStr)) {
 			paragraph null, title: "\nConfigure Fans that run only when Schedule is Active..."
@@ -9479,6 +9487,7 @@ def editSchedule(cnt, soloSch=false, hideStr=null) {
 		}
 */
 		//if(!("restrict" in hideStr)) {
+		section("Schedule Restrictions:") {
 			paragraph "Restrict when this Schedule is in use...", title: "Evaluation Restrictions (Optional)"
 			input "${sLbl}restrictionMode", "mode", title: "Only execute in these modes", description: "Any location mode", required: false, multiple: true, image: getAppImg("mode_icon.png")
 			input "${sLbl}restrictionDOW", "enum", options: timeDayOfWeekOptions(), title: "Only execute on these days", description: "Any week day", required: false, multiple: true, image: getAppImg("day_calendar_icon2.png")
@@ -9500,7 +9509,7 @@ def editSchedule(cnt, soloSch=false, hideStr=null) {
 			}
 			input "${sLbl}restrictionSwitchOn", "capability.switch", title: "Only execute when these switches are all on", description: "Always", required: false, multiple: true, image: getAppImg("switch_on_icon.png")
 			input "${sLbl}restrictionSwitchOff", "capability.switch", title: "Only execute when these switches are all off", description: "Always", required: false, multiple: true, image: getAppImg("switch_off_icon.png")
-		//}
+		}
 	}
 }
 
