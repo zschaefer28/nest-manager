@@ -1097,7 +1097,7 @@ def poll(force = false, type = null) {
 }
 
 def finishPoll(str, dev) {
-	LogAction("finishPoll($str, $dev) received...", "info", true)
+	LogAction("finishPoll($str, $dev) received...", "info", false)
 	if(atomicState?.pollBlocked) { schedNextWorkQ(null); return }
 	if(dev || str || atomicState?.needChildUpd ) { updateChildData() }
 	updateWebStuff()
