@@ -38,7 +38,7 @@ definition(
 
 include 'asynchttp_v1'
 
-def appVersion() { "3.5.2" }
+def appVersion() { "3.5.3" }
 def appVerDate() { "10-4-2016" }
 def appVerInfo() {
 	def str = ""
@@ -5170,6 +5170,7 @@ def initAutoApp() {
 		if(autoType == "schMot" && isSchMotConfigured()) {
 			atomicState.scheduleList = [ 1,2,3,4 ]
 			def schedList = atomicState.scheduleList
+			def timersActive = false
 			def sLbl
 			def cnt = 1
 			def numact = 0
@@ -5222,11 +5223,16 @@ def initAutoApp() {
 				atomicState."schedule${cnt}MotionEnabled" = (newscd?.m0) ? true : false
 				atomicState."schedule${cnt}SensorEnabled" = (newscd?.sen0) ? true : false
 				//atomicState."schedule${cnt}FanCtrlEnabled" = (newscd?.fan0) ? true : false
+				atomicState."schedule${cnt}TimeActive" = (newscd?.tf || newscd?.tfc || newscd?.tfo || newscd?.tt || newscd?.ttc || newscd?.tto || newscd?.w) ? true : false
+
 				atomicState?."motion${cnt}InBtwn" = null // clear automation state of schedule in use motion state
+				timersActive = (timersActive || atomicState."schedule${cnt}TimeActive") ? true : false
+
 				cnt += 1
 			}
-			atomicState?.lastSched = null  // clear automation state of schedule in use
-			atomicState."scheduleSchedActiveCount" = numact
+			atomicState.scheduleTimersActive = timersActive
+			atomicState.lastSched = null  // clear automation state of schedule in use
+			atomicState.scheduleSchedActiveCount = numact
 		}
 
 		subscribeToEvents()
@@ -5563,7 +5569,7 @@ def scheduler() {
 	def random_dint = random.nextInt(9)
 
 	def autoType = getAutoType()
-	if(autoType == "schMot") {
+	if(autoType == "schMot" && atomicState?.scheduleSchedActiveCount && atomicState?.scheduleTimersActive) {
 		LogAction("${autoType} scheduled using Cron (${random_int} ${random_dint}/5 * * * ?)", "info", true)
 		schedule("${random_int} ${random_dint}/5 * * * ?", watchDogAutomation)
 	} else {
@@ -9671,7 +9677,7 @@ def updateScheduleStateMap() {
 			}
 		}
 		atomicState.activeSchedData = actSchedules
-		atomicState.scheduleSchedActiveCount = numAct
+		//atomicState.scheduleSchedActiveCount = numAct
 	}
 }
 
