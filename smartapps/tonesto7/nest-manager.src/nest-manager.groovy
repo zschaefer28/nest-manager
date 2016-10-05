@@ -702,7 +702,7 @@ def addRemoveVthermostat(tstatdni, tval, myID) {
 
 	def d1 = getChildDevice(odevId.toString())
 	if(!d1) {
-		log.error "addRemoveVthermostat Error: Cannot find virtual thermostat device"
+		LogAction("addRemoveVthermostat Error: Cannot find thermostat device child", "error", true)
 		if(tval) { return false }  // if deleting (false), let it try to proceed
 	} else {
 		tstat = d1
@@ -790,7 +790,7 @@ def uninstalled() {
 def initialize() {
 	//log.debug "initialize..."
 	if(parent) {
-		runIn(4, "initAutoApp", [overwrite: true])
+		runIn(23, "initAutoApp", [overwrite: true])
 	}
 	else {
 		initWatchdogApp()
@@ -5258,7 +5258,7 @@ def uninstAutomationApp() {
 		def myID = getMyLockId()
 		if(schMotTstat && myID && parent) {
 			if(parent?.addRemoveVthermostat(schMotTstat.deviceNetworkId, false, myID)) {
-				LogAction("removed virtual thermostat", "debug", true)
+				LogAction("cleanup check for virtual thermostat", "debug", true)
 			}
 			if( parent?.remSenUnlock(atomicState?.remSenTstat, myID) ) { // attempt unlock old ID
 				LogAction("Released remote sensor lock", "debug", true)
