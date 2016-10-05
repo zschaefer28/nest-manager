@@ -38,8 +38,8 @@ definition(
 
 include 'asynchttp_v1'
 
-def appVersion() { "3.5.3" }
-def appVerDate() { "10-4-2016" }
+def appVersion() { "3.5.4" }
+def appVerDate() { "10-5-2016" }
 def appVerInfo() {
 	def str = ""
 
@@ -5225,7 +5225,15 @@ def initAutoApp() {
 				//atomicState."schedule${cnt}FanCtrlEnabled" = (newscd?.fan0) ? true : false
 				atomicState."schedule${cnt}TimeActive" = (newscd?.tf || newscd?.tfc || newscd?.tfo || newscd?.tt || newscd?.ttc || newscd?.tto || newscd?.w) ? true : false
 
-				atomicState?."motion${cnt}InBtwn" = null // clear automation state of schedule in use motion state
+				atomicState?."motion${cnt}InBtwn" = null 		// clear automation state of schedule in use motion state
+
+				def oldact = atomicState?."${sLbl}MotionActive"
+				def newact = isMotionActive(settings["${sLbl}Motion"])
+				if(oldact != newact) {
+					atomicState."${sLbl}MotionActive" = newact
+					if(newact) { atomicState."${sLbl}MotionActiveDt" = getDtNow()
+					} else { atomicState."${sLbl}MotionInActiveDt" = getDtNow() }
+				}
 				timersActive = (timersActive || atomicState."schedule${cnt}TimeActive") ? true : false
 
 				cnt += 1
@@ -5917,38 +5925,45 @@ def automationMotionEvt(evt) {
 		def sLbl
 
 		def mySched = getCurrentSchedule()
-		if(mySched) {
-			sLbl = "schMot_${mySched}_"
-			if(settings["${sLbl}Motion"]) {
+
+		def schedList = atomicState?.scheduleList
+		for (cnt in schedList) {
+			sLbl = "schMot_${cnt}_"
+			def act = settings["${sLbl}SchedActive"]
+			if(act && settings["${sLbl}Motion"]) {
 				def str = settings["${sLbl}Motion"].toString()
-				//if(evt.displayName in settings["${sLbl}Motion"]) {
 				if(str.contains( evt.displayName)) {
 					def oldActive = atomicState?."${sLbl}MotionActive"
 					def newActive = isMotionActive(settings["${sLbl}Motion"])
 					atomicState."${sLbl}MotionActive" = newActive
 					if(oldActive != newActive) {
 						if(newActive) {
-							delay = settings."${sLbl}MDelayValOn"?.toInteger() ?: 15
+							if(cnt == mySched) { delay = settings."${sLbl}MDelayValOn"?.toInteger() ?: 15 }
 							atomicState."${sLbl}MotionActiveDt" = getDtNow()
 						} else {
-							delay = settings."${sLbl}MDelayValOff"?.toInteger() ?: 15*60
+							if(cnt == mySched) { delay = settings."${sLbl}MDelayValOff"?.toInteger() ?: 15*60 }
 							atomicState."${sLbl}MotionInActiveDt" = getDtNow()
 						}
 					}
-					LogAction("Event | Motion Sensor: [ Current Schedule: (${mySched}) | Previous Active: (${oldActive}) | Current Status: ({$newActive}) ]", "trace", true)
-					dorunIn = true
+					LogAction("Updating Schedule Motion Sensor State: [ Schedule: (${cnt}) | Previous Active: (${oldActive}) | Current Status: ({$newActive}) ]", "trace", true)
+					if(cnt == mySched) { dorunIn = true }
 				}
 			}
 		}
 
-		LogAction(" Motion: [ Action Delay: ($delay) | Event Device: (${evt.displayName}) | Selected Sensors: ${settings["${sLbl}Motion"]} ]", "trace", true)
 		if(dorunIn) {
-			LogAction("Event | Scheduling Motion Check for (${delay} Seconds)", "info", true)
+			LogAction(" Motion: [ Scheduling for Delay: ($delay) | Schedule ${mySched} ]", "trace", true)
 			delay = delay > 20 ? delay : 20
 			delay = delay < 60 ? delay : 60
 			scheduleAutomationEval(delay)
 		} else {
-			LogAction("Event | Skipping Motion Check because motion sensor not in used in active schedule (${mySched})", "info", true)
+			def str = "Event | Skipping Motion Check because "
+			if(mySched) {
+				str += "motion sensor not in used in active schedule (${mySched})"
+			} else {
+				str += "no active schedule"
+			}
+			LogAction(str, "info", true)
 		}
 	}
 }
@@ -8462,31 +8477,33 @@ def isTstatSchedConfigured() {
 	return (settings?.schMotSetTstatTemp && atomicState?.activeSchedData?.size())
 }
 
+/*
 def isTimeBetween(start, end, now, tz) {
-    def startDt = Date.parse("E MMM dd HH:mm:ss z yyyy", start).getTime()
-    def endDt = Date.parse("E MMM dd HH:mm:ss z yyyy", end).getTime()
-    def nowDt = Date.parse("E MMM dd HH:mm:ss z yyyy", now).getTime()
-    def result = false
-    if(nowDt > startDt && nowDt < endDt) {
-	result = true
-    }
-    //def result = timeOfDayIsBetween(startDt, endDt, nowDt, tz) ? true : false
-    return result
+	def startDt = Date.parse("E MMM dd HH:mm:ss z yyyy", start).getTime()
+	def endDt = Date.parse("E MMM dd HH:mm:ss z yyyy", end).getTime()
+	def nowDt = Date.parse("E MMM dd HH:mm:ss z yyyy", now).getTime()
+	def result = false
+	if(nowDt > startDt && nowDt < endDt) {
+		result = true
+	}
+	//def result = timeOfDayIsBetween(startDt, endDt, nowDt, tz) ? true : false
+	return result
 }
+*/
 
 def checkOnMotion(mySched) {
-	//log.trace "checkOnMotion"
+	//log.trace "checkOnMotion($mySched)"
 	def sLbl = "schMot_${mySched}_"
 
 	def motionOn
 	if(settings["${sLbl}Motion"] && atomicState?."${sLbl}MotionActiveDt") {
-		motionOn = atomicState."${sLbl}MotionActive"
+		motionOn = isMotionActive(settings["${sLbl}Motion"])
 
 		def lastActiveMotionDt = Date.parse("E MMM dd HH:mm:ss z yyyy", atomicState?."${sLbl}MotionActiveDt").getTime()
 		def lastActiveMotionSec = getLastMotionActiveSec(mySched)
 
-		def lastInactiveMotionDt
-		def lastInactiveMotionSec
+		def lastInactiveMotionDt = lastActiveMotionDt
+		def lastInactiveMotionSec = lastActiveMotionSec
 
 		if(atomicState?."${sLbl}MotionInActiveDt") {
 			lastInactiveMotionDt = Date.parse("E MMM dd HH:mm:ss z yyyy", atomicState?."${sLbl}MotionInActiveDt").getTime()
@@ -8495,13 +8512,26 @@ def checkOnMotion(mySched) {
 
 		LogAction("checkOnMotion: [ Active Dt: $lastActiveMotionDt ($lastActiveMotionSec sec.) | Inactive Dt: $lastInactiveMotionDt ($lastInactiveMotionSec sec.) | MotionOn: ($motionOn) ]", "trace", true)
 
-		if(lastActiveMotionDt > lastInactiveMotionDt) { return motionOn }
+		def ontimedelay = (settings."${sLbl}MDelayValOn"?.toInteger() ?: 15) * 1000 		// default to 15s
+		def offtimedelay = (settings."${sLbl}MDelayValOff"?.toInteger() ?: 15*60) * 1000	// default to 15 min
+		def ontime = formatDt( (lastActiveMotionDt + ontimedelay) )
+		def offtime = formatDt( (lastInactiveMotionDt + offtimedelay) )
 
-		def ontime = formatDt( (lastActiveMotionDt + (settings."${sLbl}MDelayValOn"?.toInteger() ?: 15) * 1000) )		// default to 15s
-		def offtime = formatDt( (lastInactiveMotionDt + (settings."${sLbl}MDelayValOff"?.toInteger() ?: 15*60) * 1000) )	// default to 15 min
-		LogAction("checkOnMotion: [ Event Date: (${atomicState."${sLbl}MotionActiveDt"}) | OnTime: ($ontime) | Inactive Dt: (${atomicState?."${sLbl}MotionInActiveDt"}) | OffTime: ($offtime) ]", "info", true)
+		if(ontime > offtime) { offtime = formatDt( (lastActiveMotionDt + ontimedelay + offtimedelay) ) }	
 
-		return isTimeBetween(ontime,  offtime, getDtNow(), getTimeZone())
+		LogAction("checkOnMotion: [ Active Dt: (${atomicState."${sLbl}MotionActiveDt"}) | OnTime: ($ontime) | Inactive Dt: (${atomicState?."${sLbl}MotionInActiveDt"}) | OffTime: ($offtime) ]", "info", true)
+		def startDt = Date.parse("E MMM dd HH:mm:ss z yyyy", ontime).getTime()
+		def endDt = Date.parse("E MMM dd HH:mm:ss z yyyy", offtime).getTime()
+		def nowDt = Date.parse("E MMM dd HH:mm:ss z yyyy", getDtNow()).getTime()
+		def result = false
+		if(nowDt > startDt && nowDt < endDt) {
+			result = true
+		}
+		if(nowDt < startDt || (result && !motionOn)) { 
+			LogAction("checkOnMotion($mySched): scheduling motion check", "trace", true)
+			scheduleAutomationEval(60)
+		}
+		return result
 	}
 	return false
 }
