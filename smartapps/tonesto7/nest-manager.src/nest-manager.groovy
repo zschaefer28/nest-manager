@@ -453,10 +453,10 @@ def automationsPage() {
 			paragraph "${rText}"//, required: true, state: null
 */
 			if(autoAppInst) {
-				//def schEn = getChildApps()?.findAll { it?.getActiveScheduleState() != null }
-				//if(schEn?.size()) {
-				//	href "automationSchedulePage", title: "View Automation Schedule(s)", description: "", image: getAppImg("schedule_icon.png")
-				//}
+				def schEn = getChildApps()?.findAll { it?.getActiveScheduleState() != null }
+				if(schEn?.size()) {
+				href "automationSchedulePage", title: "View Automation Schedule(s)", description: "", image: getAppImg("schedule_icon.png")
+				}
 				href "automationStatisticsPage", title: "View Automation Statistics", description: "", image: getAppImg("app_analytics_icon.png")
 			}
 		}
