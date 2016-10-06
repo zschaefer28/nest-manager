@@ -38,12 +38,16 @@ definition(
 
 include 'asynchttp_v1'
 
-def appVersion() { "3.5.5" }
-def appVerDate() { "10-5-2016" }
+def appVersion() { "3.6.0" }
+def appVerDate() { "10-6-2016" }
 def appVerInfo() {
 	def str = ""
 
-	str += "V3.5.5 (October 4th, 2016):"
+	str += "V3.6.0 (October 4th, 2016):"
+	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
+	str += "\n • More tweaks to the certain UI Elements..."
+
+	str += "\n\nV3.5.5 (October 4th, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
 	str += "\n • UPDATED: Lot's more UI polish automations..."
 	str += "\n • UPDATED: Lot's of little bugfixes...."
@@ -268,7 +272,7 @@ def mainPage() {
 			}
 			//webDashConfig()
 			section("Feedback") {
-				href "feedbackPage", title: "Send Feedback to the Developer", description: "", image: "https://cdn0.iconfinder.com/data/icons/seo-smart-pack/128/grey_new_seo-30-512.png"
+				href "feedbackPage", title: "Send Feedback to the Developer", description: "", image: getAppImg("feedback_icon.png")
 			}
 			section("Remove All Apps, Automations, and Devices:") {
 				href "uninstallPage", title: "Uninstall this App", description: "Tap to Remove...", image: getAppImg("uninstall_icon.png")
@@ -443,9 +447,11 @@ def automationsPage() {
 		}
 		section("") {
 			app(name: "autoApp", appName: appName(), namespace: "tonesto7", multiple: true, title: "Create New Automation...", image: getAppImg("automation_icon.png"))
+/*
 			def rText = "NOTICE:\nAutomations is still in BETA!!!\n" +
 						"We are not responsible for any damages caused by using this SmartApp.\n\n	       USE AT YOUR OWN RISK!!!"
 			paragraph "${rText}"//, required: true, state: null
+*/
 			if(autoAppInst) {
 				def schEn = getChildApps()?.findAll { it?.getActiveScheduleState() != null }
 				if(schEn.size()) {
@@ -8825,8 +8831,8 @@ def schMotModePage() {
 			section("Schedule Automation:") {
 				def actSch = atomicState?.activeSchedData?.size()
 				if(actSch && !settings?.schMotSetTstatTemp) {
-					setSettings(schMotSetTstatTemp: [type: "bool", value: true]) //This may not work 100%
-					//paragraph "You have schedules created that are enabled but the the setting below is off.  Please turn this on to use those schedules", required: true, state: null
+					//setSettings(schMotSetTstatTemp: [type: "bool", value: true]) //This may not work 100%
+					paragraph "You have schedules created that are enabled but the the setting below is off.  Please turn this on to use those schedules", required: true, state: null
 				}
 				input (name: "schMotSetTstatTemp", type: "bool", title: "Use Schedules to adjust Temp Setpoints and HVAC mode?", required: actSch, defaultValue: false, submitOnChange: true, image: getAppImg("schedule_icon.png"))
 				if(settings?.schMotSetTstatTemp) {
@@ -9111,15 +9117,17 @@ def tstatConfigAutoPage(params) {
 						}
 					}
 				}
-				def schTitle
-				if(!atomicState?.activeSchedData?.size()) {
-					schTitle = "Optionally create schedules to set temperatures based on schedule..."
-				} else {
-					schTitle = "Temperature settings based on schedule..."
+				if(settings?."${pName}FanSwitches") {
+					def schTitle
+					if(!atomicState?.activeSchedData?.size()) {
+						schTitle = "Optionally create schedules to set temperatures based on schedule..."
+					} else {
+						schTitle = "Temperature settings based on schedule..."
+					}
+					section("${schTitle}") { // FANS USE TEMPS IN LOGIC
+						href "scheduleConfigPage", title: "Modify Schedule Settings...", description: pageDesc, params: ["sData":["hideStr":"${hideStr}"]], state: (pageDesc ? "complete" : null), image: getAppImg("schedule_icon.png")
+				 	}
 				}
-				section("${schTitle}") { // FANS USE TEMPS IN LOGIC
-					href "scheduleConfigPage", title: "Modify Schedule Settings...", description: pageDesc, params: ["sData":["hideStr":"${hideStr}"]], state: (pageDesc ? "complete" : null), image: getAppImg("schedule_icon.png")
-			 	}
 			}
 
 			def cannotLock
@@ -9524,7 +9532,7 @@ def editSchedule(schedData) {
 		section("(${schedData?.secData?.schName}) Setpoint Configuration:") {
 			paragraph "Configure Setpoints and HVAC modes that will be set when this Schedule is in use...", title: "Setpoints and Mode"
 			if(canHeat) {
-				input "${sLbl}HeatTemp", "decimal", title: "Heat Set Point(${tempScaleStr})", description: "Range within ${tempRangeValues()}", required: true, range: tempRangeValues(), image: getAppImg("heat_icon.png")
+				input "${sLbl}HeatTemp", "decimal", title: "Heat Set Point (${tempScaleStr})", description: "Range within ${tempRangeValues()}", required: true, range: tempRangeValues(), image: getAppImg("heat_icon.png")
 			}
 			if(canCool) {
 				input "${sLbl}CoolTemp", "decimal", title: "Cool Set Point (${tempScaleStr})", description: "Range within ${tempRangeValues()}", required: true, range: tempRangeValues(), image: getAppImg("cool_icon.png")
@@ -9544,9 +9552,9 @@ def editSchedule(schedData) {
 		}
 		//if(!("motSen" in hideStr)) {
 		section("(${schedData?.secData?.schName}) Motion Sensor Setpoints:") {
-			paragraph "Set alternate setpoint temps based on Motion...", title: "Motion Sensors (Optional)"
+			paragraph "Activate alternate HVAC settings with Motion...", title: "Use Motion Sensors (Optional)"
 			def mmot = settings["${sLbl}Motion"]
-			input "${sLbl}Motion", "capability.motionSensor", title: "Motion Sensors", description: "Enables alternate hvac settings based on motion", required: false, multiple: true, submitOnChange: true, image: getAppImg("motion_icon.png")
+			input "${sLbl}Motion", "capability.motionSensor", title: "Motion Sensors", description: "Select Sensors to Configure...", required: false, multiple: true, submitOnChange: true, image: getAppImg("motion_icon.png")
 			if(settings["${sLbl}Motion"]) {
 				paragraph " • Motion State: (${isMotionActive(mmot) ? "Active" : "Not Active"})", state: "complete", image: getAppImg("instruct_icon.png")
 				if(canHeat) {
