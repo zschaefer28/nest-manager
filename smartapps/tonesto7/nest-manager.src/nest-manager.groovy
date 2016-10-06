@@ -34,11 +34,12 @@ definition(
 {
 	appSetting "clientId"
 	appSetting "clientSecret"
+	appSetting "dashActKey"
 }
 
 include 'asynchttp_v1'
 
-def appVersion() { "3.6.0" }
+def appVersion() { "3.6.1" }
 def appVerDate() { "10-6-2016" }
 def appVerInfo() {
 	def str = ""
@@ -270,7 +271,7 @@ def mainPage() {
 					href "nestInfoPage", title: "API | Diagnostics | Testing...", description: "Tap to view info...", image: getAppImg("api_diag_icon.png")
 				}
 			}
-			//webDashConfig()
+			webDashConfig()
 			section("Feedback") {
 				href "feedbackPage", title: "Send Developer Feedback", description: "", image: getAppImg("feedback_icon.png")
 			}
@@ -447,13 +448,13 @@ def automationsPage() {
 		}
 		section("") {
 			app(name: "autoApp", appName: appName(), namespace: "tonesto7", multiple: true, title: "Create New Automation...", image: getAppImg("automation_icon.png"))
-/*
-			def rText = "NOTICE:\nAutomations is still in BETA!!!\n" +
-						"We are not responsible for any damages caused by using this SmartApp.\n\n	       USE AT YOUR OWN RISK!!!"
-			paragraph "${rText}"//, required: true, state: null
-*/
+			/*
+				def rText = "NOTICE:\nAutomations is still in BETA!!!\n" +
+					"We are not responsible for any damages caused by using this SmartApp.\n\n	       USE AT YOUR OWN RISK!!!"
+					paragraph "${rText}"//, required: true, state: null
+			*/
 			if(autoAppInst) {
-				def schEn = getChildApps()?.findAll { it?.getActiveScheduleState() != null }
+				def schEn = getChildApps()?.findAll { (!it.getAutomationType() in "webDash" && it?.getActiveScheduleState()) }
 				if(schEn?.size()) {
 				href "automationSchedulePage", title: "View Automation Schedule(s)", description: "", image: getAppImg("schedule_icon.png")
 				}
@@ -461,7 +462,10 @@ def automationsPage() {
 			}
 		}
 		if(autoAppInst) {
-			section("Global Options:                                                                         ", hideable: true, hidden: false) {
+			/*section("Global Options:                                                                         ", hideable: true, hidden: false) {
+
+			}*/
+			section("Advanced Options: (Tap + to Show)                                                          ", hideable: true, hidden: true) {
 				def descStr = ""
 				descStr += (settings?.locDesiredCoolTemp || settings?.locDesiredHeatTemp) ? "Comfort Settings:" : ""
 				descStr += settings?.locDesiredHeatTemp ? "\n • Desired Heat Temp: (${settings?.locDesiredHeatTemp}°${getTemperatureScale()})" : ""
@@ -471,8 +475,6 @@ def automationsPage() {
 				descStr += "${(settings?.locDesiredCoolTemp || settings?.locDesiredHeatTemp) ? "\n\n" : ""}${getSafetyValuesDesc()}" ?: ""
 				def prefDesc = (descStr != "") ? "${descStr}\n\nTap to Modify..." : "Tap to Configure..."
 				href "automationGlobalPrefsPage", title: "Global Automation Preferences", description: prefDesc, state: (descStr != "" ? "complete" : null), image: getAppImg("global_prefs_icon.png")
-			}
-			section("Advanced Options: (Tap + to Show)                                                          ", hideable: true, hidden: true) {
 				href "automationKickStartPage", title: "Re-Initialize All Automations", description: "Tap to call the Update() action on each automation.\nTap to Begin...", image: getAppImg("reset_icon.png")
 			}
 		}
@@ -496,7 +498,6 @@ def automationSchedulePage() {
 							section("${it?.label}") {
 								paragraph "${schDesc}", state: schInUse ? "complete" : ""
 							}
-							//href "schMotSchedulePage", title: "", description: "${schDesc}\n\nTap to Modify Schedule...", params: ["sNum":schNum], state: (schInUse ? "complete" : "")
 						}
 					}
 				}
@@ -678,19 +679,22 @@ def getSafetyValuesDesc() {
 }
 
 def webDashConfig() {
-	section("Web Dashboard Preferences:") {
-		def dashAct = (settings?.enableDashboard && atomicState?.dashboardInstalled && atomicState?.dashboardUrl) ? true : false
-		def dashDesc = dashAct ? "Dashboard is (Active)\nTurn off to Remove" : "Toggle to Install.."
-		input "enableDashboard", "bool", title: "Enable Web Dashboard", submitOnChange: true, defaultValue: false, required: false, description: dashDesc, state: dashAct ? "complete" : null,
-				image: getAppImg("dashboard_icon.png")
-		if(settings?.enableDashboard) {
-			if(!dashAct) {
-				atomicState?.dashSetup = true
-				initDashboardApp()
+	if(appSettings?.dashActKeya) {
+		// Todo add some sort of encrypted code for activation
+		section("Web Dashboard Preferences:") {
+			def dashAct = (settings?.enableDashboard && atomicState?.dashboardInstalled && atomicState?.dashboardUrl) ? true : false
+			def dashDesc = dashAct ? "Dashboard is (Active)\nTurn off to Remove" : "Toggle to Install.."
+			input "enableDashboard", "bool", title: "Enable Web Dashboard", submitOnChange: true, defaultValue: false, required: false, description: dashDesc, state: dashAct ? "complete" : null,
+					image: getAppImg("dashboard_icon.png")
+			if(settings?.enableDashboard) {
+				if(!dashAct) {
+					atomicState?.dashSetup = true
+					initDashboardApp()
+				}
+			} else {
+				removeDashboardApp()
+				atomicState?.dashSetup = false
 			}
-		} else {
-			removeDashboardApp()
-			atomicState?.dashSetup = false
 		}
 	}
 }
@@ -4131,6 +4135,16 @@ def getDevicesDesc() {
 	str += settings?.weatherDevice ? "\n • [1] Weather Device" : ""
 	str += (!settings?.thermostats && !settings?.protects && !settings?.presDevice && !settings?.weatherDevice) ? "\n • No Devices Selected..." : ""
 	return (str != "") ? str : null
+}
+
+def b64Action(String str, dec=false) {
+	if (str) {
+		if(dec) {
+			return (String) str?.bytes?.decodeBase64()
+		} else {
+			return (String) str?.bytes?.encodeBase64(true)
+		}
+	}
 }
 
 def debugPrefPage() {
