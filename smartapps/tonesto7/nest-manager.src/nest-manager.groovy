@@ -39,7 +39,7 @@ definition(
 
 include 'asynchttp_v1'
 
-def appVersion() { "3.6.3" }
+def appVersion() { "3.6.4" }
 def appVerDate() { "10-6-2016" }
 def appVerInfo() {
 	def str = ""
@@ -1468,7 +1468,7 @@ def updateChildData(force = false) {
 				}
 				return true
 			}
-			else if(!atomicState?.pDevVer || (atomicState?.protects && atomicState?.deviceData?.smoke_co_alarms[devId])) {
+			else if(atomicState?.protects && atomicState?.deviceData?.smoke_co_alarms[devId]) {
 				def pData = ["data":atomicState?.deviceData?.smoke_co_alarms[devId], "mt":useMt, "debug":dbg, "showProtActEvts":(!showProtActEvts ? false : true),
 						"tz":nestTz, "htmlInfo":htmlInfo, "apiIssues":api, "allowDbException":allowDbException, "latestVer":latestProtVer()?.ver?.toString()]
 				def oldProtData = atomicState?."oldProtData${devId}"
@@ -5055,7 +5055,6 @@ def removeInstallData() {
 }
 
 def sendExceptionData(ex, methodName, isChild = false, autoType = null) {
-	log.trace "sendExceptionData(${ex.message})"
 	if(atomicState?.appData?.database?.disableExceptions == true) {
 	  return
 	} else {
