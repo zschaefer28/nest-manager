@@ -9850,7 +9850,7 @@ def getAbrevDay(vals) {
 	return list
 }
 
-def roundTemp(temp) {
+def roundTemp(Double temp) {
 	if(temp == null) { return null }
 	def newtemp
 	if( getTemperatureScale() == "C") {
