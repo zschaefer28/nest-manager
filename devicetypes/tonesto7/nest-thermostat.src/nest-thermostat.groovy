@@ -27,7 +27,7 @@ import groovy.time.*
 
 preferences {  }
 
-def devVer() { return "3.1.1"}
+def devVer() { return "3.2.0"}
 
 // for the UI
 metadata {
@@ -66,6 +66,8 @@ metadata {
 		command "coolingSetpointUp"
 		command "coolingSetpointDown"
 		command "changeMode"
+		command "getVoiceReportTypes"
+		command "nestMgrReport", ["string"]
 
 		attribute "temperatureUnit", "string"
 		attribute "targetTemp", "string"
@@ -1627,9 +1629,31 @@ def exceptionDataHandler(msg, methodName) {
 	}
 }
 
+def getVoiceReportTypes() {
+	return parent?.voiceReportTypes() ?: null
+}
 
+def nestMgrReport(type) {
+	if(!type) { return "No report type received" }
+	else {
+		switch (type) {
+			case "schedZone":
+				return reqSchedInfoRprt(this).toString()
+				break
+			case "runtimeDay":
+				return "The developer has not enabled this report yet"
+				break
+			case "runtimeWeek":
+				"The developer has not enabled this report yet"
+				break
+			case "runtimeMonth":
+				"The developer has not enabled this report yet"
+				break
+		}
+	}
+}
 /**************************************************************************
-|										  HTML TILE RENDER FUNCTIONS											  |
+|					  HTML TILE RENDER FUNCTIONS	  					  |
 ***************************************************************************/
 
 def getImgBase64(url,type) {

@@ -1011,76 +1011,56 @@ def getInstAutoTypesDesc() {
 
 def subscriber() {
 	subscribe(app, onAppTouch)
-	if(settings?.enTstatAutoSchedInfoReq) {
-		subscribe(location, "nestManagerReqSchedInfo", reqSchedInfoEvt)
-		subscribe(location, "nestManagerActSchedInfo", nestManagerActSchedInfoEvt)
-	}
 }
 
-// This event will respond to the location event example below.
-	/*
-		sendLocationEvent(name: "nestManagerReqSchedInfo", value: "request", displayed: true, linkText: "Nest Manager Schedule Info Request",
-				isStateChange: true, descriptionText: "${app?.label} requested schedule info for (settings.whatEverTstatInputName) automation",
-				data: [
-					requestingApp: "${app.label}",
-					tstatDevId: "${settings.whatEverTstatInputName.deviceNetworkId}",
-					requestAppEvtName: "nameOfLocationEvtToSendTo"
-				])
-	*/
+def voiceReportTypes() {
+	return ["schedZone": "Schedule / Zone Info", "runtimeWeek": "Weeks Run Time"]
+}
 
-def reqSchedInfoEvt(evt) {
-	if (!evt) { return }
-	log.trace "reqSchedInfoEvt: (Name: ${evt.name} | Value: ${evt.value} | Desc: ${evt.descriptionText} | Json: ${evt.jsonData})"
+def reqSchedInfoRprt(dev) {
+	log.trace "reqSchedInfoRprt: (dev)"
 	def result = null
-	switch (evt.value) {
-		case "request":
-			if (evt.jsonData && evt.jsonData?.tstatDevId) {
-				def tstatDev = getChildDevice(evt?.jsonData?.tstatDevId)
-				if(tstatDev) {
-					def str = ""
-					def chldSch = getChildApps()?.find { (!(it.getAutomationType() in ["nMode", "webDash"]) && it?.getActiveScheduleState() && it?.getTstatAutoDevId() == evt?.jsonData?.tstatDevId) }
-					if(chldSch) {
-						def actNum = chldSch?.getCurrentSchedule()
-						def tempScaleStr = "°${getTemperatureScale()}"
+	if (dev) {
+		def tstatDev = dev
+		if(tstatDev) {
+			def str = ""
+			def chldSch = getChildApps()?.find { (!(it.getAutomationType() in ["nMode", "webDash"]) && it?.getActiveScheduleState() && it?.getTstatAutoDevId() == tstatDev?.deviceNetworkId) }
+			if(chldSch) {
+				def actNum = chldSch?.getCurrentSchedule()
+				def tempScaleStr = "°${getTemperatureScale()}"
 
-						def canHeat = tstatDev?.currentCanHeat.toString() == "true" ? true : false
-						def canCool = tstatDev?.currentCanCool.toString() == "true" ? true : false
-						def reqSenHeatSetPoint = chldSch?.getRemSenHeatSetTemp() ?: null
-						def reqSenCoolSetPoint = chldSch?.getRemSenCoolSetTemp() ?: null
-						def curZoneTemp = chldSch?.getRemoteSenTemp() ?: null
+				def canHeat = tstatDev?.currentCanHeat.toString() == "true" ? true : false
+				def canCool = tstatDev?.currentCanCool.toString() == "true" ? true : false
+				def reqSenHeatSetPoint = chldSch?.getRemSenHeatSetTemp() ?: null
+				def reqSenCoolSetPoint = chldSch?.getRemSenCoolSetTemp() ?: null
+				def curZoneTemp = chldSch?.getRemoteSenTemp() ?: null
 
-						def schedName = chldSch?.getSchedLbl(actNum)
-						def tempSrc = chldSch?.getRemSenTempSrc() ?: null
-						def tempSrcStr = (actNum && tempSrc == "Schedule") ? "Schedule ${actNum}" : tempSrc
+				def schedName = chldSch?.getSchedLbl(actNum)
+				def tempSrc = chldSch?.getRemSenTempSrc() ?: null
+				def tempSrcStr = (actNum && tempSrc == "Schedule") ? "Schedule ${actNum}" : tempSrc
 
-						str += schedName  ? "the automation schedule named ${schedName} is currently active for ${tstat}" : "No Schedule is currently Active"
-						str += tempSrcStr && curZoneTemp ? "\nthe current zones temp source is ${tempSrcStr} with a temperature of ${curZoneTemp}${tempScaleStr}" : ""
-						str += canHeat ? "\nthe Heat Set point is ${reqSenHeatSetPoint}${tempScaleStr}" : ""
-						str += canHeat && canCool ? " and " : ""
-						str += canCool ? "${!canHeat ? "" : "\n"}the cool set point is ${reqSenCoolSetPoint}${tempScaleStr}" : ""
+				str += schedName  ? "the automation schedule named ${schedName} is currently active for ${tstat}" : "No Schedule is currently Active"
+				str += tempSrcStr && curZoneTemp ? "\nthe current zones temp source is ${tempSrcStr} with a temperature of ${curZoneTemp}${tempScaleStr}" : ""
+				str += canHeat ? "\nthe Heat Set point is ${reqSenHeatSetPoint}${tempScaleStr}" : ""
+				str += canHeat && canCool ? " and " : ""
+				str += canCool ? "${!canHeat ? "" : "\n"}the cool set point is ${reqSenCoolSetPoint}${tempScaleStr}" : ""
 
-						if (str != "") {
-							LogAction("reqSchedInfoEvt: Creating Location Event with with active automation schedule info for (${tstatDev})", "info", true)
-							sendLocationEvent(name: "nestManagerActSchedInfo", value: "${app?.label}", isStateChange: true, descriptionText: str)
-						}
-					} else {
-						LogAction ("reqSchedInfoEvt: No Automation Schedules were found for the $tstat device", "warn", true)
-						sendLocationEvent(name: "nestManagerActSchedInfo", value: "${app?.label}", isStateChange: true, descriptionText: "No Automation Schedules were found for the $tstat device")
-					}
-				} else {
-					LogAction("reqSchedInfoEvt: A Thermostat with deviceId(${evt?.jsonData?.tstatDevId}) not found", "error", true)
-					sendLocationEvent(name: "nestManagerActSchedInfo", value: "${app?.label}", isStateChange: true, descriptionText: "A Thermostat with deviceId(${evt?.jsonData?.tstatDevId}) not found")
+				if (str != "") {
+					LogAction("reqSchedInfoRprt: Sending voice report for Zone info on (${tstatDev})", "info", true)
+					result = str
 				}
+			} else {
+				LogAction ("reqSchedInfoRprt: No Automation Schedules were found for the $tstat device", "warn", true)
+				result = "No Automation Schedules were found for the $tstat device"
 			}
-			break
+		} else {
+			LogAction("reqSchedInfoRprt: The requested thermostat device was not found", "error", true)
+			result = "The requested thermostat device was not found"
+		}
 	}
+	return result
 }
 
-def nestManagerActSchedInfoEvt(evt) {
-	if(!evt) { return }
-	log.debug "nestManagerActSchedInfoEvt: Nest Manager Schedule Info Location Event Received..."
-	log.debug "nestManagerActSchedInfoEvt: (Name: ${evt.name} | Value: ${evt.value} | Desc: ${evt.descriptionText} | Json: ${evt.jsonData})"
-}
 
 def setPollingState() {
 	if(!atomicState?.thermostats && !atomicState?.protects && !atomicState?.weatherDevice && !atomicState?.cameras) {
@@ -5217,18 +5197,6 @@ def mainAutoPage(params) {
 		// Main Page Entries
 		//return dynamicPage(name: "mainAutoPage", title: "Automation Configuration", uninstall: false, install: false, nextPage: "nameAutoPage" ) {
 		return dynamicPage(name: "mainAutoPage", title: "Automation Configuration", uninstall: false, install: true, nextPage:null ) {
-			section("Automation Name:") {
-				if(autoType == "watchDog") {
-					paragraph "${app?.label}"
-				} else {
-					def newName = getAutoTypeLabel()
-					label title: "Label this Automation:", description: "Suggested Name: ${newName}", defaultValue: newName, required: true, wordWrap: true, image: getAppImg("name_tag_icon.png")
-					if(!atomicState?.isInstalled) {
-						paragraph "FYI:\nMake sure to name it something that will help you easily identify the automation later."
-					}
-				}
-			}
-
 			section() {
 				if(disableAutomationreq) {
 					paragraph "This Automation is currently disabled!!!\nTurn it back on to to make changes or resume operation...", required: true, state: null, image: getAppImg("instruct_icon.png")
@@ -5306,7 +5274,17 @@ def mainAutoPage(params) {
 				input (name: "showDebug", type: "bool", title: "Debug Option", description: "Show App Logs in the IDE?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("log.png"))
 				atomicState?.showDebug = showDebug
 			}
-
+			section("Automation Name:") {
+				if(autoType == "watchDog") {
+					paragraph "${app?.label}"
+				} else {
+					def newName = getAutoTypeLabel()
+					label title: "Label this Automation:", description: "Suggested Name: ${newName}", defaultValue: newName, required: true, wordWrap: true, image: getAppImg("name_tag_icon.png")
+					if(!atomicState?.isInstalled) {
+						paragraph "FYI:\nMake sure to name it something that will help you easily identify the automation later."
+					}
+				}
+			}
 		}
 	}
 }
