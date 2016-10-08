@@ -8834,8 +8834,8 @@ def setTstatTempCheck() {
 					}
 				}
 			}
-			atomicState.lastSched = mySched
 		}
+		atomicState.lastSched = mySched
 		storeExecutionHistory((now() - execTime), "setTstatTempCheck")
 	} catch (ex) {
 		log.error "setTstatTempCheck Exception:", ex
