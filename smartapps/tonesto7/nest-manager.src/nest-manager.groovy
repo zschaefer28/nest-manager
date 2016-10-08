@@ -39,8 +39,8 @@ definition(
 
 include 'asynchttp_v1'
 
-def appVersion() { "3.6.4" }
-def appVerDate() { "10-6-2016" }
+def appVersion() { "3.6.5" }
+def appVerDate() { "10-7-2016" }
 def appVerInfo() {
 	def str = ""
 
@@ -5344,7 +5344,6 @@ def initAutoApp() {
 						w: settings["${sLbl}restrictionDOW"],
 						s1: buildDeviceNameList(settings["${sLbl}restrictionSwitchOn"], "and"),
 						s0: buildDeviceNameList(settings["${sLbl}restrictionSwitchOff"], "and"),
-//ERSERS
 						ctemp: roundTemp(settings["${sLbl}CoolTemp"]),
 						htemp: roundTemp(settings["${sLbl}HeatTemp"]),
 						hvacm: settings["${sLbl}HvacMode"],
@@ -5374,9 +5373,8 @@ def initAutoApp() {
 				//atomicState."schedule${cnt}FanCtrlEnabled" = (newscd?.fan0) ? true : false
 				atomicState."schedule${cnt}TimeActive" = (newscd?.tf || newscd?.tfc || newscd?.tfo || newscd?.tt || newscd?.ttc || newscd?.tto || newscd?.w) ? true : false
 
-				def now = getDtNow()
-				atomicState."${sLbl}MotionActiveDt" = atomicState."${sLbl}MotionActiveDt" ?: now
-				atomicState."${sLbl}MotionInActiveDt" = atomicState."${sLbl}MotionInActiveDt" ?: now
+				atomicState."${sLbl}MotionActiveDt" = null
+				atomicState."${sLbl}MotionInActiveDt" = null
 
 				def newact = isMotionActive(settings["${sLbl}Motion"])
 				if(newact) { atomicState."${sLbl}MotionActiveDt" = getDtNow() }
@@ -8665,7 +8663,7 @@ def checkOnMotion(mySched) {
 		def lastActiveMotionDt = Date.parse("E MMM dd HH:mm:ss z yyyy", atomicState?."${sLbl}MotionActiveDt").getTime()
 		def lastActiveMotionSec = getLastMotionActiveSec(mySched)
 
-		def lastInactiveMotionDt
+		def lastInactiveMotionDt = 1
 		def lastInactiveMotionSec
 
 		if(atomicState?."${sLbl}MotionInActiveDt") {
@@ -8680,15 +8678,26 @@ def checkOnMotion(mySched) {
 
 		def ontimeNum = lastActiveMotionDt + ontimedelay
 		def offtimeNum = lastInactiveMotionDt + offtimedelay
-		if(ontimeNum > offtimeNum) { offtimeNum = ontimeNum + offtimedelay }
+
+		def nowDt = Date.parse("E MMM dd HH:mm:ss z yyyy", getDtNow()).getTime()
+		if(ontimeNum > offtimeNum) {  // means motion is on now, so ensure offtime is in future
+			offtimeNum = nowDt + offtimedelay
+		}
+
+		def lastOnTime                  // if we are on now, backup ontime to not oscillate
+		if(atomicState?."motion${mySched}UseMotionSettings" && atomicState?."motion${mySched}TurnedOnDt") {
+			lastOnTime = Date.parse("E MMM dd HH:mm:ss z yyyy", atomicState?."motion${mySched}TurnedOnDt").getTime()
+			if(ontimeNum > lastOnTime) {
+				ontimeNum = lastOnTime - ontimedelay
+			}
+		}
 
 		def ontime = formatDt( ontimeNum )
 		def offtime = formatDt( offtimeNum )
 
 		LogAction("checkOnMotion: [ Active Dt: (${atomicState."${sLbl}MotionActiveDt"}) | OnTime: ($ontime) | Inactive Dt: (${atomicState?."${sLbl}MotionInActiveDt"}) | OffTime: ($offtime) ]", "info", true)
-		def nowDt = Date.parse("E MMM dd HH:mm:ss z yyyy", getDtNow()).getTime()
 		def result = false
-		if(nowDt > ontimeNum && nowDt < offtimeNum) {
+		if(nowDt >= ontimeNum && nowDt <= offtimeNum) {
 			result = true
 		}
 		if(nowDt < ontimeNum || (result && !motionOn)) {
@@ -8714,61 +8723,57 @@ def setTstatTempCheck() {
 		def execTime = now()
 
 		def away = (getNestLocPres() == "home") ? false : true
-
+// ERSERS
 		def mySched = getCurrentSchedule()
 		def noSched = (mySched == null) ? true : false
 
-		LogAction("setTstatTempCheck: [Current Schedule: ($mySched) | No Schedule: ($noSched)]", "trace", false)
+		def previousSched = atomicState?.lastSched
+		def samesched = previousSched == mySched ? true : false
 
-		if(away || noSched) {
-			if(away) {
-				LogAction("setTstatTempCheck: Skipping check because [Nest is set AWAY]", "info", true)
-				atomicState.lastSched = null
-			} else {
-				LogAction("setTstatTempCheck: Skipping check because [No matching Schedule]", "info", true)
-				atomicState.lastSched = null
+		if((!samesched || away ) && previousSched) {                    // schedule change - set old schedule to not use motion
+			if(atomicState?."motion${previousSched}UseMotionSettings") {
+				LogAction("setTstatTempCheck: Disabled Use of Motion Settings for previous schedule ${previousSched}", "info", true)
 			}
+			atomicState?."motion${previousSched}UseMotionSettings" = false
+			atomicState?."motion${previousSched}LastisBtwn" = false
 		}
-		else {
-// ERSERS
- 			def previousSched = atomicState?.lastSched
-			def samesched = previousSched == mySched ? true : false
+
+		LogAction("setTstatTempCheck: [Current Schedule: ($mySched) | Previous Schedule: (${previousSched}) | No Schedule: ($noSched)]", "trace", false)
+
+		if(noSched || away) {
+			if(away) { LogAction("setTstatTempCheck: Skipping check because [Nest is set AWAY]", "info", true) }
+			else {     LogAction("setTstatTempCheck: Skipping check because [No matching Schedule]", "info", true) }
+		} else {
 			def isBtwn = checkOnMotion(mySched)
 			def previousBtwn = atomicState?."motion${mySched}LastisBtwn"
 			atomicState?."motion${mySched}LastisBtwn" = isBtwn
 
-			def samemotion = previousBtwn == isBtwn ? true : false
-
-			if(!isBtwn || !samesched) {
+			if(!isBtwn) {
 				if(atomicState?."motion${mySched}UseMotionSettings") {
 					LogAction("setTstatTempCheck: Disabled Use of Motion Settings for schedule ${mySched}", "info", true)
 				}
 				atomicState?."motion${mySched}UseMotionSettings" = false
 			}
 
-			if(!samesched && previousSched) {			// schedule change - set old schedule to not use motion
-				if(atomicState?."motion${previousSched}UseMotionSettings") {
-					LogAction("setTstatTempCheck: Disabled Use of Motion Settings for previous schedule ${previousSched}", "info", true)
-				}
-				atomicState?."motion${previousSched}UseMotionSettings" = false
-			}
-
 			def sLbl = "schMot_${mySched}_"
 			def motionOn = isMotionActive(settings["${sLbl}Motion"])
 
-			def schedMatch = (samesched && samemotion) ? true : false
-
-			if(isBtwn && !previousBtwn) {   // transitioned to use Motion
+			if(!atomicState?."motion${mySched}UseMotionSettings" && isBtwn && !previousBtwn) {   // transitioned to use Motion
 				if(motionOn) {	// if motion is on use motion now
 					atomicState?."motion${mySched}UseMotionSettings" = true
-					atomicState."${sLbl}MotionActiveDt" = getDtNow()
+					atomicState?."motion${mySched}TurnedOnDt" = getDtNow()
 					LogAction("setTstatTempCheck: Enabled Use of Motion Settings for schedule ${mySched}", "info", true)
 				} else {
-					atomicState."${sLbl}MotionInActiveDt" = getDtNow()	 // otherwise set to start over on motion
+					atomicState."${sLbl}MotionActiveDt" = null              // this will clear isBtwn
+					atomicState?."motion${mySched}LastisBtwn" = false
+					LogAction("setTstatTempCheck: Motion Sensors not active at transition time to motion ON for schedule ${mySched}", "info", true)
 				}
 			}
 
 			LogAction("setTstatTempCheck: Schedule ${mySched} use of Motion settings: ${atomicState?."motion${mySched}UseMotionSettings"} | isBtwn: $isBtwn | previousBtwn: $previousBtwn | motionOn $motionOn", "trace", true)
+
+			def samemotion = previousBtwn == isBtwn ? true : false
+			def schedMatch = (samesched && samemotion) ? true : false
 
 			if(tstat && !schedMatch) {
 				def hvacSettings = atomicState?."sched${mySched}restrictions"
@@ -8796,11 +8801,13 @@ def setTstatTempCheck() {
 
 				def heatTemp = null
 				def coolTemp = null
+				def needChg = false
 
 				if(!isModeOff && atomicState?.schMotTstatCanHeat) {
 					def oldHeat = getTstatSetpoint(tstat, "heat")
 					heatTemp = getRemSenHeatSetTemp()
 					if(oldHeat != heatTemp) {
+						needChg = true
 						LogAction("setTstatTempCheck: Setting Heat Setpoint to '${heatTemp}' on (${tstat}) | Old Heat Setpoint: '${oldHeat}'", "info", false)
 						//storeLastAction("Set ${settings?.schMotTstat} Heat Setpoint to ${heatTemp}", getDtNow())
 					} else { heatTemp = null }
@@ -8810,16 +8817,18 @@ def setTstatTempCheck() {
 					def oldCool = getTstatSetpoint(tstat, "cool")
 					coolTemp = getRemSenCoolSetTemp()
 					if(oldCool != coolTemp) {
+						needChg = true
 						LogAction("setTstatTempCheck: Setting Cool Setpoint to '${coolTemp}' on (${tstat}) | Old Cool Setpoint: '${oldCool}'", "info", false)
 						//storeLastAction("Set ${settings?.schMotTstat} Cool Setpoint to ${coolTemp}", getDtNow())
 					} else { coolTemp = null }
 				}
-				if(setTstatAutoTemps(settings?.schMotTstat, coolTemp?.toDouble(), heatTemp?.toDouble())) {
-					LogAction("setTstatTempCheck: [Temp Change | newHvacMode: $newHvacMode | tstatHvacMode: $tstatHvacMode | heatTemp: $heatTemp | coolTemp: $coolTemp ]", "info", true)
-					storeLastAction("Set ${tstat} Cool Setpoint to ${coolTemp} Set Heat Setpoint to ${heatTemp}", getDtNow())
-				} else {
-					LogAction("setTstatTempCheck: Thermostat Set ERROR [ newHvacMode: $newHvacMode | tstatHvacMode: $tstatHvacMode | heatTemp: $heatTemp | coolTemp: $coolTemp ]", "info", true)
-
+				if(needChg) {
+					if(setTstatAutoTemps(settings?.schMotTstat, coolTemp?.toDouble(), heatTemp?.toDouble())) {
+						LogAction("setTstatTempCheck: [Temp Change | newHvacMode: $newHvacMode | tstatHvacMode: $tstatHvacMode | heatTemp: $heatTemp | coolTemp: $coolTemp ]", "info", true)
+						storeLastAction("Set ${tstat} Cool Setpoint to ${coolTemp} Set Heat Setpoint to ${heatTemp}", getDtNow())
+					} else {
+						LogAction("setTstatTempCheck: Thermostat Set ERROR [ newHvacMode: $newHvacMode | tstatHvacMode: $tstatHvacMode | heatTemp: $heatTemp | coolTemp: $coolTemp ]", "info", true)
+					}
 				}
 			}
 			atomicState.lastSched = mySched
@@ -9873,7 +9882,6 @@ def updateScheduleStateMap() {
 					w: settings["${sLbl}restrictionDOW"],
 					s1: deviceInputToList(settings["${sLbl}restrictionSwitchOn"]),
 					s0: deviceInputToList(settings["${sLbl}restrictionSwitchOff"]),
-//ERSERS
 					ctemp: roundTemp(settings["${sLbl}CoolTemp"]),
 					htemp: roundTemp(settings["${sLbl}HeatTemp"]),
 					hvacm: settings["${sLbl}HvacMode"],
