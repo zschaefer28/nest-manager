@@ -39,8 +39,8 @@ definition(
 
 include 'asynchttp_v1'
 
-def appVersion() { "3.6.5" }
-def appVerDate() { "10-7-2016" }
+def appVersion() { "3.6.6" }
+def appVerDate() { "10-8-2016" }
 def appVerInfo() {
 	def str = ""
 
@@ -8741,7 +8741,10 @@ def setTstatTempCheck() {
 		LogAction("setTstatTempCheck: [Current Schedule: ($mySched) | Previous Schedule: (${previousSched}) | No Schedule: ($noSched)]", "trace", false)
 
 		if(noSched || away) {
-			if(away) { LogAction("setTstatTempCheck: Skipping check because [Nest is set AWAY]", "info", true) }
+			if(away) {
+				LogAction("setTstatTempCheck: Skipping check because [Nest is set AWAY]", "info", true)
+				mySched = null
+			}
 			else {     LogAction("setTstatTempCheck: Skipping check because [No matching Schedule]", "info", true) }
 		} else {
 			def isBtwn = checkOnMotion(mySched)
