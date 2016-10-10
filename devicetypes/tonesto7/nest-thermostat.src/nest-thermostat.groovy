@@ -67,7 +67,7 @@ metadata {
 		command "coolingSetpointDown"
 		command "changeMode"
 		command "getVoiceReportTypes"
-		command "nestMgrReport", ["string"]
+		command "getNestMgrReport", ["string"]
 
 		attribute "temperatureUnit", "string"
 		attribute "targetTemp", "string"
@@ -1632,28 +1632,46 @@ def exceptionDataHandler(msg, methodName) {
 }
 
 def getVoiceReportTypes() {
-	return parent?.voiceReportTypes() ?: null
+	return ["curZoneInfo":"Current Zone Info", "runtimeToday":"Today Usage", "runtimeWeek":"This Weeks Usage", "runtimeMonth":"This Month's Usage"]
 }
 
-def nestMgrReport(type) {
-	if(!type) { return "No report type received" }
+def getNestMgrReport(type) {
+	if(!type) { return "report type was not received" }
 	else {
 		switch (type) {
-			case "schedZone":
-				return reqSchedInfoRprt(this).toString()
+			case "curZoneInfo":
+				return parent?.reqSchedInfoRprt(this).toString()
 				break
-			case "runtimeDay":
-				return "The developer has not enabled this report yet"
+			case ["runtimeToday", "runtimeWeek", "runtimeMonth"]:
+				return getUsageVoiceReport(type)
 				break
-			case "runtimeWeek":
-				"The developer has not enabled this report yet"
-				break
-			case "runtimeMonth":
-				"The developer has not enabled this report yet"
+			default:
+				return "I'm sorry but No report was found for the report type provided"
 				break
 		}
 	}
 }
+
+def getUsageVoiceReport(type) {
+	switch(type) {
+		case "runtimeToday":
+
+		break
+		case "runtimeWeek":
+			"The developer has not enabled this report yet"
+
+			break
+		case "runtimeMonth":
+			"The developer has not enabled this report yet"
+
+ 			break
+
+		default:
+
+			break
+	}
+}
+
 /**************************************************************************
 |					  HTML TILE RENDER FUNCTIONS	  					  |
 ***************************************************************************/
@@ -2103,7 +2121,7 @@ void getSomeData(devpoll = false) {
 		state.coolSetpointTable = []
 		state.heatSetpointTable = []
 		state.fanModeTable = []
-		updateOperatingHistory(today) 
+		updateOperatingHistory(today)
 
 	}
 	//initHistoryStore() 	// TODO DEBUGGING
@@ -2256,7 +2274,7 @@ def getSumUsage(table, String strtyp) {
 				counting = true
 			}
 		} else if(counting) {
-			newseconds = ((hr * 60 + mins) - (strthr * 60 + strtmin)) * 60 
+			newseconds = ((hr * 60 + mins) - (strthr * 60 + strtmin)) * 60
 			totseconds += newseconds
 			counting = false
 			//log.debug "found $strtyp   starthr: $strthr  startmin: $strtmin  newseconds: $newseconds   totalseconds: $totseconds"
@@ -2271,7 +2289,7 @@ def getSumUsage(table, String strtyp) {
 			lasthr = 24
 			lastmins = 0
 		}
-		newseconds = ((lasthr * 60 + lastmins) - (strthr * 60 + strtmin)) * 60 
+		newseconds = ((lasthr * 60 + lastmins) - (strthr * 60 + strtmin)) * 60
 		totseconds += newseconds
 		//log.debug "still counting found $strtyp  lasthr: $lasthr   lastmins: $lastmins  starthr: $strthr  startmin: $strtmin  newseconds: $newseconds   totalseconds: $totseconds"
 	}
@@ -2295,55 +2313,27 @@ def initHistoryStore() {
 		currentDay: dayNum,
 		currentMonth: monthNum,
 		currentYear: yearNum,
-
-		OperatingState_Day1_cooling: 0L, OperatingState_Day1_heating: 0L, OperatingState_Day1_idle: 0L,
-		OperatingState_Day2_cooling: 0L, OperatingState_Day2_heating: 0L, OperatingState_Day2_idle: 0L,
-		OperatingState_Day3_cooling: 0L, OperatingState_Day3_heating: 0L, OperatingState_Day3_idle: 0L,
-		OperatingState_Day4_cooling: 0L, OperatingState_Day4_heating: 0L, OperatingState_Day4_idle: 0L,
-		OperatingState_Day5_cooling: 0L, OperatingState_Day5_heating: 0L, OperatingState_Day5_idle: 0L,
-		OperatingState_Day6_cooling: 0L, OperatingState_Day6_heating: 0L, OperatingState_Day6_idle: 0L,
-		OperatingState_Day7_cooling: 0L, OperatingState_Day7_heating: 0L, OperatingState_Day7_idle: 0L,
 		OperatingState_DayWeekago_cooling: 0L, OperatingState_DayWeekago_heating: 0L, OperatingState_DayWeekago_idle: 0L,
-		OperatingState_Month1_cooling: 0L, OperatingState_Month1_heating: 0L, OperatingState_Month1_idle: 0L,
-		OperatingState_Month2_cooling: 0L, OperatingState_Month2_heating: 0L, OperatingState_Month2_idle: 0L,
-		OperatingState_Month3_cooling: 0L, OperatingState_Month3_heating: 0L, OperatingState_Month3_idle: 0L,
-		OperatingState_Month4_cooling: 0L, OperatingState_Month4_heating: 0L, OperatingState_Month4_idle: 0L,
-		OperatingState_Month5_cooling: 0L, OperatingState_Month5_heating: 0L, OperatingState_Month5_idle: 0L,
-		OperatingState_Month6_cooling: 0L, OperatingState_Month6_heating: 0L, OperatingState_Month6_idle: 0L,
-		OperatingState_Month7_cooling: 0L, OperatingState_Month7_heating: 0L, OperatingState_Month7_idle: 0L,
-		OperatingState_Month8_cooling: 0L, OperatingState_Month8_heating: 0L, OperatingState_Month8_idle: 0L,
-		OperatingState_Month9_cooling: 0L, OperatingState_Month9_heating: 0L, OperatingState_Month9_idle: 0L,
-		OperatingState_Month10_cooling: 0L, OperatingState_Month10_heating: 0L, OperatingState_Month10_idle: 0L,
-		OperatingState_Month11_cooling: 0L, OperatingState_Month11_heating: 0L, OperatingState_Month11_idle: 0L,
-		OperatingState_Month12_cooling: 0L, OperatingState_Month12_heating: 0L, OperatingState_Month12_idle: 0L,
 		OperatingState_MonthYearago_cooling: 0L, OperatingState_MonthYearago_heating: 0L, OperatingState_MonthYearago_idle: 0L,
 		OperatingState_thisYear_cooling: 0L, OperatingState_thisYear_heating: 0L, OperatingState_thisYear_idle: 0L,
 		OperatingState_lastYear_cooling: 0L, OperatingState_lastYear_heating: 0L, OperatingState_lastYear_idle: 0L,
-
-		FanMode_Day1_On: 0L, FanMode_Day1_auto: 0L,
-		FanMode_Day2_On: 0L, FanMode_Day2_auto: 0L,
-		FanMode_Day3_On: 0L, FanMode_Day3_auto: 0L,
-		FanMode_Day4_On: 0L, FanMode_Day4_auto: 0L,
-		FanMode_Day5_On: 0L, FanMode_Day5_auto: 0L,
-		FanMode_Day6_On: 0L, FanMode_Day6_auto: 0L,
-		FanMode_Day7_On: 0L, FanMode_Day7_auto: 0L,
 		FanMode_DayWeekago_On: 0L, FanMode_DayWeekago_auto: 0L,
-		FanMode_Month1_On: 0L, FanMode_Month1_auto: 0L,
-		FanMode_Month2_On: 0L, FanMode_Month2_auto: 0L,
-		FanMode_Month3_On: 0L, FanMode_Month3_auto: 0L,
-		FanMode_Month4_On: 0L, FanMode_Month4_auto: 0L,
-		FanMode_Month5_On: 0L, FanMode_Month5_auto: 0L,
-		FanMode_Month6_On: 0L, FanMode_Month6_auto: 0L,
-		FanMode_Month7_On: 0L, FanMode_Month7_auto: 0L,
-		FanMode_Month8_On: 0L, FanMode_Month8_auto: 0L,
-		FanMode_Month9_On: 0L, FanMode_Month9_auto: 0L,
-		FanMode_Month10_On: 0L, FanMode_Month10_auto: 0L,
-		FanMode_Month11_On: 0L, FanMode_Month11_auto: 0L,
-		FanMode_Month12_On: 0L, FanMode_Month12_auto: 0L,
 		FanMode_MonthYearago_On: 0L, FanMode_MonthYearago_auto: 0L,
 		FanMode_thisYear_On: 0L, FanMode_thisYear_auto: 0L,
 		FanMode_lastYear_On: 0L, FanMode_lastYear_auto: 0L
 	]
+
+	for(int i = 1; i <= 7; i++) {
+		historyStoreMap << ["OperatingState_Day${i}_cooling": 0L, "OperatingState_Day${i}_heating": 0L, "OperatingState_Day${i}_idle": 0L]
+		historyStoreMap << ["FanMode_Day${i}_On": 0L, "FanMode_Day${i}_auto": 0L]
+	}
+
+	for(int i = 1; i <= 12; i++) {
+		historyStoreMap << ["OperatingState_Month${i}_cooling": 0L, "OperatingState_Month${i}_heating": 0L, "OperatingState_Month${i}_idle": 0L]
+		historyStoreMap << ["FanMode_Month${i}_On": 0L, "FanMode_Month${i}_auto": 0L]
+	}
+
+	//log.debug "historyStoreMap: $historyStoreMap"
 	state.historyStoreMap = historyStoreMap
 }
 
@@ -2441,6 +2431,28 @@ def addValue(table, hr, mins, val) {
 	return newTable
 }
 
+def getIntListAvg(itemList) {
+	//log.debug "itemList: ${itemList}"
+	def avgRes = 0
+	def iCnt = itemList?.size()
+	if(iCnt >= 1) {
+		if(iCnt > 1) {
+			avgRes = (itemList?.sum().toDouble() / iCnt.toDouble()).round(0)
+		} else { itemList?.each { avgRes = avgRes + it.toInteger() } }
+	}
+	//log.debug "[getIntListAvg] avgRes: $avgRes"
+	return avgRes.toInteger()
+}
+
+def secToTimeMap(long seconds) {
+	long sec = seconds % 60
+	long minutes = seconds % 3600 / 60
+	long hours = seconds % 86400 / 3600
+	long days = seconds / 86400
+	long years = days / 365
+	def res = ["m":minutes, "h":hours, "d":days, "y":years]
+	return res
+}
 
 def getStartTime() {
 	def startTime = 24
@@ -2472,7 +2484,7 @@ def getMaxTemp() {
 
 def getGraphHTML() {
 	try {
-		LogAction("State Size: ${getStateSize()} (${getStateSizePerc()}%)")
+		//LogAction("State Size: ${getStateSize()} (${getStateSizePerc()}%)")
 		def leafImg = state?.hasLeaf ? getImgBase64(getImg("nest_leaf_on.gif"), "gif") : getImgBase64(getImg("nest_leaf_off.gif"), "gif")
 		def updateAvail = !state.updateAvailable ? "" : "<h3>Device Update Available!</h3>"
 
