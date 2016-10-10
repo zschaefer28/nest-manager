@@ -2417,22 +2417,16 @@ def addNewData() {
 }
 
 def addValue(table, hr, mins, val) {
-	def addOne = false
 	def newTable = table
-	if(!table?.size() || table.last()[2] != val || table.size() <= 2) {
-		addOne = true
-	}
-	if(!addOne && table?.size() > 2) {
-		def last = table?.last()[2]
-		if(val == last) {
-			newTable = table?.take(table.size() - 1)
-			addOne = true
-		}
-	}
-	if(addOne) {
-		newTable?.add([hr, mins, ,val])
-	}
-	return newTable
+        if(table?.size() > 2) {
+                def last = table?.last()[2]
+                def secondtolast = table[-2][2]
+                if(val == last && val == secondtolast) {
+                        newTable = table?.take(table.size() - 1)
+                }
+        }
+        newTable?.add([hr, mins, val])
+        return newTable
 }
 
 def getIntListAvg(itemList) {
