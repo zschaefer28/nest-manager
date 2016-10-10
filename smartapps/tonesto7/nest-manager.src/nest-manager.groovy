@@ -3588,6 +3588,9 @@ def clientId() {
 			case 2:
 				return "31aea46c-4048-4c2b-b6be-cac7fe305d4c" //token v2 with cam support
 				break
+			case 3:
+				return "665dbbb1-2765-4145-b3ae-36cb986c309d" //Added a 3rd token with 50 available slots
+				break
 		}
 	} else {
 		return appSettings.clientId
@@ -3603,6 +3606,9 @@ def clientSecret() {
 				break
 			case 2:
 				return "FmO469GXfdSVjn7PhKnjGWZlm" //token v2 with cam support
+				break
+			case 3:
+				return "jzARJspM2bmXETMVWXeGTYBDJ" //Added a 3rd token with 50 available slots
 				break
 		}
 	} else {
