@@ -68,6 +68,7 @@ metadata {
 		command "changeMode"
 		command "getVoiceReportTypes"
 		command "getNestMgrReport", ["string"]
+		command "getUsageVoiceReport", ["string"]
 		command "doSomething"
 
 		attribute "temperatureUnit", "string"
@@ -1647,11 +1648,17 @@ def getNestMgrReport(type) {
 	else {
 		switch (type) {
 			case "curZoneInfo":
-				if(state?.zoneVoiceRprtEn == false) { return "Usage voice reports have been disabled by Nest manager app preferences" }
+				if(state?.zoneVoiceRprtEn == false) {
+					LogAction("Usage voice reports have been disabled by Nest manager app preferences", "info", true)
+					return "Usage voice reports have been disabled by Nest manager app preferences"
+				}
 				else { return parent?.reqSchedInfoRprt(this).toString() }
 				break
 			case ["runtimeToday", "runtimeWeek", "runtimeMonth"]:
-				if(state?.usageVoiceRprtEn == false) { return "Zone status voice reports have been disabled by Nest manager app preferences" }
+				if(state?.usageVoiceRprtEn == false) {
+					LogAction("getNestMgrReport: Zone status voice reports have been disabled by Nest manager app preferences", "info", true)
+					return "Zone status voice reports have been disabled by Nest manager app preferences"
+				}
 				else { return getUsageVoiceReport(type) }
 				break
 			default:
@@ -1664,20 +1671,88 @@ def getNestMgrReport(type) {
 def getUsageVoiceReport(type) {
 	switch(type) {
 		case "runtimeToday":
-
-		break
+			return generateUsageText("today" ,getTodaysUsage())
+			break
 		case "runtimeWeek":
-			"The developer has not enabled this report yet"
-
+			return generateUsageText("week" ,getWeeksUsage())
 			break
 		case "runtimeMonth":
-			"The developer has not enabled this report yet"
-
+			return generateUsageText("month" ,getMonthsUsage())
  			break
-
 		default:
-
+			return "I'm sorry but the report received was not valid"
 			break
+	}
+}
+
+def generateUsageText(timeType, timeMap) {
+	def str = ""
+	if(timeType && timeMap) {
+		str += "Here is ${timeType}'s Usage report for the ${device?.displayName}.  "
+		str += "Ok...${timeType in ["week", "month"] ? "This ": ""}${timeType} there was "
+
+		def newMap = [:]
+		timeMap?.each { item ->
+			def type = item?.key
+			def tData = item?.value
+			def h = tData?.h.toInteger()
+			def m = tData?.m.toInteger()
+			def d = tData?.d.toInteger()
+			def y = tData?.y.toInteger()
+			if( h>0 || m>0 || d>0) {
+				def tStr = getTimeMapString(tData)
+				if(type?.toString() in ["idle", "cooling", "heating"]) {
+					newMap << ["${type}":"${tStr}"]
+				}
+			}
+		}
+		if(newMap?.size()) {
+			log.debug "newMap: $newMap"
+			def i = 1
+			newMap?.each { m ->
+				if(m?.key == "idle") {
+					str += m?.key + " for "
+					str += m?.value
+				}
+				else if(m?.key in ["fanAuto", "fanOn"]) {
+
+				}
+				else {
+					str += m?.value
+					str += " of " + m?.key
+				}
+				str += i < newMap?.size() ? " and " : " "
+				i = i+1
+			}
+
+		}
+	}
+	log.debug "str: $str"
+	return str
+}
+
+def getTimeMapString(data) {
+	if(!data) { return null }
+	def str = ""
+	def d = data?.d
+	def h = data?.h
+	def m = data?.m
+	if(h>0 || m>0 || d>0) {
+		if(d>0) {
+			str += "$d day"
+			str += d>0 || m>0 ? " and " : ""
+		}
+		if (h>0) {
+			str += h>0 ? "$h Hours " : ""
+			str += m>0 ? "and " : ""
+
+		}
+		if (m>0) {
+			str += m>0 ? "$m minutes" : ""
+		}
+		return str
+	} else {
+		return null
 	}
 }
 
@@ -2349,11 +2424,11 @@ def initHistoryStore() {
 def getTodaysUsage() {
 	def hm = getHistoryStore()
 	def timeMap = [:]
-	timeMap << ["todayCooling":secToTimeMap(hm?."OperatingState_Day${hm?.currentDay}_cooling")]
-	timeMap << ["todayHeating":secToTimeMap(hm?."OperatingState_Day${hm?.currentDay}_heating")]
-	timeMap << ["todayIdle":secToTimeMap(hm?."OperatingState_Day${hm?.currentDay}_idle")]
-	timeMap << ["todayFanOn":secToTimeMap(hm?."FanMode_Day${hm?.currentDay}_On")]
-	timeMap << ["todayFanAuto":secToTimeMap(hm?."FanMode_Day${hm?.currentDay}_auto")]
+	timeMap << ["cooling":secToTimeMap(hm?."OperatingState_Day${hm?.currentDay}_cooling")]
+	timeMap << ["heating":secToTimeMap(hm?."OperatingState_Day${hm?.currentDay}_heating")]
+	timeMap << ["idle":secToTimeMap(hm?."OperatingState_Day${hm?.currentDay}_idle")]
+	timeMap << ["fanOn":secToTimeMap(hm?."FanMode_Day${hm?.currentDay}_On")]
+	timeMap << ["fanAuto":secToTimeMap(hm?."FanMode_Day${hm?.currentDay}_auto")]
 	return timeMap
 }
 
@@ -2372,12 +2447,12 @@ def getWeeksUsage() {
 		fanOnVal = fanOnVal + hm?."FanMode_Day${i}_On"?.toInteger()
 		fanAutoVal = fanAutoVal + hm?."FanMode_Day${i}_auto"?.toInteger()
 	}
-	timeMap << ["weekCooling":secToTimeMap(coolVal)]
-	timeMap << ["weekHeating":secToTimeMap(heatVal)]
-	timeMap << ["weekIdle":secToTimeMap(idleVal)]
-	timeMap << ["weekFanOn":secToTimeMap(fanOnVal)]
-	timeMap << ["weekFanAuto":secToTimeMap(fanAutoVal)]
-	log.debug "weeksUsage: ${timeMap}"
+	timeMap << ["cooling":secToTimeMap(coolVal)]
+	timeMap << ["heating":secToTimeMap(heatVal)]
+	timeMap << ["idle":secToTimeMap(idleVal)]
+	timeMap << ["fanOn":secToTimeMap(fanOnVal)]
+	timeMap << ["fanAuto":secToTimeMap(fanAutoVal)]
+	//log.debug "weeksUsage: ${timeMap}"
 	return timeMap
 }
 
@@ -2385,12 +2460,12 @@ def getMonthsUsage(monNum) {
 	def hm = getHistoryStore()
 	def timeMap = [:]
 	def mVal = monNum ?: hm?.currentMonth
-	timeMap << ["monthCooling":secToTimeMap(hm?."OperatingState_Month${mVal}_cooling")]
-	timeMap << ["monthHeating":secToTimeMap(hm?."OperatingState_Month${mVal}_heating")]
-	timeMap << ["monthIdle":secToTimeMap(hm?."OperatingState_Month${mVal}_idle")]
-	timeMap << ["monthFanOn":secToTimeMap(hm?."FanMode_Month${mVal}_On")]
-	timeMap << ["monthFanAuto":secToTimeMap(hm?."FanMode_Month${mVal}_auto")]
-	log.debug "monthsUsage: ${timeMap}"
+	timeMap << ["cooling":secToTimeMap(hm?."OperatingState_Month${mVal}_cooling")]
+	timeMap << ["heating":secToTimeMap(hm?."OperatingState_Month${mVal}_heating")]
+	timeMap << ["idle":secToTimeMap(hm?."OperatingState_Month${mVal}_idle")]
+	timeMap << ["fanOn":secToTimeMap(hm?."FanMode_Month${mVal}_On")]
+	timeMap << ["fanAuto":secToTimeMap(hm?."FanMode_Month${mVal}_auto")]
+	//log.debug "monthsUsage: ${timeMap}"
 	return timeMap
 }
 
@@ -2409,24 +2484,25 @@ def getYearsUsage() {
 		fanOnVal = fanOnVal + hm?."FanMode_Month${i}_On"?.toInteger()
 		fanAutoVal = fanAutoVal + hm?."FanMode_Month${i}_auto"?.toInteger()
 	}
-	timeMap << ["yearCooling":secToTimeMap(coolVal)]
-	timeMap << ["yearHeating":secToTimeMap(heatVal)]
-	timeMap << ["yearIdle":secToTimeMap(idleVal)]
-	timeMap << ["yearFanOn":secToTimeMap(fanOnVal)]
-	timeMap << ["yearFanAuto":secToTimeMap(fanAutoVal)]
-	log.debug "yearsUsage: ${timeMap}"
+	timeMap << ["cooling":secToTimeMap(coolVal)]
+	timeMap << ["heating":secToTimeMap(heatVal)]
+	timeMap << ["idle":secToTimeMap(idleVal)]
+	timeMap << ["fanOn":secToTimeMap(fanOnVal)]
+	timeMap << ["fanAuto":secToTimeMap(fanAutoVal)]
+	//log.debug "yearsUsage: ${timeMap}"
 	return timeMap
 }
 
 def doSomething() {
-	getTodaysUsage()
-	getWeeksUsage()
-	getMonthsUsage()
-	getYearsUsage()
+	getUsageVoiceReport("runtimeToday")
+	//getTodaysUsage()
+	//getWeeksUsage()
+	//getMonthsUsage()
+	//getYearsUsage()
 }
 
 def getHistoryStore() {
-	log.trace "getHistoryStore()..."
+	//log.trace "getHistoryStore()..."
 	def hm = state?.historyStoreMap
 	if(hm == null) {
 		log.error "hm is null"
