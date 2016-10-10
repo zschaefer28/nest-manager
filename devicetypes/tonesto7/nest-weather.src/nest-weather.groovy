@@ -487,6 +487,8 @@ def getWeatherAlerts(weatData) {
 					sendEvent(name: "alertKeys", value: newKeys.encodeAsJSON(), displayed: false)
 					sendEvent(name: "alert", value: noneString, descriptionText: "${device.displayName} has no current weather alerts")
 					state.walert = noneString
+					state.walertMessage = null
+					state.lastWeatherAlertNotif = null
 				}
 				else if (newKeys != oldKeys) {
 					if (oldKeys == null) {
@@ -522,6 +524,8 @@ def getWeatherAlerts(weatData) {
 					if (!newAlerts && device.currentValue("alert") != noneString) {
 						sendEvent(name: "alert", value: noneString, descriptionText: "${device.displayName} has no current weather alerts")
 						state.walert = noneString
+						state.walertMessage = null
+						state.lastWeatherAlertNotif = null
 					}
 				}
 			}
@@ -1194,13 +1198,32 @@ def addNewData() {
 
 	// add latest dewpoint & temperature readings for the graph
 	def newDate = new Date()
-	temperatureTable.add([newDate.format("H", location.timeZone),newDate.format("m", location.timeZone),currentTemperature])
-	dewpointTable.add([newDate.format("H", location.timeZone),newDate.format("m", location.timeZone),currentDewpoint])
-	humidityTable.add([newDate.format("H", location.timeZone),newDate.format("m", location.timeZone),currentHumidity])
+        def hr = newDate.format("H", location.timeZone) as Integer
+        def mins = newDate.format("m", location.timeZone) as Integer
+	state.temperatureTable = addValue(temperatureTable, hr, mins, currentTemperature)
+	state.dewpointTable = addValue(dewpointTable, hr, mins, currentDewpoint)
+	state?.humidityTable = addValue(humidityTable, hr, mins, currentHumidity)
 
-	state.temperatureTable = temperatureTable
-	state.dewpointTable = dewpointTable
-	state?.humidityTable = humidityTable
+	//temperatureTable.add([newDate.format("H", location.timeZone),newDate.format("m", location.timeZone),currentTemperature])
+	//dewpointTable.add([newDate.format("H", location.timeZone),newDate.format("m", location.timeZone),currentDewpoint])
+	//humidityTable.add([newDate.format("H", location.timeZone),newDate.format("m", location.timeZone),currentHumidity])
+
+	//state.temperatureTable = temperatureTable
+	//state.dewpointTable = dewpointTable
+	//state?.humidityTable = humidityTable
+}
+
+def addValue(table, hr, mins, val) {
+        def newTable = table
+	if(table?.size() > 2) {
+		def last = table?.last()[2]
+		def secondtolast = table[-2][2]
+		if(val == last && val == secondtolast) {
+			newTable = table?.take(table.size() - 1)
+		}
+	}
+	newTable?.add([hr, mins, val])
+	return newTable
 }
 
 def getStartTime() {
