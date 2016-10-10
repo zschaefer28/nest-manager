@@ -27,7 +27,7 @@ import groovy.time.*
 
 preferences {  }
 
-def devVer() { return "3.3.0"}
+def devVer() { return "3.4.0"}
 
 // for the UI
 metadata {
@@ -657,7 +657,6 @@ def hvacModeEvent(mode) {
 	if(!hvacMode.equals(newMode)) {
 		LogAction("UPDATED | Hvac Mode is (${newMode.toString().capitalize()}) | Original State: (${hvacMode.toString().capitalize()})")
 		sendEvent(name: "thermostatMode", value: newMode, descriptionText: "HVAC mode is ${newMode} mode", displayed: true, isStateChange: true)
-		//handleRunMetModeData(mode)
 	} else { Logger("Hvac Mode is (${newMode}) | Original State: (${hvacMode})") }
 
 }
@@ -668,7 +667,6 @@ def fanModeEvent(fanActive) {
 	if(!fanMode.equals(val)) {
 		LogAction("UPDATED | Fan Mode: (${val.toString().capitalize()}) | Original State: (${fanMode.toString().capitalize()})")
 		sendEvent(name: "thermostatFanMode", value: val, descriptionText: "Fan Mode is: ${val}", displayed: true, isStateChange: true, state: val)
-		//handleRunMetFanData(val)
 	} else { Logger("Fan Active: (${val}) | Original State: (${fanMode})") }
 
 }
@@ -679,7 +677,6 @@ def operatingStateEvent(operatingState) {
 	if(!hvacState.equals(operState)) {
 		LogAction("UPDATED | OperatingState is (${operState.toString().capitalize()}) | Original State: (${hvacState.toString().capitalize()})")
 		sendEvent(name: 'thermostatOperatingState', value: operState, descriptionText: "Device is ${operState}", displayed: true, isStateChange: true)
-		//handleRunMetOperData(operatingState)
 	} else { Logger("OperatingState is (${operState}) | Original State: (${hvacState})") }
 
 }
@@ -1073,24 +1070,6 @@ def GetTimeDiffSeconds(lastDate) {
 	def diff = (int) (long) (stop - start) / 1000
 	return diff
 }
-
-/*
-def GetTimeDiffSecondsNew(strtDate, stpDate=null, methName=null) {
-	LogAction("[GetTimeDiffSeconds] StartDate: $strtDate | StopDate: ${stpDate ?: "Not Sent"} | MethodName: ${methName ?: "Not Sent"})", "warn", false)
-	if((strtDate && !stpDate) || (strtDate && stpDate)) {
-		if(strtDate?.contains("dtNow")) { return 10000 }
-		def now = new Date()
-		def stopVal = stpDate ? stpDate.toString() : formatDt(now)
-		def startDt = Date.parse("E MMM dd HH:mm:ss z yyyy", strtDate)
-		def stopDt = Date.parse("E MMM dd HH:mm:ss z yyyy", stopVal)
-		def start = Date.parse("E MMM dd HH:mm:ss z yyyy", formatDt(startDt)).getTime()
-		def stop = Date.parse("E MMM dd HH:mm:ss z yyyy", stopVal).getTime()
-		def diff = (int) (long) (stop - start) / 1000
-		//log.trace "[GetTimeDiffSeconds] Results for '$methName': ($diff seconds)"
-		return diff
-	} else { return null }
-}
-*/
 
 // Nest does not allow temp changes in away modes
 def canChangeTemp() {
@@ -2124,7 +2103,7 @@ void getSomeData(devpoll = false) {
 		state.coolSetpointTable = []
 		state.heatSetpointTable = []
 		state.fanModeTable = []
-		updateOperatingHistory(today)
+		updateOperatingHistory(today) 
 
 	}
 	//initHistoryStore() 	// TODO DEBUGGING
@@ -2148,15 +2127,7 @@ def updateOperatingHistory(today) {
 	def dayNum = today.format("u", location.timeZone).toInteger() // 1 = Monday,... 7 = Sunday
 	def monthNum = today.format("MM", location.timeZone).toInteger()
 	def yearNum = today.format("YYYY", location.timeZone).toInteger()
-/*
-	//def today = new Date()
-	//def dayNum = today.format("d", location.timeZone)
-	def dayName = today.format("EEE", location.timeZone)
-	def dayOfWeekNum = getDayOfWeekNum()
-	def monthName = today.format("MMM", location.timeZone)
-	def monthLongName = today.format("MMMMM", location.timeZone)
-	def weekNum = getWeekNum()
-*/
+
 	if(hm.currentDay == null) {
 		log.error "hm.currentDay is null"
 		return
@@ -2181,7 +2152,7 @@ def updateOperatingHistory(today) {
 		def fan_on = getSumUsage(state.fanModeTableYesterday, "on").toInteger()
 		def fan_auto = getSumUsage(state.fanModeTableYesterday, "auto").toInteger()
 
-		//log.info "fanon ${fan_on}  fanauto: ${fan_auto} opidle: ${Op_idle}  cool: ${Op_coolingusage} heat: ${Op_heatingusage}"
+		log.info "fanon ${fan_on}  fanauto: ${fan_auto} opidle: ${Op_idle}  cool: ${Op_coolingusage} heat: ${Op_heatingusage}"
 
 		hm."OperatingState_Day${hm.currentDay}_cooling" = Op_coolingusage
 		hm."OperatingState_Day${hm.currentDay}_heating" = Op_heatingusage
@@ -2201,11 +2172,16 @@ def updateOperatingHistory(today) {
 		hm."FanMode_Day${hm.currentDay}_On" = 0
 		hm."FanMode_Day${hm.currentDay}_auto" = 0
 
-		hm."OperatingState_Month${hm.currentMonth}_cooling" += Op_coolingusage
-		hm."OperatingState_Month${hm.currentMonth}_heating" += Op_heatingusage
-		hm."OperatingState_Month${hm.currentMonth}_idle" += Op_idle
-		hm."FanMode_Month${hm.currentMonth}_On" += fan_on
-		hm."FanMode_Month${hm.currentMonth}_auto" += fan_auto
+		def t1 = hm["OperatingState_Month${hm.currentMonth}_cooling"]?.toInteger() ?: 0
+		hm."OperatingState_Month${hm.currentMonth}_cooling" = t1 + Op_coolingusage
+		t1 = hm["OperatingState_Month${hm.currentMonth}_heating"]?.toInteger() ?: 0
+		hm."OperatingState_Month${hm.currentMonth}_heating" = t1 + Op_heatingusage
+		t1 = hm["OperatingState_Month${hm.currentMonth}_idle"]?.toInteger() ?: 0
+		hm."OperatingState_Month${hm.currentMonth}_idle" = t1 + Op_idle
+		t1 = hm["FanMode_Month${hm.currentMonth}_On"]?.toInteger() ?: 0
+		hm."FanMode_Month${hm.currentMonth}_On" = t1 + fan_on
+		t1 = hm["FanMode_Month${hm.currentMonth}_auto"]?.toInteger() ?: 0
+		hm."FanMode_Month${hm.currentMonth}_auto" = t1 + fan_auto
 
 		if(monthChange) {
 			hm.currentMonth = monthNum
@@ -2221,11 +2197,16 @@ def updateOperatingHistory(today) {
 			hm."FanMode_Month${hm.currentMonth}_auto" = 0
 		}
 
-		hm.OperatingState_thisYear_cooling += Op_coolingusage
-		hm.OperatingState_thisYear_heating += Op_heatingusage
-		hm.OperatingState_thisYear_idle += Op_idle
-		hm.FanMode_thisYear_On += fan_on
-		hm.FanMode_thisYear_auto += fan_auto
+		t1 = hm[OperatingState_thisYear_cooling]?.toInteger() ?: 0
+		hm.OperatingState_thisYear_cooling = t1 + Op_coolingusage
+		t1 = hm[OperatingState_thisYear_heating]?.toInteger() ?: 0
+		hm.OperatingState_thisYear_heating = t1 + Op_heatingusage
+		t1 = hm[OperatingState_thisYear_idle]?.toInteger() ?: 0
+		hm.OperatingState_thisYear_idle = t1 + Op_idle
+		t1 = hm[FanMode_thisYear_On]?.toInteger() ?: 0
+		hm.FanMode_thisYear_On = t1 + fan_on
+		t1 = hm[FanMode_thisYear_auto]?.toInteger() ?: 0
+		hm.FanMode_thisYear_auto = t1 + fan_auto
 
 		if(yearChange) {
 			hm.currentYear = yearNum
@@ -2275,7 +2256,7 @@ def getSumUsage(table, String strtyp) {
 				counting = true
 			}
 		} else if(counting) {
-			newseconds = ((hr * 60 + mins) - (strthr * 60 + strtmin)) * 60
+			newseconds = ((hr * 60 + mins) - (strthr * 60 + strtmin)) * 60 
 			totseconds += newseconds
 			counting = false
 			//log.debug "found $strtyp   starthr: $strthr  startmin: $strtmin  newseconds: $newseconds   totalseconds: $totseconds"
@@ -2290,7 +2271,7 @@ def getSumUsage(table, String strtyp) {
 			lasthr = 24
 			lastmins = 0
 		}
-		newseconds = ((lasthr * 60 + lastmins) - (strthr * 60 + strtmin)) * 60
+		newseconds = ((lasthr * 60 + lastmins) - (strthr * 60 + strtmin)) * 60 
 		totseconds += newseconds
 		//log.debug "still counting found $strtyp  lasthr: $lasthr   lastmins: $lastmins  starthr: $strthr  startmin: $strtmin  newseconds: $newseconds   totalseconds: $totseconds"
 	}
@@ -2302,7 +2283,7 @@ def getSumUsage(table, String strtyp) {
 def initHistoryStore() {
 	log.trace "initHistoryStore()..."
 
-	def historyStoreMap = []
+	def historyStoreMap = [:]
 	def today = new Date()
 	def dayNum = today.format("u", location.timeZone) as Integer // 1 = Monday,... 7 = Sunday
 	def monthNum = today.format("MM", location.timeZone) as Integer
@@ -2388,17 +2369,28 @@ def getHistoryStore() {
 	hm."FanMode_Day${hm.currentDay}_On" = fan_on
 	hm."FanMode_Day${hm.currentDay}_auto" = fan_auto
 
-	hm."OperatingState_Month${hm.currentMonth}_cooling" += Op_coolingusage
-	hm."OperatingState_Month${hm.currentMonth}_heating" += Op_heatingusage
-	hm."OperatingState_Month${hm.currentMonth}_idle" += Op_idle
-	hm."FanMode_Month${hm.currentMonth}_On" += fan_on
-	hm."FanMode_Month${hm.currentMonth}_auto" += fan_auto
+	def t1 = hm["OperatingState_Month${hm.currentMonth}_cooling"]?.toInteger() ?: 0
+	hm."OperatingState_Month${hm.currentMonth}_cooling" = t1 + Op_coolingusage
+	t1 = hm["OperatingState_Month${hm.currentMonth}_heating"]?.toInteger() ?: 0
+	hm."OperatingState_Month${hm.currentMonth}_heating" = t1 + Op_heatingusage
+	t1 = hm["OperatingState_Month${hm.currentMonth}_idle"]?.toInteger() ?: 0
+	hm."OperatingState_Month${hm.currentMonth}_idle" = t1 + Op_idle
+	t1 = hm["FanMode_Month${hm.currentMonth}_On"]?.toInteger() ?: 0
+	hm."FanMode_Month${hm.currentMonth}_On" = t1 + fan_on
+	t1 = hm["FanMode_Month${hm.currentMonth}_auto"]?.toInteger() ?: 0
+	hm."FanMode_Month${hm.currentMonth}_auto" = t1 + fan_auto
 
-	hm.OperatingState_thisYear_cooling += Op_coolingusage
-	hm.OperatingState_thisYear_heating += Op_heatingusage
-	hm.OperatingState_thisYear_idle += Op_idle
-	hm.FanMode_thisYear_On += fan_on
-	hm.FanMode_thisYear_auto += fan_auto
+	t1 = hm[OperatingState_thisYear_cooling]?.toInteger() ?: 0
+	hm.OperatingState_thisYear_cooling = t1 + Op_coolingusage
+	t1 = hm[OperatingState_thisYear_heating]?.toInteger() ?: 0
+	hm.OperatingState_thisYear_heating = t1 + Op_heatingusage
+	t1 = hm[OperatingState_thisYear_idle]?.toInteger() ?: 0
+	hm.OperatingState_thisYear_idle = t1 + Op_idle
+	t1 = hm[FanMode_thisYear_On]?.toInteger() ?: 0
+	hm.FanMode_thisYear_On = t1 + fan_on
+	t1 = hm[FanMode_thisYear_auto]?.toInteger() ?: 0
+	hm.FanMode_thisYear_auto = t1 + fan_auto
+
 	return hm
 }
 
@@ -2428,32 +2420,6 @@ def addNewData() {
 	state.coolSetpointTable = addValue(coolSetpointTable, hr, mins, currentcoolSetPoint)
 	state.heatSetpointTable = addValue(heatSetpointTable, hr, mins, currentheatSetPoint)
 	state.fanModeTable = addValue(fanModeTable, hr, mins, currentfanMode)
-/*
-	//if(!temperatureTable?.size() || temperatureTable.last()[2] != currentTemperature) {
-		temperatureTable?.add([newDate.format("H", location.timeZone),newDate.format("m", location.timeZone),currentTemperature])
-	//}
-	if(!operatingStateTable?.size() || operatingStateTable.last()[2] != currentoperatingState) {
-		operatingStateTable?.add([newDate.format("H", location.timeZone),newDate.format("m", location.timeZone),currentoperatingState])
-	}
-	if(!humidityTable?.size() || humidityTable.last()[2] != currenthumidity) {
-		humidityTable?.add([newDate.format("H", location.timeZone),newDate.format("m", location.timeZone),currenthumidity])
-	}
-	if(!coolSetpointTable?.size() || coolSetpointTable.last()[2] != currentcoolSetPoint) {
-		coolSetpointTable?.add([newDate.format("H", location.timeZone),newDate.format("m", location.timeZone),currentcoolSetPoint])
-	}
-	if(!heatSetpointTable?.size() || heatSetpointTable.last()[2] != currentheatSetPoint) {
-		heatSetpointTable?.add([newDate.format("H", location.timeZone),newDate.format("m", location.timeZone),currentheatSetPoint])
-	}
-	if(!fanModeTable?.size() || fanModeTable.last()[2] != currentfanMode) {
-		fanModeTable?.add([newDate.format("H", location.timeZone),newDate.format("m", location.timeZone),currentfanMode])
-	}
-	state.temperatureTable = temperatureTable
-	state.operatingStateTable = operatingStateTable
-	state.humidityTable = humidityTable
-	state.coolSetpointTable = coolSetpointTable
-	state.heatSetpointTable = heatSetpointTable
-	state.fanModeTable = fanModeTable
-*/
 }
 
 def addValue(table, hr, mins, val) {
@@ -2475,327 +2441,6 @@ def addValue(table, hr, mins, val) {
 	return newTable
 }
 
-/*
-def handleRunMetFanData(fanVal) {
-	if(!fanVal || state?.hasFan == false) { return }
-	def timeNow = getDtNow()
-	if(!atomicState?.runFanModeDayMetrics) { atomicState?.runFanModeDayMetrics = ["off":0, "heat":0, "cool":0, "auto":0] }
-
-	//Reads in operateState elapsed runtime values from state
-	def fanData = atomicState?.runFanModeDayMetrics
-	def offTime = runData?.fanoff ?: 0
-	def onTime = runData?.fanon ?: 0
-
-
-	//log.debug "runData: $runData"
-	//log.debug "Todays Totals (in Seconds): [onTime: ($onTime) | offTime: ($offTime)]"
-
-	def oldEvtData = atomicState?.fanModeRunMetEvtData
-	def newEvtData = [:]
-	def startTime = null
-	def stopTime = null
-
-	// IF past event data is there and the evt value does not equal the past then try and calculate seconds
-	if(oldEvtData?.evtVal && oldEvtData?.evtDt) {
-		if(oldEvtData?.evtVal.toString() != evt.value.toString()) {
-			startTime = oldEvtData?.evtDt
-			stopTime = timeNow
-			if(startTime && stopTime) {
-				def timeRes = GetTimeDiffSecondsNew(startTime, stopTime, "handleRunMetFanData").toInteger()
-				if (timeRes) {
-					def newVal = null
-					switch(oldEvtData?.evtVal) {
-						case "on":
-							onTime = onTime.toInteger() + timeRes
-							newVal = onTime
-							break
-						case "off":
-							offTime = offTime.toInteger() + timeRes
-							newVal = offTime
-							break
-					}
-					//This is used to determine the thermostat and evtvalue prefix for the state name
-					def sNameStr = "${oldEvtData?.evtVal}FanModeTime"
-
-					// Saving the last 15 times for each evt value type for future averaging
-					itemHistoryToStateList(timeRes, sNameStr, 15)
-					LogAction("[handleRunMetFanData] Added (${timeRes} seconds) to '${oldEvtData?.evtVal.toString().toUpperCase()}' Fan mode time | Today's ${oldEvtData?.evtVal.toString().toUpperCase()} Fan time seconds)", "info", true)
-
-					// This reads back the average for the current evt value data
-					if(atomicState?."${sNameStr}") { getIntListAvg(atomicState?."${sNameStr}") }
-				}
-			}
-		}
-	}
-	//Stores current event info into state map
-	newEvtData = ["evtVal":fanVal, "evtDt":timeNow]
-	//stores current event data to state
-	atomicState.fanModeRunMetEvtData = newEvtData
-	//Writes back new elapsed times to state for each value type
-	atomicState.runFanModeDayMetrics = ["fanon":onTime, "fanoff":offTime]
-	//log.debug "fanModeRunMetEvtData: ${atomicState?.fanModeRunMetEvtData"}"
-	//log.debug "runFanModeDayMetrics: ${atomicState?.runFanModeDayMetrics"}"
-}
-
-def handleRunMetModeData(mode) {
-	if(!mode) { return }
-	def timeNow = getDtNow()
-	if(!atomicState?.runHvacModeDayMetrics) { atomicState?.runHvacModeDayMetrics = ["off":0, "heat":0, "cool":0, "auto":0] }
-
-	//Reads in operateState elapsed runtime values from state
-	def modeData = atomicState?.runHvacModeDayMetrics
-	def offTime = runData?.off ?: 0
-	def heatTime = runData?.heat ?: 0
-	def coolTime = runData?.cool ?: 0
-	def autoTime = runData?.auto ?: 0
-	//log.debug "runData: $runData"
-	//log.debug "Todays Totals (in Seconds): [idleTime: ($offTime) | heatTime: ($heatTime) | coolTime: ($coolTime) | fanTime: ($autoTime)]"
-
-	def oldEvtData = atomicState?.hvacModeRunMetEvtData
-	def newEvtData = [:]
-	def startTime = null
-	def stopTime = null
-
-	// IF past event data is there and the evt value does not equal the past then try and calculate seconds
-	if(oldEvtData?.evtVal && oldEvtData?.evtDt) {
-		if(oldEvtData?.evtVal.toString() != evt.value.toString()) {
-			startTime = oldEvtData?.evtDt
-			stopTime = timeNow
-			if(startTime && stopTime) {
-				def timeRes = GetTimeDiffSeconds2(startTime, stopTime, "handleRunMetModeData").toInteger()
-				if (timeRes) {
-					def newVal = null
-					switch(oldEvtData?.evtVal) {
-						case "auto":
-							autoTime = autoTime.toInteger() + timeRes
-							newVal = autoTime
-							break
-						case "heat":
-							coolTime = coolTime.toInteger() + timeRes
-							newVal = coolTime
-							break
-						case "cool":
-							fanTime = fanTime.toInteger() + timeRes
-							newVal = fanTime
-							break
-						case "off":
-							offTime = offTime.toInteger() + timeRes
-							newVal = offTime
-							break
-					}
-					//This is used to determine the thermostat and evtvalue prefix for the state name
-					def sNameStr = "${oldEvtData?.evtVal}HvacModeTime"
-
-					// Saving the last 15 times for each evt value type for future averaging
-					itemHistoryToStateList(timeRes, sNameStr, 15)
-					LogAction("[handleRunMetModeData] Added (${timeRes} seconds) to '${oldEvtData?.evtVal.toString().toUpperCase()}' HVAC mode time | Today's ${oldEvtData?.evtVal.toString().toUpperCase()} HVAC time for (${evt.device}) is (${newVal} seconds)", "info", true)
-
-					// This reads back the average for the current evt value data
-					if(atomicState?."${sNameStr}") { getIntListAvg(atomicState?."${sNameStr}") }
-				}
-			}
-		}
-	}
-	//Stores current event info into state map
-	newEvtData = ["evtVal":mode, "evtDt":timeNow]
-	//stores current event data to state
-	atomicState.hvacModeRunMetEvtData = newEvtData
-	//Writes back new elapsed times to state for each value type
-	atomicState.runHvacModeDayMetrics = ["auto":autoTime, "heat":heatTime, "cool":coolTime, "off":offTime]
-	//log.debug "hvacModeRunMetEvtData: ${atomicState?.hvacModeRunMetEvtData"}"
-	//log.debug "runHvacModeDayMetrics: ${atomicState?.runHvacModeDayMetrics"}"
-}
-
-def handleRunMetOperData(operVal) {
-	if(!operVal) { return }
-
-	def timeNow = getDtNow()
-	if(!atomicState?."${evt.deviceId}_runOperDayMetrics") { atomicState?."${evt.deviceId}_runOperDayMetrics" = ["idle":0, "heating":0, "cooling":0, "fanonly":0] }
-
-	//Reads in operateState elapsed runtime values from state
-	def runData = atomicState?."${evt.deviceId}_runOperDayMetrics"
-	def idleTime = runData?.idle ?: 0
-	def heatTime = runData?.heating ?: 0
-	def coolTime = runData?.cooling ?: 0
-	def fanTime = runData?.fanonly ?: 0
-	//log.debug "runData: $runData"
-	//log.debug "Todays Totals (in Seconds): [idleTime: ($idleTime) | heatTime: ($heatTime) | coolTime: ($coolTime) | fanTime: ($fanTime)]"
-
-	def oldEvtData = atomicState?."${evt.deviceId}_lastOperRunMetEvtData"
-	def newEvtData = [:]
-	def startTime = null
-	def stopTime = null
-
-	// IF past event data is there and the evt value does not equal the past then try and calculate seconds
-	if(oldEvtData?.evtVal && oldEvtData?.evtDt) {
-		if(oldEvtData?.evtVal.toString() != evt.value.toString()) {
-			startTime = oldEvtData?.evtDt
-			stopTime = timeNow
-			if(startTime && stopTime) {
-				def timeRes = GetTimeDiffSeconds2(startTime, stopTime, "handleRunMetOperData").toInteger()
-				if (timeRes) {
-					def newVal = null
-					switch(oldEvtData?.evtVal) {
-						case "heating":
-							heatTime = heatTime.toInteger() + timeRes
-							newVal = heatTime
-							break
-						case "cooling":
-							coolTime = coolTime.toInteger() + timeRes
-							newVal = coolTime
-							break
-						case "fan only":
-							fanTime = fanTime.toInteger() + timeRes
-							newVal = fanTime
-							break
-						case "idle":
-							idleTime = idleTime.toInteger() + timeRes
-							newVal = idleTime
-							break
-					}
-					//This is used to determine the thermostat and evtvalue prefix for the state name
-					def sNameStr = (oldEvtData?.evtVal.toString() == "fan only") ? "${evt.deviceId}_fanonlyOperTime" : "${evt.deviceId}_${oldEvtData?.evtVal}OperTime"
-
-					// Saving the last 15 times for each evt value type for future averaging
-					itemHistoryToStateList(timeRes, sNameStr, 15)
-					LogAction("[handleRunMetOperData] Added (${timeRes} seconds) to (${evt.device}) '${oldEvtData?.evtVal.toString().toUpperCase()}' operating time | Today's ${oldEvtData?.evtVal.toString().toUpperCase()} time for (${evt.device}) is (${newVal} seconds)", "info", true)
-
-					// This reads back the average for the current evt value data
-					if(atomicState?."${sNameStr}HistoryList}") { getIntListAvg("${sNameStr}HistoryList") }
-					log.debug "elapsed time: ${secToTimeMap(newVal)}"
-				}
-			}
-		}
-	}
-	//Stores current event info into state map
-	newEvtData = ["evtVal":operVal, "evtDt":timeNow]
-	//stores current event data to state
-	atomicState.lastOperRunMetEvtData = newEvtData
-	//Writes back new elapsed times to state for each value type
-	atomicState.runOperDayMetrics = ["idle":idleTime, "heating":heatTime, "cooling":coolTime, "fanonly":fanTime]
-	//log.debug "lastOperRunMetEvtData: ${atomicState?."${evt.deviceId}_lastOperRunMetEvtData"}"
-	//log.debug "runOperDayMetrics: ${atomicState?."${evt.deviceId}_runOperDayMetrics"}"
-
-	watDogDailyMetricsWrapUp()
-}
-
-private itemHistoryToStateList(val, stateName, size = null) {
-	def list = atomicState?."${stateName}HistoryList" ?: []
-	def listSize = size ? size.toInteger() : 20
-	if(list?.size() < listSize) {
-		list.push(val)
-	}
-	else if(list?.size() > listSize) {
-		def nSz = (list?.size()-listSize) + 1
-		def nList = list?.drop(nSz)
-		nList?.push(issue)
-		list = nList
-	}
-	else if(list?.size() == listSize) {
-		def nList = list?.drop(1)
-		nList?.push(val)
-		list = nList
-	}
-
-	if(list) { atomicState?."${stateName}HistoryList" = list }
-	log.debug "[itemHistoryToStateList] ${stateName}HistoryList: $list"
-}
-
-def getIntListAvg(itemList) {
-	//log.debug "itemList: ${itemList}"
-	def avgRes = 0
-	def iCnt = itemList?.size()
-	if(iCnt >= 1) {
-		if(iCnt > 1) {
-			avgRes = (itemList?.sum().toDouble() / iCnt.toDouble()).round(0)
-		} else { itemList?.each { avgRes = avgRes + it.toInteger() } }
-	}
-	//log.debug "[getIntListAvg] avgRes: $avgRes"
-	return avgRes.toInteger()
-}
-
-private newDayDataHandler() {
-	def today = new Date()
-	def dayNum = today.format("d", location.timeZone)
-	def monthNum = today.format("M", location.timeZone)
-	def dayName = today.format("EEE", location.timeZone)
-	def dayOfWeekNum = getDayOfWeekNum()
-	def monthName = today.format("MMM", location.timeZone)
-	def monthLongName = today.format("MMMMM", location.timeZone)
-	def yearNum = today.format("YYYY", location.timeZone)
-	def weekNum = getWeekNum()
-	LogAction("Local DateTime Info: [dayNum: ($dayNum), weekNum: ($weekNum), monthNum: ($monthNum), dayOfWeekNum: ($dayOfWeekNum), dayName: ($dayName), monthName: ($monthName), monthLongName: ($monthLongName), yearLongNum: ($yearNum)]", "info", true)
-
-	if(!atomicState?.prevDayNum || atomicState?.prevDayNum != dayNum) { atomicState.prevDayNum = dayNum }
-	if(!atomicState?.prevDayOfWeekNum || atomicState?.prevDayOfWeekNum != dayOfWeekNum) { atomicState.prevDayOfWeekNum = dayOfWeekNum }
-	if(!atomicState?.prevWeekNum || atomicState?.prevWeekNum != weekNum) { atomicState.prevWeekNum = weekNum }
-	if(!atomicState?.prevMonthNum || atomicState?.preMonthNum != monthNum) { atomicState.prevMonthNum = monthNum }
-	if(!atomicState?.prevYearNum || atomicState?.prevYearNum != yearNum) { atomicState.prevYearNum = yearNum }
-
-	def prevDayNum = atomicState?.prevDayNum
-	def prevDayOfWeekNum = atomicState?.prevDayOfWeekNum
-	def prevWeekNum = atomicState?.prevWeekNum
-	def prevMonthNum = atomicState?.prevMonthNum
-	def prevYearNum = atomicState?.prevYearNum
-
-
-	if(prevDayNum.toInteger() != dayNum.toInteger()) {
-		handleNewDayMetData(dayNum.toInteger(), prevDayNum.toInteger())
-	}
-	if(prevWeekNum.toInteger() != weekNum.toInteger()) {
-		handleNewWeekMetData(weekNum.toInteger(), prevWeekNum.toInteger())
-	}
-	if(prevMonthNum.toInteger() != monthNum.toInteger()) {
-		handleNewMonthMetData(monthNum.toInteger(), prevMonthNum.toInteger())
-	}
-	if(prevYearNum.toInteger() != yearNum.toInteger()) {
-		handleNewYearMetData(yearNum.toInteger(), prevYearNum.toInteger())
-	}
-}
-
-
-// This should roll up the prev day data in the weeks total
-void handleNewDayMetData(curDayNum, prevDayNum) {
-	if(prevDayNum < curDayNum || (prevDayNum > curDayNum && curDayNum == 1)) {
-		def dayOperData = atomicState?.runOperDayMetrics
-		def dayHvacModeData = atomicState?.runHvacModeDayMetrics
-		log.debug "dayOperData: ${dayOperData}"
-	}
-}
-
-// This should roll up the prev week data into the months total
-void handleNewWeekMetData(curWeekNum, prevWeekNum) {
-
-}
-
-// This should roll up the prev months data into the years total
-void handleNewMonthMetData(curMonthNum, prevMonthNum) {
-
-}
-
-
-void handleNewYearMetData(curYearNum, prevYearNum) {
-
-}
-
-def getWeekNum() {
-	return Calendar.getInstance().get(Calendar.WEEK_OF_YEAR).toInteger()
-}
-
-def getDayOfWeekNum() {
-	return Calendar.getInstance().get(Calendar.DAY_OF_WEEK).toInteger()
-}
-
-def secToTimeMap(long seconds) {
-	long sec = seconds % 60
-	long minutes = seconds % 3600 / 60
-	long hours = seconds % 86400 / 3600
-	long days = seconds / 86400
-	long years = days / 365
-	def res = ["m":minutes, "h":hours, "d":days, "y":years]
-	return res
-}
-*/
 
 def getStartTime() {
 	def startTime = 24
@@ -2804,22 +2449,6 @@ def getStartTime() {
 	//LogAction("startTime ${startTime}", "trace")
 	return startTime
 }
-
-/*
-def resetMetricData() {
-	// look through the state map and null any items that match
-	def stateNames = [
-		"runtimeHvacModeDayMetrics", "lastHvacModeRunMetEvtData", "runtimeOperDayMetrics", "lastOperRunMetEvtData", "lastRunMetOperEvtData", "offFanModeTimeHistoryList",
-		"onFanModeTimeHistoryList", "heatingOperTimeHistoryList", "coolingOperTimeHistoryList", "fanonlyOperTimeHistoryList", "idleOperTimeHistoryList",
-	]
-	stateNames?.each { st ->
-		if(state[st.toString()]) {
-			state[st.toString()] = null
-			log.debug "($st) State Value is now cleared..."
-		}
-	}
-}
-*/
 
 def getMinTemp() {
 	def list = []
