@@ -39,33 +39,25 @@ definition(
 
 include 'asynchttp_v1'
 
-def appVersion() { "3.6.6" }
-def appVerDate() { "10-8-2016" }
+def appVersion() { "3.7.1" }
+def appVerDate() { "10-7-2016" }
 def appVerInfo() {
 	def str = ""
 
-	str += "V3.6.0 (October 4th, 2016):"
+	str += "V3.7.1 (October 7th, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
-	str += "\n • More tweaks to the certain UI Elements..."
-
-	str += "\n\nV3.5.5 (October 4th, 2016):"
-	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
+	str += "\n • UPDATED: More tweaks to the certain UI Elements..."
+	str += "\n • NEW: Allow Voice Report via Ask Alexa app for schedules and a future report..."
 	str += "\n • UPDATED: Lot's more UI polish automations..."
 	str += "\n • UPDATED: Lot's of little bugfixes...."
 	str += "\n • ADDED: Beta Test of async http polling...."
 	str += "\n • ADDED: User Feedback Page to send directly to developer...."
-
-	str += "\n\nV3.4.6 (October 1st, 2016):"
-	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
 	str += "\n • UPDATED: Lot's of UI reworks for automations..."
 	str += "\n • UPDATED: Lot's of little bugfixes...."
 	str += "\n • UPDATED: Merged in eric's latest patch..."
 	str += "\n • UPDATED: Lot's of modifications to the thermostat UI design..."
 	str += "\n • UPDATED: Cleanup of Old Code and bugfixes..."
 	str += "\n • UPDATED: More bug fixes and cleanups..."
-
-	str += "\n\nV3.3.0 (September 19th, 2016):"
-	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
 	str += "\n • UPDATED: Automation Refactor with Schedules (ALPHA)..."
 
 	return str
@@ -1703,10 +1695,10 @@ def ok2PollStruct() {
 
 
 def isPollAllowed() { return (atomicState?.pollingOn && (atomicState?.thermostats || atomicState?.protects || atomicState?.weatherDevice || atomicState?.cameras)) ? true : false }
-def getLastDevicePollSec() { return !atomicState?.lastDevDataUpd ? 840 : GetTimeDiffSeconds(atomicState?.lastDevDataUpd).toInteger() }
-def getLastStructPollSec() { return !atomicState?.lastStrucDataUpd ? 1000 : GetTimeDiffSeconds(atomicState?.lastStrucDataUpd).toInteger() }
-def getLastForcedPollSec() { return !atomicState?.lastForcePoll ? 1000 : GetTimeDiffSeconds(atomicState?.lastForcePoll).toInteger() }
-def getLastChildUpdSec() { return !atomicState?.lastChildUpdDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastChildUpdDt).toInteger() }
+def getLastDevicePollSec() { return !atomicState?.lastDevDataUpd ? 840 : GetTimeDiffSeconds(atomicState?.lastDevDataUpd, null, "getLastDevicePollSec").toInteger() }
+def getLastStructPollSec() { return !atomicState?.lastStrucDataUpd ? 1000 : GetTimeDiffSeconds(atomicState?.lastStrucDataUpd, null, "getLastStructPollSec").toInteger() }
+def getLastForcedPollSec() { return !atomicState?.lastForcePoll ? 1000 : GetTimeDiffSeconds(atomicState?.lastForcePoll, null, "getLastForcedPollSec").toInteger() }
+def getLastChildUpdSec() { return !atomicState?.lastChildUpdDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastChildUpdDt, null, "getLastChildUpdSec").toInteger() }
 
 /************************************************************************************************
 |										Nest API Commands										|
@@ -1714,7 +1706,7 @@ def getLastChildUpdSec() { return !atomicState?.lastChildUpdDt ? 100000 : GetTim
 
 private cmdProcState(Boolean value) { atomicState?.cmdIsProc = value }
 private cmdIsProc() { return !atomicState?.cmdIsProc ? false : true }
-private getLastProcSeconds() { return atomicState?.cmdLastProcDt ? GetTimeDiffSeconds(atomicState?.cmdLastProcDt) : 0 }
+private getLastProcSeconds() { return atomicState?.cmdLastProcDt ? GetTimeDiffSeconds(atomicState?.cmdLastProcDt, null, "getLastProcSeconds") : 0 }
 
 def apiVar() {
 	def api = [
@@ -2059,7 +2051,7 @@ private setRecentSendCmd(qnum, val) {
 	return
 }
 
-private getLastCmdSentSeconds(qnum) { return atomicState?."lastCmdSentDt${qnum}" ? GetTimeDiffSeconds(atomicState?."lastCmdSentDt${qnum}") : 3601 }
+private getLastCmdSentSeconds(qnum) { return atomicState?."lastCmdSentDt${qnum}" ? GetTimeDiffSeconds(atomicState?."lastCmdSentDt${qnum}", null, "getLastCmdSentSeconds") : 3601 }
 
 private setLastCmdSentSeconds(qnum, val) {
 	atomicState."lastCmdSentDt${qnum}" = val
@@ -2251,9 +2243,9 @@ def increaseCmdCnt() {
 |								Push Notification Functions										|
 *************************************************************************************************/
 def pushStatus() { return (settings?.recipients || settings?.phone || settings?.usePush) ? (settings?.usePush ? "Push Enabled" : "Enabled") : null }
-def getLastMsgSec() { return !atomicState?.lastMsgDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastMsgDt).toInteger() }
-def getLastUpdMsgSec() { return !atomicState?.lastUpdMsgDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastUpdMsgDt).toInteger() }
-def getLastMisPollMsgSec() { return !atomicState?.lastMisPollMsgDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastMisPollMsgDt).toInteger() }
+def getLastMsgSec() { return !atomicState?.lastMsgDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastMsgDt, null, "getLastMsgSec").toInteger() }
+def getLastUpdMsgSec() { return !atomicState?.lastUpdMsgDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastUpdMsgDt, null, "getLastUpdMsgSec").toInteger() }
+def getLastMisPollMsgSec() { return !atomicState?.lastMisPollMsgDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastMisPollMsgDt, null, "getLastMisPollMsgSec").toInteger() }
 def getRecipientsSize() { return !settings.recipients ? 0 : settings?.recipients.size() }
 
 //this is parent only method
@@ -2357,11 +2349,11 @@ def sendMsg(msgType, msg, people = null, sms = null, push = null, brdcast = null
 	}
 }
 
-def getLastWebUpdSec() { return !atomicState?.lastWebUpdDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastWebUpdDt).toInteger() }
-def getLastWeatherUpdSec() { return !atomicState?.lastWeatherUpdDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastWeatherUpdDt).toInteger() }
-def getLastForecastUpdSec() { return !atomicState?.lastForecastUpdDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastForecastUpdDt).toInteger() }
-def getLastAnalyticUpdSec() { return !atomicState?.lastAnalyticUpdDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastAnalyticUpdDt).toInteger() }
-def getLastUpdateMsgSec() { return !atomicState?.lastUpdateMsgDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastUpdateMsgDt).toInteger() }
+def getLastWebUpdSec() { return !atomicState?.lastWebUpdDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastWebUpdDt, null, "getLastWebUpdSec").toInteger() }
+def getLastWeatherUpdSec() { return !atomicState?.lastWeatherUpdDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastWeatherUpdDt, null, "getLastWeatherUpdSec").toInteger() }
+def getLastForecastUpdSec() { return !atomicState?.lastForecastUpdDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastForecastUpdDt, null, "getLastForecastUpdSec").toInteger() }
+def getLastAnalyticUpdSec() { return !atomicState?.lastAnalyticUpdDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastAnalyticUpdDt, null, "getLastAnalyticUpdSec").toInteger() }
+def getLastUpdateMsgSec() { return !atomicState?.lastUpdateMsgDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastUpdateMsgDt, null, "getLastUpdateMsgSec").toInteger() }
 
 def getStZipCode() { return location?.zipCode.toString() }
 def getNestZipCode() { return atomicState?.structData[atomicState?.structures].postal_code ? atomicState?.structData[atomicState?.structures]?.postal_code.toString() : "" }
@@ -3813,14 +3805,20 @@ def formatDt(dt) {
 	return tf.format(dt)
 }
 
-def GetTimeDiffSeconds(lastDate) {
-	if(lastDate?.contains("dtNow")) { return 10000 }
-	def now = new Date()
-	def lastDt = Date.parse("E MMM dd HH:mm:ss z yyyy", lastDate)
-	def start = Date.parse("E MMM dd HH:mm:ss z yyyy", formatDt(lastDt)).getTime()
-	def stop = Date.parse("E MMM dd HH:mm:ss z yyyy", formatDt(now)).getTime()
-	def diff = (int) (long) (stop - start) / 1000
-	return diff
+def GetTimeDiffSeconds(strtDate, stpDate=null, methName=null) {
+	LogAction("[GetTimeDiffSeconds] StartDate: $strtDate | StopDate: ${stpDate ?: "Not Sent"} | MethodName: ${methName ?: "Not Sent"})", "warn", false)
+	if((strtDate && !stpDate) || (strtDate && stpDate)) {
+		if(strtDate?.contains("dtNow")) { return 10000 }
+		def now = new Date()
+		def stopVal = stpDate ? stpDate.toString() : formatDt(now)
+		def startDt = Date.parse("E MMM dd HH:mm:ss z yyyy", strtDate)
+		def stopDt = Date.parse("E MMM dd HH:mm:ss z yyyy", stopVal)
+		def start = Date.parse("E MMM dd HH:mm:ss z yyyy", formatDt(startDt)).getTime()
+		def stop = Date.parse("E MMM dd HH:mm:ss z yyyy", stopVal).getTime()
+		def diff = (int) (long) (stop - start) / 1000
+		//log.trace "[GetTimeDiffSeconds] Results for '$methName': ($diff seconds)"
+		return diff
+	} else { return null }
 }
 
 def daysOk(days) {
@@ -5271,7 +5269,7 @@ def mainAutoPage(params) {
 					}
 					atomicState.disableAutomation = disableAutomationreq
 				}
-				input (name: "showDebug", type: "bool", title: "Debug Option", description: "Show App Logs in the IDE?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("log.png"))
+				input ("showDebug", "bool", title: "Debug Option", description: "Show App Logs in the IDE?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("log.png"))
 				atomicState?.showDebug = showDebug
 			}
 			section("Automation Name:") {
@@ -5755,7 +5753,7 @@ def scheduleAutomationEval(schedtime = 20) {
 	}
 }
 
-def getLastAutomationSchedSec() { return !atomicState?.lastAutomationSchedDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastAutomationSchedDt).toInteger() }
+def getLastAutomationSchedSec() { return !atomicState?.lastAutomationSchedDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastAutomationSchedDt, null, "getLastAutomationSchedSec").toInteger() }
 
 def runAutomationEval() {
 	LogAction("runAutomationEval...", "trace", false)
@@ -5834,6 +5832,9 @@ def automationTstatModeEvt(evt) {
 		scheduleAutomationEval()
 		storeLastEventData(evt)
 	}
+	if(settings?.disableRuntimeMetrics == false) {
+		handleRunMetModeData(evt)
+	}
 }
 
 def automationPresenceEvt(evt) {
@@ -5870,6 +5871,9 @@ def automationTstatFanEvt(evt) {
 		scheduleAutomationEval()
 		storeLastEventData(evt)
 	}
+	if(settings?.disableRuntimeMetrics == false) {
+		handleRunMetFanData(evt)
+	}
 }
 
 def automationTstatOperEvt(evt) {
@@ -5878,6 +5882,9 @@ def automationTstatOperEvt(evt) {
 	else {
 		scheduleAutomationEval()
 		storeLastEventData(evt)
+	}
+	if(settings?.disableRuntimeMetrics == false) {
+		handleRunMetOperData(evt)
 	}
 }
 
@@ -5931,6 +5938,7 @@ def watchDogPage() {
 		}
 	}
 }
+
 
 def automationSafetyTempEvt(evt) {
 	LogAction("Event | Thermostat Safety Temp Exceeded: '${evt.displayName}' (${evt.value})", "trace", true)
@@ -6000,14 +6008,30 @@ def watchDogAlarmActions(dev, dni, actType) {
 	}
 }
 
-def getLastWatDogSafetyAlertDtSec(dni) { return !atomicState?."lastWatDogSafetyAlertDt{$dni}" ? 10000 : GetTimeDiffSeconds(atomicState?."lastWatDogSafetyAlertDt${dni}").toInteger() }
+def getLastWatDogSafetyAlertDtSec(dni) { return !atomicState?."lastWatDogSafetyAlertDt{$dni}" ? 10000 : GetTimeDiffSeconds(atomicState?."lastWatDogSafetyAlertDt${dni}", null, "getLastWatDogSafetyAlertDtSec").toInteger() }
 def getWatDogRepeatMsgDelayVal() { return !watDogRepeatMsgDelay ? 3600 : watDogRepeatMsgDelay.toInteger() }
 
 def isWatchdogConfigured() {
 	return (atomicState?.automationType == "watchDog") ? true : false
 }
 
+def getWeekNum() {
+    return Calendar.getInstance().get(Calendar.WEEK_OF_YEAR).toInteger()
+}
 
+def getDayOfWeekNum() {
+	return Calendar.getInstance().get(Calendar.DAY_OF_WEEK).toInteger()
+}
+
+def secToTimeMap(long seconds) {
+    long sec = seconds % 60
+    long minutes = seconds % 3600 / 60
+    long hours = seconds % 86400 / 3600
+    long days = seconds / 86400
+	long years = days / 365
+	def res = ["m":minutes, "h":hours, "d":days, "y":years]
+	return res
+}
 /////////////////////THERMOSTAT AUTOMATION CODE LOGIC ///////////////////////
 
 /****************************************************************************
@@ -6055,12 +6079,12 @@ def isRemSenConfigured() {
 
 def getLastMotionActiveSec(mySched) {
 	def sLbl = "schMot_${mySched}_"
-	return !atomicState?."${sLbl}MotionActiveDt" ? 0 : GetTimeDiffSeconds(atomicState?."${sLbl}MotionActiveDt").toInteger()
+	return !atomicState?."${sLbl}MotionActiveDt" ? 0 : GetTimeDiffSeconds(atomicState?."${sLbl}MotionActiveDt", null, "getLastMotionActiveSec").toInteger()
 }
 
 def getLastMotionInActiveSec(mySched) {
 	def sLbl = "schMot_${mySched}_"
-	return !atomicState?."${sLbl}MotionInActiveDt" ? 0 : GetTimeDiffSeconds(atomicState?."${sLbl}MotionInActiveDt").toInteger()
+	return !atomicState?."${sLbl}MotionInActiveDt" ? 0 : GetTimeDiffSeconds(atomicState?."${sLbl}MotionInActiveDt", null, "getLastMotionInActiveSec").toInteger()
 }
 
 def automationMotionEvt(evt) {
@@ -6225,15 +6249,6 @@ def remSendoSetHeat(chgval, onTemp, offTemp) {
 	}
 	return  false
 }
-
-/*
-private remSenCheck() {
-	LogAction("remSenCheck.....", "trace", true)
-	if(atomicState?.disableAutomation) { return }
-	remSenCheck()
-	//remSenTstatFanSwitchCheck()
-}
-*/
 
 private remSenCheck() {
 	LogAction("remSenCheck.....", "trace", true)
@@ -6611,8 +6626,8 @@ def getRemoteSenAutomationEnabled() {
 // TODO When a temp change is sent to virtual device, it lasts for 4 hours, or next turn off, then we return to automation settings
 // Other choices could be to change the schedule setpoint permanently if one is active,  or allow folks to set timer,  or have next schedule change clear override
 
-def getLastOverrideCoolSec() { return !atomicState?.lastOverrideCoolDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastOverrideCoolDt).toInteger() }
-def getLastOverrideHeatSec() { return !atomicState?.lastOverrideHeatDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastOverrideHeatDt).toInteger() }
+def getLastOverrideCoolSec() { return !atomicState?.lastOverrideCoolDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastOverrideCoolDt, null, "getLastOverrideCoolSec").toInteger() }
+def getLastOverrideHeatSec() { return !atomicState?.lastOverrideHeatDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastOverrideHeatDt, null, "getLastOverrideHeatSec").toInteger() }
 
 def remSenTempUpdate(temp, mode) {
 	LogAction("remSenTempUpdate(${temp}, ${mode})", "trace", true)
@@ -6938,8 +6953,8 @@ def doFanOperation(tempDiff) {
 	}
 }
 
-def getLastRemSenFanRunDtSec() { return !atomicState?.lastRemSenFanRunDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastRemSenFanRunDt).toInteger() }
-def getLastRemSenFanOffDtSec() { return !atomicState?.lastRemSenFanOffDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastRemSenFanOffDt).toInteger() }
+def getLastRemSenFanRunDtSec() { return !atomicState?.lastRemSenFanRunDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastRemSenFanRunDt, null, "getLastRemSenFanRunDtSec").toInteger() }
+def getLastRemSenFanOffDtSec() { return !atomicState?.lastRemSenFanOffDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastRemSenFanOffDt, null, "getLastRemSenFanOffDtSec").toInteger() }
 
 
 // CONTROLS THE THERMOSTAT FAN
@@ -7229,8 +7244,8 @@ def extTmpTempOk() {
 
 def extTmpScheduleOk() { return autoScheduleOk(extTmpPrefix()) }
 def getExtTmpTempDiffVal() { return !settings?.extTmpDiffVal ? 1.0 : settings?.extTmpDiffVal.toDouble() }
-def getExtTmpWhileOnDtSec() { return !atomicState?.extTmpChgWhileOnDt ? 100000 : GetTimeDiffSeconds(atomicState?.extTmpChgWhileOnDt).toInteger() }
-def getExtTmpWhileOffDtSec() { return !atomicState?.extTmpChgWhileOffDt ? 100000 : GetTimeDiffSeconds(atomicState?.extTmpChgWhileOffDt).toInteger() }
+def getExtTmpWhileOnDtSec() { return !atomicState?.extTmpChgWhileOnDt ? 100000 : GetTimeDiffSeconds(atomicState?.extTmpChgWhileOnDt, null, "getExtTmpWhileOnDtSec").toInteger() }
+def getExtTmpWhileOffDtSec() { return !atomicState?.extTmpChgWhileOffDt ? 100000 : GetTimeDiffSeconds(atomicState?.extTmpChgWhileOffDt, null, "getExtTmpWhileOffDtSec").toInteger() }
 
 // TODO allow override from schedule?
 def getExtTmpOffDelayVal() { return !settings?.extTmpOffDelay ? 300 : settings?.extTmpOffDelay.toInteger() }
@@ -7500,9 +7515,9 @@ def isConWatConfigured() {
 def getConWatContactsOk() { return settings?.conWatContacts?.currentState("contact")?.value.contains("open") ? false : true }
 def conWatContactOk() { return (!settings?.conWatContacts) ? false : true }
 def conWatScheduleOk() { return autoScheduleOk(conWatPrefix()) }
-def getConWatOpenDtSec() { return !atomicState?.conWatOpenDt ? 100000 : GetTimeDiffSeconds(atomicState?.conWatOpenDt).toInteger() }
-def getConWatCloseDtSec() { return !atomicState?.conWatCloseDt ? 100000 : GetTimeDiffSeconds(atomicState?.conWatCloseDt).toInteger() }
-def getConWatRestoreDelayBetweenDtSec() { return !atomicState?.conWatRestoredDt ? 100000 : GetTimeDiffSeconds(atomicState?.conWatRestoredDt).toInteger() }
+def getConWatOpenDtSec() { return !atomicState?.conWatOpenDt ? 100000 : GetTimeDiffSeconds(atomicState?.conWatOpenDt, null, "getConWatOpenDtSec").toInteger() }
+def getConWatCloseDtSec() { return !atomicState?.conWatCloseDt ? 100000 : GetTimeDiffSeconds(atomicState?.conWatCloseDt, null, "getConWatCloseDtSec").toInteger() }
+def getConWatRestoreDelayBetweenDtSec() { return !atomicState?.conWatRestoredDt ? 100000 : GetTimeDiffSeconds(atomicState?.conWatRestoredDt, null, "getConWatRestoreDelayBetweenDtSec").toInteger() }
 
 // TODO allow override from schedule?
 def getConWatOffDelayVal() { return !settings?.conWatOffDelay ? 300 : (settings?.conWatOffDelay.toInteger()) }
@@ -7775,7 +7790,7 @@ def leakWatScheduleOk() { return autoScheduleOk(leakWatPrefix()) }
 
 // TODO allow override from schedule?
 def getLeakWatOnDelayVal() { return !settings?.leakWatOnDelay ? 300 : settings?.leakWatOnDelay.toInteger() }
-def getLeakWatDryDtSec() { return !atomicState?.leakWatDryDt ? 100000 : GetTimeDiffSeconds(atomicState?.leakWatDryDt).toInteger() }
+def getLeakWatDryDtSec() { return !atomicState?.leakWatDryDt ? 100000 : GetTimeDiffSeconds(atomicState?.leakWatDryDt, null, "getLeakWatDryDtSec").toInteger() }
 
 def leakWatCheck() {
 	//log.trace "leakWatCheck..."
@@ -8834,8 +8849,8 @@ def setTstatTempCheck() {
 					}
 				}
 			}
+			atomicState.lastSched = mySched
 		}
-		atomicState.lastSched = mySched
 		storeExecutionHistory((now() - execTime), "setTstatTempCheck")
 	} catch (ex) {
 		log.error "setTstatTempCheck Exception:", ex
@@ -9945,7 +9960,7 @@ def isSchMotConfigured() {
 	return false
 }
 
-def getLastschMotEvalSec() { return !atomicState?.lastschMotEval ? 100000 : GetTimeDiffSeconds(atomicState?.lastschMotEval).toInteger() }
+def getLastschMotEvalSec() { return !atomicState?.lastschMotEval ? 100000 : GetTimeDiffSeconds(atomicState?.lastschMotEval, null, "getLastschMotEvalSec").toInteger() }
 
 def schMotCheck() {
 	LogAction("schMotCheck...", "trace", false)

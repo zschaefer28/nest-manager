@@ -5,32 +5,12 @@
     "state": {
         "stateVarVer": 2
     },
-    "versions": {
-        "app": {
-            "ver": "3.1.4"
-        },
-        "thermostat": {
-            "ver": "3.1.1"
-        },
-        "protect": {
-            "ver": "3.1.0"
-        },
-        "camera": {
-            "ver": "1.1.1"
-        },
-        "presence": {
-            "ver": "3.1.0"
-        },
-        "weather": {
-            "ver": "3.1.1"
-        }
-    },
     "token": {
         "tokenNum": 2
     },
     "broadcast": {
         "msgId": "eavl9D2vry",
-        "message": "Nest Manager Broadcast: Version 3.1.4 is now available.  Please make sure to update the SmartApp and Devices...",
+        "message": "Nest Manager Broadcast: Version 3.1.3 is now available.  Please make sure to update the SmartApp and Devices...",
         "type": "info"
     },
     "updater": {
@@ -77,5 +57,16 @@
     },
     "aaSupport": {
         "enabled": true
+    },
+    "aaPrefs": {
+        "enAaMsgQueue": true,
+        "enAaVoiceZoneRprt": true,
+        "enAaVoiceUseRprt": true
+    },
+    "dashPrefs": {
+        "enabled": true
+    },
+    "clientBL": {
+        "clients": []
     }
 }
