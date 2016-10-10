@@ -55,9 +55,6 @@
     "database": {
         "disableExceptions": true
     },
-    "aaSupport": {
-        "enabled": true
-    },
     "aaPrefs": {
         "enAaMsgQueue": true,
         "enAaVoiceZoneRprt": true,

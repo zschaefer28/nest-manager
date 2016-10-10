@@ -39,7 +39,7 @@ definition(
 
 include 'asynchttp_v1'
 
-def appVersion() { "3.7.2" }
+def appVersion() { "3.7.3" }
 def appVerDate() { "10-10-2016" }
 def appVerInfo() {
 	def str = ""
@@ -1407,6 +1407,8 @@ def updateChildData(force = false) {
 		def api = !apiIssues() ? false : true
 		def htmlInfo = getHtmlInfo()
 		def allowDbException = allowDbException()
+		def aaZoneRprtEn = getAskAlexaEnVoiceZoneRprt()
+		def aaUseRprtEn = getAskAlexaEnVoiceUseRprt()
 		getAllChildDevices()?.each {
 			def devId = it?.deviceNetworkId
 			if(atomicState?.thermostats && atomicState?.deviceData?.thermostats[devId]) {
@@ -1422,7 +1424,7 @@ def updateChildData(force = false) {
 				def comfortHumidity = settings?."${devId}_comfort_humidity_max" ?: 80
 				def tData = ["data":atomicState?.deviceData?.thermostats[devId], "mt":useMt, "debug":dbg, "tz":nestTz, "apiIssues":api, "safetyTemps":safetyTemps, "comfortHumidity":comfortHumidity,
 						"comfortDewpoint":comfortDewpoint, "pres":locationPresence(), "childWaitVal":getChildWaitVal().toInteger(), "htmlInfo":htmlInfo, "allowDbException":allowDbException,
-						"latestVer":latestTstatVer()?.ver?.toString()]
+						"latestVer":latestTstatVer()?.ver?.toString(), "usageVoiceRprtEn":aaUseRprtEn, "zoneVoiceRprtEn":aaZoneRprtEn]
 				def oldTstatData = atomicState?."oldTstatData${devId}"
 				def tDataChecksum = generateMD5_A(tData.toString())
 				atomicState."oldTstatData${devId}" = tDataChecksum
@@ -2562,7 +2564,15 @@ def versionStr2Int(str) { return str ? str.toString().replaceAll("\\.", "").toIn
 def getChildWaitVal() { return settings?.tempChgWaitVal ? settings?.tempChgWaitVal.toInteger() : 4 }
 
 def getAskAlexaQueueEnabled() {
-	if(!parent) { return (atomicState?.appData?.aaSupport?.enabled == true) ? true : false }
+	if(!parent) { return (atomicState?.appData?.aaPrefs?.enAaMsgQueue == true) ? true : false }
+}
+
+def getAskAlexaEnVoiceUseRprt() {
+	if(!parent) { return (atomicState?.appData?.aaPrefs?.enAaVoiceUseRprt == false || settings?.disableVoiceUsageRprt == false) ? false : true }
+}
+
+def getAskAlexaEnVoiceZoneRprt() {
+	if(!parent) { return (atomicState?.appData?.aaPrefs?.enAaVoiceZoneRprt == false || settings?.disableVoiceZoneRprt == false) ? false : true }
 }
 
 def isCodeUpdateAvailable(newVer, curVer, type) {
@@ -4120,6 +4130,8 @@ def devPrefPage() {
 		if(atomicState?.thermostats) {
 			section("Thermostat Devices:") {
 				input ("tempChgWaitVal", "enum", title: "Manual Temp Change Delay", required: false, defaultValue: 4, metadata: [values:waitValEnum()], submitOnChange: true, image: getAppImg("temp_icon.png"))
+				input ("disableVoiceZoneRprt", "bool", title: "Disable Thermostat Zone Voice Reports?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("speech_icon.png"))
+				input ("disableVoiceUsageRprt", "bool", title: "Disable Thermostat Usage Voice Reports?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("speech_icon.png"))
 				atomicState.needChildUpd = true
 			}
 		}

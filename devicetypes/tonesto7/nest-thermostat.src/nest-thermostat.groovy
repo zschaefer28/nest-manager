@@ -344,6 +344,8 @@ def processEvent() {
 			if(eventData?.safetyTemps) { safetyTempsEvent(eventData?.safetyTemps) }
 			if(eventData?.comfortHumidity) { comfortHumidityEvent(eventData?.comfortHumidity) }
 			if(eventData?.comfortDewpoint) { comfortDewpointEvent(eventData?.comfortDewpoint) }
+			if(eventData?.usageVoiceRprtEn) { state.usageVoiceRprtEn = usageVoiceRprtEn ? true : false }
+			if(eventData?.zoneVoiceRprtEn) { state.zoneVoiceRprtEn = zoneVoiceRprtEn ? true : false }
 			def hvacMode = state?.hvac_mode
 			def tempUnit = state?.tempUnit
 			switch (tempUnit) {
@@ -1640,10 +1642,12 @@ def getNestMgrReport(type) {
 	else {
 		switch (type) {
 			case "curZoneInfo":
-				return parent?.reqSchedInfoRprt(this).toString()
+				if(state?.zoneVoiceRprtEn == false) { return "Usage voice reports have been disabled by Nest manager app preferences" }
+				else { return parent?.reqSchedInfoRprt(this).toString() }
 				break
 			case ["runtimeToday", "runtimeWeek", "runtimeMonth"]:
-				return getUsageVoiceReport(type)
+				if(state?.usageVoiceRprtEn == false) { return "Zone status voice reports have been disabled by Nest manager app preferences" }
+				else { return getUsageVoiceReport(type) }
 				break
 			default:
 				return "I'm sorry but No report was found for the report type provided"
