@@ -39,8 +39,8 @@ definition(
 
 include 'asynchttp_v1'
 
-def appVersion() { "3.7.1" }
-def appVerDate() { "10-7-2016" }
+def appVersion() { "3.7.2" }
+def appVerDate() { "10-10-2016" }
 def appVerInfo() {
 	def str = ""
 
@@ -5832,9 +5832,6 @@ def automationTstatModeEvt(evt) {
 		scheduleAutomationEval()
 		storeLastEventData(evt)
 	}
-	if(settings?.disableRuntimeMetrics == false) {
-		handleRunMetModeData(evt)
-	}
 }
 
 def automationPresenceEvt(evt) {
@@ -5871,9 +5868,6 @@ def automationTstatFanEvt(evt) {
 		scheduleAutomationEval()
 		storeLastEventData(evt)
 	}
-	if(settings?.disableRuntimeMetrics == false) {
-		handleRunMetFanData(evt)
-	}
 }
 
 def automationTstatOperEvt(evt) {
@@ -5882,9 +5876,6 @@ def automationTstatOperEvt(evt) {
 	else {
 		scheduleAutomationEval()
 		storeLastEventData(evt)
-	}
-	if(settings?.disableRuntimeMetrics == false) {
-		handleRunMetOperData(evt)
 	}
 }
 
@@ -6015,23 +6006,6 @@ def isWatchdogConfigured() {
 	return (atomicState?.automationType == "watchDog") ? true : false
 }
 
-def getWeekNum() {
-    return Calendar.getInstance().get(Calendar.WEEK_OF_YEAR).toInteger()
-}
-
-def getDayOfWeekNum() {
-	return Calendar.getInstance().get(Calendar.DAY_OF_WEEK).toInteger()
-}
-
-def secToTimeMap(long seconds) {
-    long sec = seconds % 60
-    long minutes = seconds % 3600 / 60
-    long hours = seconds % 86400 / 3600
-    long days = seconds / 86400
-	long years = days / 365
-	def res = ["m":minutes, "h":hours, "d":days, "y":years]
-	return res
-}
 /////////////////////THERMOSTAT AUTOMATION CODE LOGIC ///////////////////////
 
 /****************************************************************************
@@ -8849,8 +8823,8 @@ def setTstatTempCheck() {
 					}
 				}
 			}
-			atomicState.lastSched = mySched
 		}
+		atomicState.lastSched = mySched
 		storeExecutionHistory((now() - execTime), "setTstatTempCheck")
 	} catch (ex) {
 		log.error "setTstatTempCheck Exception:", ex
