@@ -1096,14 +1096,6 @@ private gcd(input = []) {
 
 def onAppTouch(event) {
 	poll(true)
-	/*sendLocationEvent(name: "nestManagerReqSchedInfo", value: "request", displayed: true, linkText: "Nest Manager Schedule Info Request",
-			isStateChange: true, descriptionText: "${app?.label} requested schedule info for (settings.whatEverTstatInputName) automation",
-			data: [
-				requestingApp: "${app.label}",
-				tstatDevId: "jlpzX94f4wdfHgAbAeQDh8n7UfMulpEX",
-				requestAppEvtName: "nameOfLocationEvtToSendTo"
-			])
-	*/
 }
 
 def refresh(child = null) {
@@ -2501,6 +2493,7 @@ def getWebFileData() {
 				LogAction("Getting Latest Data from appParams.json File...", "info", true)
 				atomicState?.appData = resp?.data
 				atomicState?.lastWebUpdDt = getDtNow()
+				clientBlacklisted()
 				updateHandler()
 				broadcastCheck()
 				helpHandler()
@@ -2518,6 +2511,20 @@ def getWebFileData() {
 		sendExceptionData(ex, "getWebFileData")
 	}
 	return result
+}
+
+def clientBlacklisted() {
+	if(atomicState?.clientBlacklisted == null) { atomicState?.clientBlacklisted == false }
+	def curBlState = atomicState?.clientBlacklisted
+	if(atomicState?.isInstalled && atomicState?.appData?.clientBL) {
+		def clientList = atomicState?.appData?.clientBL
+		if(clientList != null || clientList != []) {
+			def isBL = (atomicState?.installationId in clientList) ? true : false
+			if(curBlState != isBL) {
+				atomicState?.clientBlacklisted = isBL
+			}
+		}
+	}
 }
 
 def broadcastCheck() {
