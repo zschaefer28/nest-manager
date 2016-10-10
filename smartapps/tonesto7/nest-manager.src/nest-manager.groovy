@@ -226,6 +226,9 @@ def mainPage() {
 				href url: stIdeLink(), style:"external", required: false, title:"An Update is Available for ${appName()}!!!",
 						description:"Current: v${appVersion()} | New: ${atomicState?.appData?.updater?.versions?.app?.ver}\n\nTap to Open the IDE in your Mobile Browser...", state: "complete", image: getAppImg("update_icon.png")
 			}
+			if(atomicState?.appData && !appDevType() && atomicState?.clientBlacklisted) {
+				paragraph "This ID is blacklisted, please update software!!!\nIf software is up to date, contact developer...", required: true, state: null
+			}
 		}
 		if(atomicState?.isInstalled) {
 			section("Manage your Devices & Location:") {
@@ -1688,7 +1691,11 @@ def ok2PollStruct() {
 }
 
 
-def isPollAllowed() { return (atomicState?.pollingOn && (atomicState?.thermostats || atomicState?.protects || atomicState?.weatherDevice || atomicState?.cameras)) ? true : false }
+def isPollAllowed() {
+	return (atomicState?.pollingOn &&
+		!atomicState?.clientBlacklisted &&
+		(atomicState?.thermostats || atomicState?.protects || atomicState?.weatherDevice || atomicState?.cameras)) ? true : false
+}
 def getLastDevicePollSec() { return !atomicState?.lastDevDataUpd ? 840 : GetTimeDiffSeconds(atomicState?.lastDevDataUpd, null, "getLastDevicePollSec").toInteger() }
 def getLastStructPollSec() { return !atomicState?.lastStrucDataUpd ? 1000 : GetTimeDiffSeconds(atomicState?.lastStrucDataUpd, null, "getLastStructPollSec").toInteger() }
 def getLastForcedPollSec() { return !atomicState?.lastForcePoll ? 1000 : GetTimeDiffSeconds(atomicState?.lastForcePoll, null, "getLastForcedPollSec").toInteger() }
