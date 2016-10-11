@@ -1935,13 +1935,13 @@ def getCssData() {
 				state?.cssVer = htmlInfo?.cssVer
 			}
 		} else {
-			LogAction("getCssData: CSS Data is Missing | Loading Data from Source...")
+			//LogAction("getCssData: CSS Data is Missing | Loading Data from Source...")
 			cssData = getFileBase64(htmlInfo.cssUrl, "text", "css")
 			state?.cssData = cssData
 			state?.cssVer = htmlInfo?.cssVer
 		}
 	} else {
-		LogAction("getCssData: No Stored CSS Info Data Found for Device... Loading for Static URL...")
+		//LogAction("getCssData: No Stored CSS Info Data Found for Device... Loading for Static URL...")
 		cssData = getFileBase64(cssUrl(), "text", "css")
 	}
 	return cssData
