@@ -44,8 +44,9 @@ def appVerDate() { "10-10-2016" }
 def appVerInfo() {
 	def str = ""
 
-	str += "V3.7.1 (October 7th, 2016):"
+	str += "V3.7.4 (October 10th, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
+	str += "\n • NEW: Full support from experimental async HTTP requests..."
 	str += "\n • UPDATED: More tweaks to the certain UI Elements..."
 	str += "\n • NEW: Allow Voice Report via Ask Alexa app for schedules and a future report..."
 	str += "\n • UPDATED: Lot's more UI polish automations..."
@@ -1145,7 +1146,7 @@ def poll(force = false, type = null) {
 				metstr = "async"
 			}
 			if(ok2PollStruct()) {
-				LogAction("Updating Structure Data...(Last Updated: ${getLastStructPollSec()} seconds ago) ${metstr}", "info", true)
+				LogAction("Updating Structure Data...(Last Updated: ${getLastStructPollSec()} seconds ago) (${metstr})", "info", true)
 				if(allowAsync) {
 					str = queueGetApiData("str")
 				} else {
@@ -1153,7 +1154,7 @@ def poll(force = false, type = null) {
 				}
 			}
 			if(ok2PollDevice()) {
-				LogAction("Updating Device Data...(Last Updated: ${getLastDevicePollSec()} seconds ago) ${metstr}", "info", true)
+				LogAction("Updating Device Data...(Last Updated: ${getLastDevicePollSec()} seconds ago) (${metstr})", "info", true)
 				if(allowAsync) {
 					dev = queueGetApiData("dev")
 				} else {
@@ -2284,7 +2285,7 @@ def nestResponse(resp, data) {
 				log.debug "raw response: $resp.errorData"
 			}
 		}
-		finishWorkQ(command, result) 
+		finishWorkQ(command, result)
 
 	} catch (ex) {
 		log.error "nestResponse (command: $command) Exception:", ex
