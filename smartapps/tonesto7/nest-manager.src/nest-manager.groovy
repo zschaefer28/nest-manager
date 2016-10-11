@@ -259,18 +259,17 @@ def mainPage() {
 				def prefDesc = (descStr != "") ? "Tap to Modify..." : "Tap to Configure..."
 				href "prefsPage", title: "Preferences", description: prefDesc, state: (descStr ? "complete" : ""), image: getAppImg("settings_icon.png")
 			}
-			section("View Change Logs, Donation, License Info, and Feedback:") {
-				href "infoPage", title: "Help, Info and Instructions", description: "Tap to view...", image: getAppImg("info.png")
-				href "feedbackPage", title: "Send Developer Feedback", description: "", image: getAppImg("feedback_icon.png")
+			section("View Change Logs, Donation, License Info, and Leave Feedback:") {
+				href "infoPage", title: "Help, Info, Instructions and More", description: "", image: getAppImg("info.png")
 			}
 			if(atomicState?.isInstalled && atomicState?.structures && (atomicState?.thermostats || atomicState?.protects || atomicState?.weatherDevice)) {
 				section("View App and Device Data, and Perform Device Tests:") {
-					href "nestInfoPage", title: "API | Diagnostics | Testing...", description: "Tap to view info...", image: getAppImg("api_diag_icon.png")
+					href "nestInfoPage", title: "API | Diagnostics | Testing...", description: "", image: getAppImg("api_diag_icon.png")
 				}
 			}
 			webDashConfig()
 			section("Remove All Apps, Automations, and Devices:") {
-				href "uninstallPage", title: "Uninstall this App", description: "Tap to Remove...", image: getAppImg("uninstall_icon.png")
+				href "uninstallPage", title: "Uninstall this App", description: "", image: getAppImg("uninstall_icon.png")
 			}
 		}
 	}
@@ -4308,8 +4307,11 @@ def devPrefPage() {
 		if(atomicState?.thermostats) {
 			section("Thermostat Devices:") {
 				input ("tempChgWaitVal", "enum", title: "Manual Temp Change Delay", required: false, defaultValue: 4, metadata: [values:waitValEnum()], submitOnChange: true, image: getAppImg("temp_icon.png"))
-				input ("disableVoiceZoneRprt", "bool", title: "Disable Thermostat Zone Voice Reports?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("speech_icon.png"))
-				input ("disableVoiceUsageRprt", "bool", title: "Disable Thermostat Usage Voice Reports?", required: false, defaultValue: false, submitOnChange: true, image: getAppImg("speech_icon.png"))
+				paragraph "The options below will allow you to disable voice report access from voice apps like Ask Alexa"
+				input ("disableVoiceZoneRprt", "bool", title: "Disable Thermostat Zone Voice Reports?", description: "This will return the current thermostat automations zone information details.",
+						required: false, defaultValue: false, submitOnChange: true, image: getAppImg("speech_icon.png"))
+				input ("disableVoiceUsageRprt", "bool", title: "Disable Thermostat Usage Voice Reports?", description: "This will return the thermostats elapsed runtime details.",
+ 						required: false, defaultValue: false, submitOnChange: true, image: getAppImg("speech_icon.png"))
 				atomicState.needChildUpd = true
 			}
 		}
@@ -4423,11 +4425,12 @@ def infoPage () {
 		section("About this App:") {
 			paragraph appInfoDesc(), image: getAppImg("nest_manager%402x.png", true)
 		}
-		section("Help and Instructions:") {
+		section("Help, Instructions, and Feedback:") {
 			href url: getReadmePageUrl(), style:"embedded", required:false, title:"Readme File",
 				description:"View the Projects Readme File...", state: "complete", image: getAppImg("readme_icon.png")
 			href url: getHelpPageUrl(), style:"embedded", required:false, title:"Help Pages",
 				description:"View the Help and Instructions Page...", state: "complete", image: getAppImg("help_icon.png")
+			href "feedbackPage", title: "Send Developer Feedback", description: "", image: getAppImg("feedback_icon.png")
 		}
 		section("Donations:") {
 			href url: textDonateLink(), style:"external", required: false, title:"Donations",
