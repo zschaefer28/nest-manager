@@ -1688,47 +1688,120 @@ def getUsageVoiceReport(type) {
 def generateUsageText(timeType, timeMap) {
 	def str = ""
 	if(timeType && timeMap) {
-		str += "Here is ${timeType}'s Usage report for the ${device?.displayName}.  "
-		str += "Ok...${timeType in ["week", "month"] ? "This ": ""}${timeType} there was "
+		str += "Here is your ${device?.displayName} Usage report for${timeType in ["week", "month"] ? " this" : ""} ${timeType}.  Based on your usage"
+		def hData = null
+		def cData = null
+		def iData = null
+		def f1Data = null
+		def f0Data = null
 
-		def newMap = [:]
 		timeMap?.each { item ->
 			def type = item?.key
-			def tData = item?.value
+			def tData = item?.value?.tData
 			def h = tData?.h.toInteger()
 			def m = tData?.m.toInteger()
 			def d = tData?.d.toInteger()
 			def y = tData?.y.toInteger()
-			if( h>0 || m>0 || d>0) {
-				def tStr = getTimeMapString(tData)
-				if(type?.toString() in ["idle", "cooling", "heating"]) {
-					newMap << ["${type}":"${tStr}"]
-				}
+			if(h>0 || m>0 || d>0) {
+				if(type == "heating") 	{ hData = item }
+				if(type == "cooling") 	{ cData = item }
+				if(type == "idle")	  	{ iData = item }
+				//if(type == "fanOn")   	{ f1Data = item }
+				//if(type == "fanAuto")	{ f0Data = item }
 			}
 		}
-		if(newMap?.size()) {
-			log.debug "newMap: $newMap"
-			def i = 1
-			newMap?.each { m ->
-				if(m?.key == "idle") {
-					str += m?.key + " for "
-					str += m?.value
-				}
-				else if(m?.key in ["fanAuto", "fanOn"]) {
+		if(hData || cData || iData) {// || f1Data || f0Data) {
+			def showAnd = hData || cData //|| f0Data || f1Data
+			if(iData?.key == "idle") {
+				def tData = iData?.value?.tData
+				def tSec = iData?.value?.tSec.toInteger()
+				def tStr = getTimeMapString(tData)
+				if(timeType == "today") {
+					def tm = getDayTimePerc(tSec)
+					if (tm>=66 && tm<=100) {
+						str += " it looks like it was a light day because your device "
+						str +=  "was idle $tm% of the day at "
+					}
+					else if (tm>=34 && tm<66) {
+						str += " it was a pretty moderate day because your device "
+						str +=  "was only idle $tm% of the day at "
+					}
+					else if (tm>0 && tm <34) {
+						str += " it was a very busy day becaue your device "
+						str +=  "was only idle $tm% of the day at "
+					}
+					str += tStr
 
 				}
 				else {
-					str += m?.value
-					str += " of " + m?.key
+					str += " spent "
+					str += tStr
+					str += " sitting ${iData?.key} this ${timeType} "
 				}
-				str += i < newMap?.size() ? " and " : " "
-				i = i+1
+				str += hData || cData ? " and" : ""
 			}
+			if(hData?.key == "heating") {
+				def tData = hData?.value?.tData
+				def tSec = hData?.value?.tSec.toInteger()
+				def tStr = getTimeMapString(tData)
+				if(timeType == "today") {
+					def tm = getDayTimePerc(tSec)
+					if(tm>=66 && tm<=100) {
+						str += " it must have been freezing today because your device was heating your home for "
+						str += tStr
+					}
+					else if (tm>=34 && tm<66) {
+						str += " it's like the weather was a bit chilly today because your device spent "
+						str += tStr
+						str += " trying to keep your home cozy"
 
+					}
+					else if (tm>0 && tm <34) {
+						str += " Your device only had to heat up your home for "
+						str += tStr
+					}
+				} else {
+					str += " spent "
+					str += tStr
+					str += " %{cData?.key} your home this ${timeType}"
+				}
+				str += cData ? " and" : ""
+			}
+			if(cData?.key == "cooling") {
+				def tData = cData?.value?.tData
+				def tSec = cData?.value?.tSec.toInteger()
+				def tStr = getTimeMapString(tData)
+				if(timeType == "today") {
+					def tm = getDayTimePerc(tSec)
+					if(tm>=66 && tm<=100) {
+
+					}
+					else if (tm>=34 && tm<66) {
+
+					}
+					else if (tm>0 && tm <34) {
+						str += " it must have been a beautiful day because your device only cooled for "
+						str += tStr
+					}
+				} else {
+					str += " spent "
+					str += tStr
+					str += " %{cData?.key} your home this ${timeType}"
+				}
+				str += f0Data || f1Data ? " and" : ""
+			}
+			/*if(type in ["fanAuto", "fanOn"]) {
+				//not sure how to format the fan strings yet
+
+			}*/
 		}
 	}
 	log.debug "str: $str"
 	return str
+}
+
+def getDayTimePerc(val) {
+	return (int) ((val.toInteger()/86400)*100).toDouble().round(0)
 }
 
 def getTimeMapString(data) {
@@ -2424,11 +2497,11 @@ def initHistoryStore() {
 def getTodaysUsage() {
 	def hm = getHistoryStore()
 	def timeMap = [:]
-	timeMap << ["cooling":secToTimeMap(hm?."OperatingState_Day${hm?.currentDay}_cooling")]
-	timeMap << ["heating":secToTimeMap(hm?."OperatingState_Day${hm?.currentDay}_heating")]
-	timeMap << ["idle":secToTimeMap(hm?."OperatingState_Day${hm?.currentDay}_idle")]
-	timeMap << ["fanOn":secToTimeMap(hm?."FanMode_Day${hm?.currentDay}_On")]
-	timeMap << ["fanAuto":secToTimeMap(hm?."FanMode_Day${hm?.currentDay}_auto")]
+	timeMap << ["cooling":["tData":secToTimeMap(hm?."OperatingState_Day${hm?.currentDay}_cooling"), "tSec":hm?."OperatingState_Day${hm?.currentDay}_cooling"]]
+	timeMap << ["heating":["tData":secToTimeMap(hm?."OperatingState_Day${hm?.currentDay}_heating"), "tSec":hm?."OperatingState_Day${hm?.currentDay}_heating"]]
+	timeMap << ["idle":["tData":secToTimeMap(hm?."OperatingState_Day${hm?.currentDay}_idle"), "tSec":hm?."OperatingState_Day${hm?.currentDay}_idle"]]
+	timeMap << ["fanOn":["tData":secToTimeMap(hm?."FanMode_Day${hm?.currentDay}_On"), "tSec":hm?."FanMode_Day${hm?.currentDay}_on"]]
+	timeMap << ["fanAuto":["tData":secToTimeMap(hm?."FanMode_Day${hm?.currentDay}_auto"), "tSec":hm?."FanMode_Day${hm?.currentDay}_auto"]]
 	return timeMap
 }
 
@@ -2447,11 +2520,11 @@ def getWeeksUsage() {
 		fanOnVal = fanOnVal + hm?."FanMode_Day${i}_On"?.toInteger()
 		fanAutoVal = fanAutoVal + hm?."FanMode_Day${i}_auto"?.toInteger()
 	}
-	timeMap << ["cooling":secToTimeMap(coolVal)]
-	timeMap << ["heating":secToTimeMap(heatVal)]
-	timeMap << ["idle":secToTimeMap(idleVal)]
-	timeMap << ["fanOn":secToTimeMap(fanOnVal)]
-	timeMap << ["fanAuto":secToTimeMap(fanAutoVal)]
+	timeMap << ["cooling":["tData":secToTimeMap(coolVal), "tSec":coolVal]]
+	timeMap << ["heating":["tData":secToTimeMap(heatVal), "tSec":heatVal]]
+	timeMap << ["idle":["tData":secToTimeMap(idleVal), "tSec":idleVal]]
+	timeMap << ["fanOn":["tData":secToTimeMap(fanOnVal), "tSec":fanOnVal]]
+	timeMap << ["fanAuto":["tData":secToTimeMap(fanAutoVal), "tSec":fanAutoVal]]
 	//log.debug "weeksUsage: ${timeMap}"
 	return timeMap
 }
@@ -2460,11 +2533,11 @@ def getMonthsUsage(monNum) {
 	def hm = getHistoryStore()
 	def timeMap = [:]
 	def mVal = monNum ?: hm?.currentMonth
-	timeMap << ["cooling":secToTimeMap(hm?."OperatingState_Month${mVal}_cooling")]
-	timeMap << ["heating":secToTimeMap(hm?."OperatingState_Month${mVal}_heating")]
-	timeMap << ["idle":secToTimeMap(hm?."OperatingState_Month${mVal}_idle")]
-	timeMap << ["fanOn":secToTimeMap(hm?."FanMode_Month${mVal}_On")]
-	timeMap << ["fanAuto":secToTimeMap(hm?."FanMode_Month${mVal}_auto")]
+	timeMap << ["cooling":["tData":secToTimeMap(hm?."OperatingState_Month${mVal}_cooling"), "tSec":hm?."OperatingState_Month${mVal}_cooling"]]
+	timeMap << ["heating":["tData":secToTimeMap(hm?."OperatingState_Month${mVal}_heating"), "tSec":hm?."OperatingState_Month${mVal}_heating"]]
+	timeMap << ["idle":["tData":secToTimeMap(hm?."OperatingState_Month${mVal}_idle"), "tSec":hm?."OperatingState_Month${mVal}_idle"]]
+	timeMap << ["fanOn":["tData":secToTimeMap(hm?."FanMode_Month${mVal}_On"), "tSec":hm?."FanMode_Month${mVal}_on"]]
+	timeMap << ["fanAuto":["tData":secToTimeMap(hm?."FanMode_Month${mVal}_auto"), "tSec":hm?."FanMode_Month${mVal}_auto"]]
 	//log.debug "monthsUsage: ${timeMap}"
 	return timeMap
 }
@@ -2484,11 +2557,11 @@ def getYearsUsage() {
 		fanOnVal = fanOnVal + hm?."FanMode_Month${i}_On"?.toInteger()
 		fanAutoVal = fanAutoVal + hm?."FanMode_Month${i}_auto"?.toInteger()
 	}
-	timeMap << ["cooling":secToTimeMap(coolVal)]
-	timeMap << ["heating":secToTimeMap(heatVal)]
-	timeMap << ["idle":secToTimeMap(idleVal)]
-	timeMap << ["fanOn":secToTimeMap(fanOnVal)]
-	timeMap << ["fanAuto":secToTimeMap(fanAutoVal)]
+	timeMap << ["cooling":["tData":secToTimeMap(coolVal), "tSec":coolVal]]
+	timeMap << ["heating":["tData":secToTimeMap(heatVal), "tSec":heatVal]]
+	timeMap << ["idle":["tData":secToTimeMap(idleVal), "tSec":idleVal]]
+	timeMap << ["fanOn":["tData":secToTimeMap(fanOnVal), "tSec":fanOnVal]]
+	timeMap << ["fanAuto":["tData":secToTimeMap(fanAutoVal), "tSec":fanAutoVal]]
 	//log.debug "yearsUsage: ${timeMap}"
 	return timeMap
 }
