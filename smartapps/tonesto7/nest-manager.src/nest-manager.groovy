@@ -2248,7 +2248,7 @@ def queueProcNestApiCmd(uri, typeId, type, obj, objVal, qnum, cmd, redir = false
 }
 
 def nestResponse(resp, data) {
-	LogAction("nestResponse(${data?.command})", "info", false)
+	LogAction("nestResponse(${data?.cmd})", "info", false)
 	def typeId = data?.typeId
 	def type = data?.type
 	def obj = data?.obj
@@ -2489,7 +2489,8 @@ def updateWebStuff(now = false) {
 		if(now) {
 			getWebFileData()
 		} else {
-			if(canSchedule()) { runIn(45, "getWebFileData", [overwrite: true]) }  //This reads a JSON file from a web server with timing values and version numbers
+			//if(canSchedule()) { runIn(45, "getWebFileData", [overwrite: true]) }  //This reads a JSON file from a web server with timing values and version numbers
+			getWebFileData(false)
 		}
 	}
 	if(optInAppAnalytics && atomicState?.isInstalled) {
@@ -2613,32 +2614,59 @@ def getWeatherDeviceInst() {
 	return atomicState?.weatherDevice ? true : false
 }
 
-def getWebFileData() {
+def getWebFileData(now = true) {
 	//log.trace "getWebFileData..."
 	def params = [ uri: "https://raw.githubusercontent.com/tonesto7/nest-manager/${gitBranch()}/Data/appData.json", contentType: 'application/json' ]
 	def result = false
 	try {
-		httpGet(params) { resp ->
-			if(resp.data) {
-				LogAction("Getting Latest Data from appData.json File...", "info", true)
-				atomicState?.appData = resp?.data
-				atomicState?.lastWebUpdDt = getDtNow()
-				clientBlacklisted()
-				updateHandler()
-				broadcastCheck()
-				helpHandler()
+		def allowAsync = false
+		def metstr = "sync"
+		if(!now && atomicState?.appData && atomicState?.appData?.pollMethod?.allowAsync) {
+			allowAsync = true
+			metstr = "async"
+		}
+
+		LogAction("Getting Latest Data from appData.json File ${metstr}...", "info", true)
+
+		if(now || !allowAsync) {
+			httpGet(params) { resp ->
+				result = webResponse(resp, [type:null])
 			}
-			LogTrace("getWebFileData Resp: ${resp?.data}")
-			result = true
+		} else {
+			asynchttp_v1.get(webResponse, params, [type:"async"])
 		}
 	}
 	catch (ex) {
 		if(ex instanceof groovyx.net.http.HttpResponseException) {
-			   log.warn  "appParams.json file not found..."
+			log.warn  "appParams.json file not found..."
 		} else {
 			log.error "getWebFileData Exception:", ex
 		}
 		sendExceptionData(ex, "getWebFileData")
+	}
+	return result
+}
+
+def webResponse(resp, data) {
+	LogAction("webResponse(${data?.type})", "info", false)
+	def result = false
+	if(resp?.status == 200) {
+		def newdata = resp?.data
+		if(data?.type == "async") { newdata = resp?.json }
+		LogTrace("webResponse Resp: ${newdata}")
+		//log.debug "appdata: ${newdata}"		
+		if(!newdata?.equals(atomicState?.appData)) {
+			LogAction("appData.json File HAS Changed...", "info", true)
+			atomicState?.appData = newdata
+			clientBlacklisted()
+			updateHandler()
+			broadcastCheck()
+			helpHandler()
+		} else { LogAction("appData.json did not change....", "info", true) }
+		atomicState?.lastWebUpdDt = getDtNow()
+		result = true
+	} else {
+		LogAction("Get failed of appData.json File... status: ${resp?.status}", "warn", true)
 	}
 	return result
 }
