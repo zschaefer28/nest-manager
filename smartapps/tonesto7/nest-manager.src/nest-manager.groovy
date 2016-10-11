@@ -39,12 +39,12 @@ definition(
 
 include 'asynchttp_v1'
 
-def appVersion() { "3.7.4" }
-def appVerDate() { "10-10-2016" }
+def appVersion() { "3.8.0" }
+def appVerDate() { "10-11-2016" }
 def appVerInfo() {
 	def str = ""
 
-	str += "V3.7.4 (October 10th, 2016):"
+	str += "V3.8.0 (October 11th, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
 	str += "\n • NEW: Full support from experimental async HTTP requests..."
 	str += "\n • UPDATED: More tweaks to the certain UI Elements..."
@@ -1006,50 +1006,57 @@ def subscriber() {
 	subscribe(app, onAppTouch)
 }
 
-def voiceReportTypes() {
-	return ["schedZone": "Schedule / Zone Info", "runtimeWeek": "Weeks Run Time"]
-}
-
-def reqSchedInfoRprt(dev) {
-	log.trace "reqSchedInfoRprt: (dev)"
+def reqSchedInfoRprt(child) {
+	log.trace "reqSchedInfoRprt: (${child.device.label})"
 	def result = null
-	if (dev) {
-		def tstatDev = dev
-		if(tstatDev) {
-			def str = ""
-			def chldSch = getChildApps()?.find { (!(it.getAutomationType() in ["nMode", "webDash"]) && it?.getActiveScheduleState() && it?.getTstatAutoDevId() == tstatDev?.deviceNetworkId) }
-			if(chldSch) {
-				def actNum = chldSch?.getCurrentSchedule()
-				def tempScaleStr = "°${getTemperatureScale()}"
+	def tstat = getChildDevice(child.device.deviceNetworkId)
+	if (tstat) {
+		def str = ""
+		def chldSch = getChildApps()?.find { (!(it.getAutomationType() in ["nMode", "webDash"]) && it?.getActiveScheduleState() && it?.getTstatAutoDevId() == tstat?.deviceNetworkId) }
+		if(chldSch) {
+			def actNum = chldSch?.getCurrentSchedule()
+			def tempScaleStr = "°${getTemperatureScale()}"
 
-				def canHeat = tstatDev?.currentCanHeat.toString() == "true" ? true : false
-				def canCool = tstatDev?.currentCanCool.toString() == "true" ? true : false
-				def reqSenHeatSetPoint = chldSch?.getRemSenHeatSetTemp() ?: null
-				def reqSenCoolSetPoint = chldSch?.getRemSenCoolSetTemp() ?: null
-				def curZoneTemp = chldSch?.getRemoteSenTemp() ?: null
+			def canHeat = tstat?.currentCanHeat.toString() == "true" ? true : false
+			def canCool = tstat?.currentCanCool.toString() == "true" ? true : false
+			def curMode = tstat?.currentThermostatMode.toString()
+			def curOper = tstat?.currentThermostatOperatingState.toString()
+			def reqSenHeatSetPoint = chldSch?.getRemSenHeatSetTemp() ?: null
+			def reqSenCoolSetPoint = chldSch?.getRemSenCoolSetTemp() ?: null
+			def curZoneTemp = chldSch?.getRemoteSenTemp() ?: null
 
-				def schedName = chldSch?.getSchedLbl(actNum)
-				def tempSrc = chldSch?.getRemSenTempSrc() ?: null
-				def tempSrcStr = (actNum && tempSrc == "Schedule") ? "Schedule ${actNum}" : tempSrc
+			def schedName = chldSch?.getSchedLbl(actNum)
+			def tempSrc = chldSch?.getRemSenTempSrc() ?: null
+			def tempSrcStr = (actNum && tempSrc == "Schedule") ? "Schedule ${actNum}" : tempSrc
 
-				str += schedName  ? "the automation schedule named ${schedName} is currently active for ${tstat}" : "No Schedule is currently Active"
-				str += tempSrcStr && curZoneTemp ? "\nthe current zones temp source is ${tempSrcStr} with a temperature of ${curZoneTemp}${tempScaleStr}" : ""
-				str += canHeat ? "\nthe Heat Set point is ${reqSenHeatSetPoint}${tempScaleStr}" : ""
-				str += canHeat && canCool ? " and " : ""
-				str += canCool ? "${!canHeat ? "" : "\n"}the cool set point is ${reqSenCoolSetPoint}${tempScaleStr}" : ""
+			str += schedName  ? "\nthe name of the zone schedule currently active is ${schedName}" : "No Schedule is currently Active"
+			if(tempSrcStr && curZoneTemp) {
+				def zTmp = curZoneTemp.toDouble()
+				str += "\n while the current temp source is ${tempSrcStr} with"
+				if(zTmp > 78.0 && zTmp <= 85.0) { str += "a scorching " }
+				else if(zTmp > 72.0 && zTmp <= 77.0) { str += "a balmy " }
+				else if(zTmp >= 67.0 && zTmp <= 72.0) { str += "a comfortable " }
+				else if(zTmp >= 60.0 && zTmp < 67.0) { str += "a chilly " }
 
-				if (str != "") {
-					LogAction("reqSchedInfoRprt: Sending voice report for Zone info on (${tstatDev})", "info", true)
-					result = str
-				}
-			} else {
-				LogAction ("reqSchedInfoRprt: No Automation Schedules were found for the $tstat device", "warn", true)
-				result = "No Automation Schedules were found for the $tstat device"
+				str += "ambient temperature of ${curZoneTemp}${tempScaleStr}"
+			}
+
+			str += "\nwith "
+			str += canHeat && curMode in ["auto", "heat"] ? "\nthe Heat set to ${reqSenHeatSetPoint}${tempScaleStr}" : ""
+			str += canHeat && canCool && curMode == "auto" ? "\nand " : "."
+			str += canCool && curMode in ["auto", "cooling"] ? "\nthe cool set to ${reqSenCoolSetPoint}${tempScaleStr}.  " : ""
+
+			if (str != "") {
+				LogAction("reqSchedInfoRprt: Sending voice report for Zone info on (${tstat})", "info", true)
+				result = str
 			}
 		} else {
-			LogAction("reqSchedInfoRprt: The requested thermostat device was not found", "error", true)
-			result = "The requested thermostat device was not found"
+			LogAction ("reqSchedInfoRprt: No Automation Schedules were found for the ${tstat} device", "warn", true)
+			result = "No Thermostat Automation Schedules were found for the ${tstat} device"
 		}
+	} else {
+		LogAction("reqSchedInfoRprt: The requested thermostat device was not found", "error", true)
+		result = "The requested thermostat device was not found"
 	}
 	return result
 }
@@ -1412,8 +1419,8 @@ def updateChildData(force = false) {
 		def api = !apiIssues() ? false : true
 		def htmlInfo = getHtmlInfo()
 		def allowDbException = allowDbException()
-		def aaZoneRprtEn = getAskAlexaEnVoiceZoneRprt()
-		def aaUseRprtEn = getAskAlexaEnVoiceUseRprt()
+		def allowVoiceZoneRprt = allowVoiceZoneRprt()
+		def allowVoiceUsageRprt = allowVoiceUsageRprt()
 		getAllChildDevices()?.each {
 			def devId = it?.deviceNetworkId
 			if(atomicState?.thermostats && atomicState?.deviceData?.thermostats[devId]) {
@@ -1429,7 +1436,7 @@ def updateChildData(force = false) {
 				def comfortHumidity = settings?."${devId}_comfort_humidity_max" ?: 80
 				def tData = ["data":atomicState?.deviceData?.thermostats[devId], "mt":useMt, "debug":dbg, "tz":nestTz, "apiIssues":api, "safetyTemps":safetyTemps, "comfortHumidity":comfortHumidity,
 						"comfortDewpoint":comfortDewpoint, "pres":locationPresence(), "childWaitVal":getChildWaitVal().toInteger(), "htmlInfo":htmlInfo, "allowDbException":allowDbException,
-						"latestVer":latestTstatVer()?.ver?.toString(), "usageVoiceRprtEn":aaUseRprtEn, "zoneVoiceRprtEn":aaZoneRprtEn]
+						"latestVer":latestTstatVer()?.ver?.toString(), "allowVoiceUsageRprt":allowVoiceUsageRprt, "allowVoiceZoneRprt":allowVoiceZoneRprt]
 				def oldTstatData = atomicState?."oldTstatData${devId}"
 				def tDataChecksum = generateMD5_A(tData.toString())
 				atomicState."oldTstatData${devId}" = tDataChecksum
@@ -2654,7 +2661,7 @@ def webResponse(resp, data) {
 		def newdata = resp?.data
 		if(data?.type == "async") { newdata = resp?.json }
 		LogTrace("webResponse Resp: ${newdata}")
-		//log.debug "appdata: ${newdata}"		
+		//log.debug "appdata: ${newdata}"
 		if(!newdata?.equals(atomicState?.appData)) {
 			LogAction("appData.json File HAS Changed...", "info", true)
 			atomicState?.appData = newdata
@@ -2732,12 +2739,12 @@ def getAskAlexaQueueEnabled() {
 	if(!parent) { return (atomicState?.appData?.aaPrefs?.enAaMsgQueue == true) ? true : false }
 }
 
-def getAskAlexaEnVoiceUseRprt() {
-	if(!parent) { return (atomicState?.appData?.aaPrefs?.enAaVoiceUseRprt == false || settings?.disableVoiceUsageRprt == false) ? false : true }
+def allowVoiceUsageRprt() {
+	if(!parent) { return (atomicState?.appData?.reportPrefs?.disVoiceUsageRprt == true || settings?.disableVoiceUsageRprt == true) ? false : true }
 }
 
-def getAskAlexaEnVoiceZoneRprt() {
-	if(!parent) { return (atomicState?.appData?.aaPrefs?.enAaVoiceZoneRprt == false || settings?.disableVoiceZoneRprt == false) ? false : true }
+def allowVoiceZoneRprt() {
+	if(!parent) { return (atomicState?.appData?.reportPrefs?.disVoiceZoneRprt == true || settings?.disableVoiceZoneRprt == true) ? false : true }
 }
 
 def isCodeUpdateAvailable(newVer, curVer, type) {
@@ -4169,7 +4176,7 @@ def getPollingConfDesc() {
 	pStr += "Polling: (${!atomicState?.pollingOn ? "Not Active" : "Active"})"
 	pStr += "\n • Device: (${getInputEnumLabel(pollValue?:180, pollValEnum())})"
 	pStr += "\n • Structure: (${getInputEnumLabel(pollStrValue?:180, pollValEnum())})"
-	pStr += atomicState?.weatherDevice ? "\n• Weather Polling: (${getInputEnumLabel(pollWeatherValue?:900, notifValEnum())})" : ""
+	pStr += atomicState?.weatherDevice ? "\n • Weather Polling: (${getInputEnumLabel(pollWeatherValue?:900, notifValEnum())})" : ""
 	pStr += "\n • Forced Poll Refresh Limit:\n    └ (${getInputEnumLabel(pollWaitVal ?: 10, waitValEnum())})"
 	return ((pollValDesc || pollStrValDesc || pollWEatherValDesc || pollWaitValDesc) ? pStr : "")
 }

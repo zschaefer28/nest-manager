@@ -66,9 +66,8 @@ metadata {
 		command "coolingSetpointUp"
 		command "coolingSetpointDown"
 		command "changeMode"
-		command "getVoiceReportTypes"
-		command "getNestMgrReport", ["string"]
-		command "getUsageVoiceReport", ["string"]
+		//command "getVoiceReportTypes"
+		command "getNestMgrReport"
 		command "doSomething"
 
 		attribute "temperatureUnit", "string"
@@ -350,8 +349,8 @@ def processEvent() {
 			if(eventData?.safetyTemps) { safetyTempsEvent(eventData?.safetyTemps) }
 			if(eventData?.comfortHumidity) { comfortHumidityEvent(eventData?.comfortHumidity) }
 			if(eventData?.comfortDewpoint) { comfortDewpointEvent(eventData?.comfortDewpoint) }
-			if(eventData?.usageVoiceRprtEn) { state.usageVoiceRprtEn = usageVoiceRprtEn ? true : false }
-			if(eventData?.zoneVoiceRprtEn) { state.zoneVoiceRprtEn = zoneVoiceRprtEn ? true : false }
+			state.allowVoiceUsageRprt = eventData?.allowVoiceUsageRprt == false ? false : true
+			state.allowVoiceZoneRprt = eventData?.allowVoiceZoneRprt == false ? false : true
 			def hvacMode = state?.hvac_mode
 			def tempUnit = state?.tempUnit
 			switch (tempUnit) {
@@ -1643,29 +1642,26 @@ def getVoiceReportTypes() {
 	return ["curZoneInfo":"Current Zone Info", "runtimeToday":"Today Usage", "runtimeWeek":"This Weeks Usage", "runtimeMonth":"This Month's Usage"]
 }
 
-def getNestMgrReport(type) {
-	if(!type) { return "report type was not received" }
-	else {
-		switch (type) {
-			case "curZoneInfo":
-				if(state?.zoneVoiceRprtEn == false) {
-					LogAction("Usage voice reports have been disabled by Nest manager app preferences", "info", true)
-					return "Usage voice reports have been disabled by Nest manager app preferences"
-				}
-				else { return parent?.reqSchedInfoRprt(this).toString() }
-				break
-			case ["runtimeToday", "runtimeWeek", "runtimeMonth"]:
-				if(state?.usageVoiceRprtEn == false) {
-					LogAction("getNestMgrReport: Zone status voice reports have been disabled by Nest manager app preferences", "info", true)
-					return "Zone status voice reports have been disabled by Nest manager app preferences"
-				}
-				else { return getUsageVoiceReport(type) }
-				break
-			default:
-				return "I'm sorry but No report was found for the report type provided"
-				break
-		}
+def getNestMgrReport() {
+	def str = ""
+	if(state?.allowVoiceZoneRprt == false) {
+		LogAction("Usage voice reports have been disabled by Nest manager app preferences", "info")
+		return "Usage voice reports have been disabled by Nest manager app preferences"
 	}
+	else {
+		str += "\nHere is your current thermostat zone status.  "
+		str += parent?.reqSchedInfoRprt(this).toString() + "  "
+	}
+	if(state?.allowVoiceUsageRprt == false) {
+		LogAction("getNestMgrReport: Zone status voice reports have been disabled by Nest manager app preferences", "info")
+		return "Zone status voice reports have been disabled by Nest manager app preferences"
+	}
+	else {
+		str += "\nand now we will Move on to today's Usage.  "
+		str += getUsageVoiceReport("runtimeToday")
+	}
+	log.debug str
+	return str
 }
 
 def getUsageVoiceReport(type) {
@@ -1688,7 +1684,7 @@ def getUsageVoiceReport(type) {
 def generateUsageText(timeType, timeMap) {
 	def str = ""
 	if(timeType && timeMap) {
-		str += "Here is your ${device?.displayName} Usage report for${timeType in ["week", "month"] ? " this" : ""} ${timeType}.  Based on your usage"
+		str += "\nHere is your ${device?.displayName} Usage report for${timeType in ["week", "month"] ? " this" : ""} ${timeType}.  Based on your usage"
 		def hData = null
 		def cData = null
 		def iData = null
@@ -1719,24 +1715,24 @@ def generateUsageText(timeType, timeMap) {
 				if(timeType == "today") {
 					def tm = getDayTimePerc(tSec)
 					if (tm>=66 && tm<=100) {
-						str += " it looks like it was a light day because your device "
-						str +=  "was idle $tm% of the day at "
+						str += "\n it looks like it was a light day because your device "
+						str +=  "\n was idle $tm% of the day at "
 					}
 					else if (tm>=34 && tm<66) {
-						str += " it was a pretty moderate day because your device "
-						str +=  "was only idle $tm% of the day at "
+						str += "\n it was a pretty moderate day because your device "
+						str +=  "\nwas only idle $tm% of the day at "
 					}
 					else if (tm>0 && tm <34) {
-						str += " it was a very busy day becaue your device "
-						str +=  "was only idle $tm% of the day at "
+						str += "\n it was a very busy day becaue your device "
+						str +=  "\nwas only idle $tm% of the day at "
 					}
 					str += tStr
 
 				}
 				else {
-					str += " spent "
+					str += "\n spent "
 					str += tStr
-					str += " sitting ${iData?.key} this ${timeType} "
+					str += "\n sitting ${iData?.key} this ${timeType} "
 				}
 				str += hData || cData ? " and" : ""
 			}
@@ -1747,23 +1743,23 @@ def generateUsageText(timeType, timeMap) {
 				if(timeType == "today") {
 					def tm = getDayTimePerc(tSec)
 					if(tm>=66 && tm<=100) {
-						str += " it must have been freezing today because your device was heating your home for "
+						str += "\n it must have been freezing today because your device was heating your home for "
 						str += tStr
 					}
 					else if (tm>=34 && tm<66) {
-						str += " it's like the weather was a bit chilly today because your device spent "
+						str += "\n it's like the weather was a bit chilly today because your device spent "
 						str += tStr
-						str += " trying to keep your home cozy"
+						str += "\n trying to keep your home cozy"
 
 					}
 					else if (tm>0 && tm <34) {
-						str += " Your device only had to heat up your home for "
+						str += "\n Your device only had to heat up your home for "
 						str += tStr
 					}
 				} else {
-					str += " spent "
+					str += "\n spent "
 					str += tStr
-					str += " %{cData?.key} your home this ${timeType}"
+					str += "\n %{cData?.key} your home this ${timeType}"
 				}
 				str += cData ? " and" : ""
 			}
@@ -1780,13 +1776,13 @@ def generateUsageText(timeType, timeMap) {
 
 					}
 					else if (tm>0 && tm <34) {
-						str += " it must have been a beautiful day because your device only cooled for "
+						str += "\n it must have been a beautiful day because your device only cooled for "
 						str += tStr
 					}
 				} else {
-					str += " spent "
+					str += "\n spent "
 					str += tStr
-					str += " %{cData?.key} your home this ${timeType}"
+					str += "\n %{cData?.key} your home this ${timeType}"
 				}
 				str += f0Data || f1Data ? " and" : ""
 			}
@@ -1796,7 +1792,8 @@ def generateUsageText(timeType, timeMap) {
 			}*/
 		}
 	}
-	log.debug "str: $str"
+	str += "\nThat's all for your current thermostat report"
+	//log.debug "str: $str"
 	return str
 }
 
@@ -1818,7 +1815,6 @@ def getTimeMapString(data) {
 		if (h>0) {
 			str += h>0 ? "$h Hours " : ""
 			str += m>0 ? "and " : ""
-
 		}
 		if (m>0) {
 			str += m>0 ? "$m minutes" : ""
@@ -2567,7 +2563,7 @@ def getYearsUsage() {
 }
 
 def doSomething() {
-	getUsageVoiceReport("runtimeToday")
+	getNestMgrReport()
 	//getTodaysUsage()
 	//getWeeksUsage()
 	//getMonthsUsage()
