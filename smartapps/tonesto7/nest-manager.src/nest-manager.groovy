@@ -39,7 +39,7 @@ definition(
 
 include 'asynchttp_v1'
 
-def appVersion() { "3.8.2" }
+def appVersion() { "3.8.3" }
 def appVerDate() { "10-12-2016" }
 def appVerInfo() {
 	def str = ""
@@ -1171,7 +1171,7 @@ def poll(force = false, type = null) {
 		}
 		finishPoll(str, dev)
 	} else if(atomicState?.clientBlacklisted) {
-		LogAction("Client poll is blocked", "warn", true)
+		LogAction("Client poll is blocked because it was blacklisted.  Please contact the Developer to resolve the issue...", "warn", true)
 		finishPoll(false, true)
 	}
 }
@@ -1525,7 +1525,7 @@ def updateChildData(force = false) {
 					if(!atomicState?.weatDevVer || (versionStr2Int(atomicState?.weatDevVer) >= minDevVersions()?.weather?.val)) {
 						//log.warn "oldWeatherData: ${oldWeatherData} wDataChecksum: ${wDataChecksum} force: $force  nforce: $nforce"
 						LogTrace("UpdateChildData >> Weather id: ${devId}")
-						it.generateEvent(["data":wData, "tz":nestTz, "mt":useMt, "debug":dbg, "apiIssues":api, "htmlInfo":htmlInfo, "allowDbException":allowDbException, "weathAlertNotif":weathAlertNotif, "latestVer":latestWeathVer()?.ver?.toString()])
+						it.generateEvent(["data":wData, "tz":nestTz, "mt":useMt, "debug":dbg, "apiIssues":api, "htmlInfo":htmlInfo, "allowDbException":allowDbException, "weathAlertNotif":weathAlertNotif, "latestVer":latestWeathVer()?.ver?.toString(), "clientBl":clientBl])
 					} else {
 						LogAction("VERSION RESTRICTION: Your Weather Device Version (v${atomicState?.weatDevVer}) is lower than the Required Minimum (v${minDevVersions()?.weather?.desc}) | Please Update the Device Code to latest version to resume operation!!!", "error", true)
 						return false
@@ -4085,12 +4085,12 @@ def isInMode(modeList) {
 
 def minDevVersions() {
 	return [
-		"thermostat":["val":310, "desc":"3.1.0"],
-		"protect":["val":310, "desc":"3.1.0"],
-		"presence":["val":310, "desc":"3.1.0"],
-		"weather":["val":310, "desc":"3.1.0"],
-		"camera":["val":111 , "desc":"1.1.1"],
-		"vthermostat":["val":310, "desc":"3.1.0"]
+		"thermostat":["val":350, "desc":"3.5.0"],
+		"protect":["val":350, "desc":"3.5.0"],
+		"presence":["val":350, "desc":"3.5.0"],
+		"weather":["val":350, "desc":"3.5.0"],
+		"camera":["val":150 , "desc":"1.5.0"],
+		"vthermostat":["val":350, "desc":"3.5.0"]
 	]
 }
 
