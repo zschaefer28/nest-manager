@@ -39,12 +39,12 @@ definition(
 
 include 'asynchttp_v1'
 
-def appVersion() { "3.8.0" }
-def appVerDate() { "10-11-2016" }
+def appVersion() { "3.8.1" }
+def appVerDate() { "10-12-2016" }
 def appVerInfo() {
 	def str = ""
 
-	str += "V3.8.0 (October 11th, 2016):"
+	str += "V3.8.1 (October 12th, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
 	str += "\n • NEW: Full support from experimental async HTTP requests..."
 	str += "\n • UPDATED: More tweaks to the certain UI Elements..."
@@ -1102,7 +1102,8 @@ private gcd(input = []) {
 }
 
 def onAppTouch(event) {
-	poll(true)
+	//poll(true)
+	clientBlacklisted()
 }
 
 def refresh(child = null) {
@@ -1420,6 +1421,7 @@ def updateChildData(force = false) {
 		def allowDbException = allowDbException()
 		def allowVoiceZoneRprt = allowVoiceZoneRprt()
 		def allowVoiceUsageRprt = allowVoiceUsageRprt()
+		def clientBl = atomicState?.clientBlacklisted == true : true : false
 		getAllChildDevices()?.each {
 			def devId = it?.deviceNetworkId
 			if(atomicState?.thermostats && atomicState?.deviceData?.thermostats[devId]) {
@@ -2632,7 +2634,7 @@ def getWebFileData(now = true) {
 			metstr = "async"
 		}
 
-		LogAction("Getting Latest Data from appData.json File ${metstr}...", "info", true)
+		LogAction("Getting Latest Data from appData.json File...(${metstr})", "info", true)
 
 		if(now || !allowAsync) {
 			httpGet(params) { resp ->
@@ -2681,7 +2683,7 @@ def clientBlacklisted() {
 	if(atomicState?.clientBlacklisted == null) { atomicState?.clientBlacklisted == false }
 	def curBlState = atomicState?.clientBlacklisted
 	if(atomicState?.isInstalled && atomicState?.appData?.clientBL) {
-		def clientList = atomicState?.appData?.clientBL
+		def clientList = atomicState?.appData?.clientBL?.clients
 		if(clientList != null || clientList != []) {
 			def isBL = (atomicState?.installationId in clientList) ? true : false
 			if(curBlState != isBL) {
