@@ -25,7 +25,7 @@ import java.text.SimpleDateFormat
 
 preferences {  }
 
-def devVer() { return "3.1.1" }
+def devVer() { return "3.5.0" }
 
 metadata {
 	definition (name: "${textDevName()}", namespace: "tonesto7", author: "Anthony S.") {
@@ -36,6 +36,7 @@ metadata {
 		capability "Relative Humidity Measurement"
 		capability "Temperature Measurement"
 		capability "Ultraviolet Index"
+		capability "Health Check"
 
 		command "refresh"
 		command "log"
@@ -161,7 +162,7 @@ def processEvent() {
 		Logger("------------START OF API RESULTS DATA------------", "warn")
 		if(eventData) {
 			state.tempUnit = getTemperatureScale()
-
+			state.clientBl = eventData?.clientBl == true ? true : false
 			state.useMilitaryTime = eventData?.mt ? true : false
 			state.nestTimeZone = !location?.timeZone ? eventData?.tz : null
 			state.weatherAlertNotify = !eventData?.weathAlertNotif ? false : true
@@ -175,7 +176,6 @@ def processEvent() {
 			getWeatherForecast(eventData?.data?.weatForecast?.forecast ? eventData?.data?.weatForecast : null)
 			getWeatherAlerts(eventData?.data?.weatAlerts ? eventData?.data?.weatAlerts : null)
 			getWeatherConditions(eventData?.data?.weatCond?.current_observation ? eventData?.data?.weatCond : null)
-
 			//resetDataTables()
 			lastUpdatedEvent()
 		}
@@ -1261,6 +1261,7 @@ def getWeatherHTML() {
 	try {
 		//LogAction("State Size: ${getStateSize()} (${getStateSizePerc()}%)")
 		def updateAvail = !state.updateAvailable ? "" : "<h3>Device Update Available!</h3>"
+		def clientBl = state?.clientBl == true ? "" : "<h3>Your Manager client has been blacklisted.  Please contact the Nest Manager developer to get the issue resolved!!!</h3>"
 		//def obsrvTime = "Last Updated:\n${convertRfc822toDt(state?.curWeather?.current_observation?.observation_time_rfc822)}"
 		def obsrvTime = "Last Updated:\n${state?.curWeather?.current_observation?.observation_time_rfc822}"
 
@@ -1394,6 +1395,7 @@ def getWeatherHTML() {
 				<script type="text/javascript" src="${getChartJsData()}"></script>
 			</head>
 			<body>
+				  ${clientBl}
 				  ${updateAvail}
 				  <div class="container">
 				  <h4>Current Weather Conditions</h4>

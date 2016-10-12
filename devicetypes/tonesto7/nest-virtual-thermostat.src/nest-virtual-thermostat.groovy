@@ -27,7 +27,7 @@ import groovy.time.*
 
 preferences {  }
 
-def devVer() { return "3.2.0"}
+def devVer() { return "3.5.0"}
 
 // for the UI
 metadata {
@@ -45,6 +45,7 @@ metadata {
 		capability "Thermostat Operating State"
 		capability "Thermostat Setpoint"
 		capability "Temperature Measurement"
+		capability "Health Check"
 
 		command "refresh"
 		command "poll"
@@ -66,8 +67,6 @@ metadata {
 		command "coolingSetpointUp"
 		command "coolingSetpointDown"
 		command "changeMode"
-		command "getVoiceReportTypes"
-		command "nestMgrReport", ["string"]
 
 		attribute "temperatureUnit", "string"
 		attribute "targetTemp", "string"
@@ -319,6 +318,7 @@ def processEvent() {
 		if(eventData) {
 			if(virtType()) { nestTypeEvent("virtual") } else { nestTypeEvent("physical") }
 			state.useMilitaryTime = eventData?.mt ? true : false
+			state.clientBl = eventData?.clientBl == true ? true : false
 			state.nestTimeZone = !location?.timeZone ? eventData.tz : null
 			debugOnEvent(eventData?.debug ? true : false)
 			tempUnitEvent(getTemperatureScale())
@@ -2131,6 +2131,7 @@ def getGraphHTML() {
 		LogAction("State Size: ${getStateSize()} (${getStateSizePerc()}%)")
 		def leafImg = state?.hasLeaf ? getImgBase64(getImg("nest_leaf_on.gif"), "gif") : getImgBase64(getImg("nest_leaf_off.gif"), "gif")
 		def updateAvail = !state.updateAvailable ? "" : "<h3>Device Update Available!</h3>"
+		def clientBl = state?.clientBl == true ? "" : "<h3>Your Manager client has been blacklisted.  Please contact the Nest Manager developer to get the issue resolved!!!</h3>"
 
 		def chartHtml = (
 				state.temperatureTable?.size() > 0 &&
@@ -2154,6 +2155,7 @@ def getGraphHTML() {
 				<script type="text/javascript" src="${getChartJsData()}"></script>
 			</head>
 			<body>
+				${clientBl}
 				${updateAvail}
 
 				${chartHtml}
