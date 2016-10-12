@@ -39,7 +39,7 @@ definition(
 
 include 'asynchttp_v1'
 
-def appVersion() { "3.8.1" }
+def appVersion() { "3.8.2" }
 def appVerDate() { "10-12-2016" }
 def appVerInfo() {
 	def str = ""
@@ -1102,8 +1102,7 @@ private gcd(input = []) {
 }
 
 def onAppTouch(event) {
-	//poll(true)
-	clientBlacklisted()
+	poll(true)
 }
 
 def refresh(child = null) {
@@ -1171,6 +1170,9 @@ def poll(force = false, type = null) {
 			if(allowAsync) { return }
 		}
 		finishPoll(str, dev)
+	} else if(atomicState?.clientBlacklisted) {
+		LogAction("Client poll is blocked", "warn", true)
+		finishPoll(false, true)
 	}
 }
 
@@ -1421,7 +1423,7 @@ def updateChildData(force = false) {
 		def allowDbException = allowDbException()
 		def allowVoiceZoneRprt = allowVoiceZoneRprt()
 		def allowVoiceUsageRprt = allowVoiceUsageRprt()
-		def clientBl = atomicState?.clientBlacklisted == true : true : false
+		def clientBl = atomicState?.clientBlacklisted == true ? true : false
 		getAllChildDevices()?.each {
 			def devId = it?.deviceNetworkId
 			if(atomicState?.thermostats && atomicState?.deviceData?.thermostats[devId]) {
@@ -1437,7 +1439,7 @@ def updateChildData(force = false) {
 				def comfortHumidity = settings?."${devId}_comfort_humidity_max" ?: 80
 				def tData = ["data":atomicState?.deviceData?.thermostats[devId], "mt":useMt, "debug":dbg, "tz":nestTz, "apiIssues":api, "safetyTemps":safetyTemps, "comfortHumidity":comfortHumidity,
 						"comfortDewpoint":comfortDewpoint, "pres":locationPresence(), "childWaitVal":getChildWaitVal().toInteger(), "htmlInfo":htmlInfo, "allowDbException":allowDbException,
-						"latestVer":latestTstatVer()?.ver?.toString(), "allowVoiceUsageRprt":allowVoiceUsageRprt, "allowVoiceZoneRprt":allowVoiceZoneRprt]
+						"latestVer":latestTstatVer()?.ver?.toString(), "allowVoiceUsageRprt":allowVoiceUsageRprt, "allowVoiceZoneRprt":allowVoiceZoneRprt, "clientBl":clientBl]
 				def oldTstatData = atomicState?."oldTstatData${devId}"
 				def tDataChecksum = generateMD5_A(tData.toString())
 				atomicState."oldTstatData${devId}" = tDataChecksum
@@ -1457,7 +1459,7 @@ def updateChildData(force = false) {
 			}
 			else if(atomicState?.protects && atomicState?.deviceData?.smoke_co_alarms[devId]) {
 				def pData = ["data":atomicState?.deviceData?.smoke_co_alarms[devId], "mt":useMt, "debug":dbg, "showProtActEvts":(!showProtActEvts ? false : true),
-						"tz":nestTz, "htmlInfo":htmlInfo, "apiIssues":api, "allowDbException":allowDbException, "latestVer":latestProtVer()?.ver?.toString()]
+						"tz":nestTz, "htmlInfo":htmlInfo, "apiIssues":api, "allowDbException":allowDbException, "latestVer":latestProtVer()?.ver?.toString(), "clientBl":clientBl]
 				def oldProtData = atomicState?."oldProtData${devId}"
 				def pDataChecksum = generateMD5_A(pData.toString())
 				atomicState."oldProtData${devId}" = pDataChecksum
@@ -1477,7 +1479,7 @@ def updateChildData(force = false) {
 			}
 			else if(atomicState?.cameras && atomicState?.deviceData?.cameras[devId]) {
 				def camData = ["data":atomicState?.deviceData?.cameras[devId], "mt":useMt, "debug":dbg,
-						"tz":nestTz, "htmlInfo":htmlInfo, "apiIssues":api, "allowDbException":allowDbException, "latestVer":latestCamVer()?.ver?.toString()]
+						"tz":nestTz, "htmlInfo":htmlInfo, "apiIssues":api, "allowDbException":allowDbException, "latestVer":latestCamVer()?.ver?.toString(), "clientBl":clientBl]
 				def oldCamData = atomicState?."oldCamData${devId}"
 				def cDataChecksum = generateMD5_A(camData.toString())
 				if(force || nforce || (oldCamData != cDataChecksum)) {
@@ -1494,7 +1496,7 @@ def updateChildData(force = false) {
 				return true
 			}
 			else if(atomicState?.presDevice && devId == getNestPresId()) {
-				def pData = ["debug":dbg, "tz":nestTz, "mt":useMt, "pres":locationPresence(), "apiIssues":api, "allowDbException":allowDbException, "latestVer":latestPresVer()?.ver?.toString()]
+				def pData = ["debug":dbg, "tz":nestTz, "mt":useMt, "pres":locationPresence(), "apiIssues":api, "allowDbException":allowDbException, "latestVer":latestPresVer()?.ver?.toString(), "clientBl":clientBl]
 				def oldPresData = atomicState?."oldPresData${devId}"
 				def pDataChecksum = generateMD5_A(pData.toString())
 				atomicState."oldPresData${devId}" = pDataChecksum
@@ -1598,7 +1600,7 @@ def updateChildData(force = false) {
 
 					def tData = ["data":data, "mt":useMt, "debug":dbg, "tz":nestTz, "apiIssues":api, "safetyTemps":safetyTemps, "comfortHumidity":comfortHumidity,
 						"comfortDewpoint":comfortDewpoint, "pres":locationPresence(), "childWaitVal":getChildWaitVal().toInteger(), "htmlInfo":htmlInfo, "allowDbException":allowDbException,
-						"latestVer":latestvStatVer()?.ver?.toString()]
+						"latestVer":latestvStatVer()?.ver?.toString(), "clientBl":clientBl]
 					def oldTstatData = atomicState?."oldvStatData${devId}"
 					def tDataChecksum = generateMD5_A(tData.toString())
 					atomicState."oldvStatData${devId}" = tDataChecksum
