@@ -1028,10 +1028,10 @@ def reqSchedInfoRprt(child) {
 			def tempSrc = chldSch?.getRemSenTempSrc() ?: null
 			def tempSrcStr = (actNum && tempSrc == "Schedule") ? "Schedule ${actNum}" : tempSrc
 
-			str += schedName  ? "\nthe name of the zone schedule currently active is ${schedName}" : "No Schedule is currently Active"
+			str += schedName  ? " the name of the zone schedule currently active is ${schedName}" : "No Schedule is currently Active"
 			if(tempSrcStr && curZoneTemp) {
 				def zTmp = curZoneTemp.toDouble()
-				str += "\n while the current temp source is ${tempSrcStr} with"
+				str += " while the current temp source is ${tempSrcStr} with "
 				if(zTmp > 78.0 && zTmp <= 85.0) { str += "a scorching " }
 				else if(zTmp > 72.0 && zTmp <= 77.0) { str += "a balmy " }
 				else if(zTmp >= 67.0 && zTmp <= 72.0) { str += "a comfortable " }
@@ -1040,10 +1040,10 @@ def reqSchedInfoRprt(child) {
 				str += "ambient temperature of ${curZoneTemp}${tempScaleStr}"
 			}
 
-			str += "\nwith "
-			str += canHeat && curMode in ["auto", "heat"] ? "\nthe Heat set to ${reqSenHeatSetPoint}${tempScaleStr}" : ""
-			str += canHeat && canCool && curMode == "auto" ? "\nand " : "."
-			str += canCool && curMode in ["auto", "cooling"] ? "\nthe cool set to ${reqSenCoolSetPoint}${tempScaleStr}.  " : ""
+			str += " with "
+			str += canHeat && curMode in ["auto", "heat"] ? "the Heat set to ${reqSenHeatSetPoint}${tempScaleStr}" : ""
+			str += canHeat && canCool && curMode == "auto" ? " and " : "."
+			str += canCool && curMode in ["auto", "cooling"] ? "the cool set to ${reqSenCoolSetPoint}${tempScaleStr}.  " : ""
 
 			if (str != "") {
 				LogAction("reqSchedInfoRprt: Sending voice report for Zone info on (${tstat})", "info", true)
