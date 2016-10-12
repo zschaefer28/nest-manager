@@ -683,7 +683,7 @@ def getInfoHtml() {
 		def testVal = device.currentState("isTesting")?.value
 		def testModeHTML = (testVal.toString() == "true") ? "<h3>Test Mode</h3>" : ""
 		def updateAvail = !state.updateAvailable ? "" : "<h3>Device Update Available!</h3>"
-		def clientBl = state?.clientBl == true ? "" : "<h3>Your Manager client has been blacklisted.  Please contact the Nest Manager developer to get the issue resolved!!!</h3>"
+		def clientBl = state?.clientBl ? """<h3>Your Manager client has been blacklisted!\nPlease contact the Nest Manager developer to get the issue resolved!!!</h3>""" : ""
 		def html = """
 		<!DOCTYPE html>
 		<html>

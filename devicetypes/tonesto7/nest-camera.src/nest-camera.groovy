@@ -819,7 +819,7 @@ def getCamHtml() {
 	try {
 		// These are used to determine the URL for the nest cam stream
 		def updateAvail = !state.updateAvailable ? "" : "<h3>Device Update Available!</h3>"
-		def clientBl = state?.clientBl == true ? "" : "<h3>Your Manager client has been blacklisted.  Please contact the Nest Manager developer to get the issue resolved!!!</h3>"
+		def clientBl = state?.clientBl ? """<h3>Your Manager client has been blacklisted!\nPlease contact the Nest Manager developer to get the issue resolved!!!</h3>""" : ""
 		def pubVidUrl = state?.public_share_url
 		def camHtml = (pubVidUrl || state?.isStreaming) ? showCamHtml() : hideCamHtml()
 
@@ -837,9 +837,6 @@ def getCamHtml() {
 				<link rel="stylesheet prefetch" href="${getCssData()}"/>
 			</head>
 			<body>
-				<style type="text/css">
-					${getCSS()}
-				</style>
 				${clientBl}
 				${updateAvail}
 

@@ -2717,7 +2717,7 @@ def getGraphHTML() {
 		//LogAction("State Size: ${getStateSize()} (${getStateSizePerc()}%)")
 		def leafImg = state?.hasLeaf ? getImgBase64(getImg("nest_leaf_on.gif"), "gif") : getImgBase64(getImg("nest_leaf_off.gif"), "gif")
 		def updateAvail = !state.updateAvailable ? "" : "<h3>Device Update Available!</h3>"
-		def clientBl = state?.clientBl == true ? "" : "<h3>Your Manager client has been blacklisted.  Please contact the Nest Manager developer to get the issue resolved!!!</h3>"
+		def clientBl = state?.clientBl ? """<h3>Your Manager client has been blacklisted!\nPlease contact the Nest Manager developer to get the issue resolved!!!</h3>""" : ""
 
 		def chartHtml = (
 				state.temperatureTable?.size() > 0 &&
