@@ -6372,7 +6372,7 @@ def remSendoSetCool(chgval, onTemp, offTemp) {
 			}
 		}
 		if(setTstatAutoTemps(remSenTstat, chgval, cHeat)) {
-			LogAction("Remote Sensor: COOL - Adjusting CoolSetpoint to (${chgval}°${getTemperatureScale()}) ", "info", true)
+			//LogAction("Remote Sensor: COOL - Adjusting CoolSetpoint to (${chgval}°${getTemperatureScale()}) ", "info", true)
 			storeLastAction("Adjusted Cool Setpoint to (${chgval}°${getTemperatureScale()}) Heat Setpoint to (${cHeat}°${getTemperatureScale()})", getDtNow())
 			if(remSenTstatMir) { remSenTstatMir*.setCoolingSetpoint(chgval) }
 		}
@@ -6406,7 +6406,7 @@ def remSendoSetHeat(chgval, onTemp, offTemp) {
 			}
 		}
 		if(setTstatAutoTemps(remSenTstat, cCool, chgval)) {
-			LogAction("Remote Sensor: HEAT - Adjusting HeatSetpoint to (${chgval}°${getTemperatureScale()})", "info", true)
+			//LogAction("Remote Sensor: HEAT - Adjusting HeatSetpoint to (${chgval}°${getTemperatureScale()})", "info", true)
 			storeLastAction("Adjusted Heat Setpoint to (${chgval}°${getTemperatureScale()}) Cool Setpoint to (${cCool}°${getTemperatureScale()})", getDtNow())
 			if(remSenTstatMir) { remSenTstatMir*.setHeatingSetpoint(chgval) }
 		}
@@ -6444,8 +6444,7 @@ private remSenCheck() {
 			def hvacMode = remSenTstat ? remSenTstat?.currentThermostatMode.toString() : null
 			if(hvacMode == "off") {
 				LogAction("Remote Sensor: Skipping Evaluation... The Current Thermostat Mode is 'OFF'...", "info", true)
-				atomicState?.coolOverride = null
-				atomicState?.heatOverride = null
+				disableOverrideTemps()
 				storeExecutionHistory((now() - execTime), "remSenCheck")
 				return
 			}
@@ -6795,6 +6794,16 @@ def getRemoteSenAutomationEnabled() {
 
 def getLastOverrideCoolSec() { return !atomicState?.lastOverrideCoolDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastOverrideCoolDt, null, "getLastOverrideCoolSec").toInteger() }
 def getLastOverrideHeatSec() { return !atomicState?.lastOverrideHeatDt ? 100000 : GetTimeDiffSeconds(atomicState?.lastOverrideHeatDt, null, "getLastOverrideHeatSec").toInteger() }
+
+def disableOverrideTemps() {
+	if(atomicState?.heatOverride || atomicState?.coolOverride) {
+		atomicState?.coolOverride = null
+		atomicState?.heatOverride = null
+		atomicState?.lastOverrideCoolDt = null
+		atomicState?.lastOverrideHeatDt = null
+		LogAction("disableOverrideTemps: Disabling Override temps", "trace", true)
+	}
+}
 
 def remSenTempUpdate(temp, mode) {
 	LogAction("remSenTempUpdate(${temp}, ${mode})", "trace", true)
@@ -7311,6 +7320,7 @@ def getExtTmpDewPoint() {
 //TODO if an external sensor, if it has temp and humidity, we can calculate DP
 	return extDp
 }
+
 def getDesiredTemp(curMode) {
 	def modeOff = (curMode == "off") ? true : false
 	def modeCool = (curMode == "cool") ? true : false
@@ -7328,7 +7338,6 @@ def getDesiredTemp(curMode) {
 	LogAction("extTmpTempOk: Desired Temp: ${desiredTemp} | Desired Heat Temp: ${desiredHeatTemp} | Desired Cool Temp: ${desiredCoolTemp} atomicState.extTmpLastDesiredTemp: ${atomicState?.extTmpLastDesiredTemp}", "info", false)
 
 	return desiredTemp
-
 }
 
 def extTmpTempOk() {
@@ -8920,6 +8929,10 @@ def setTstatTempCheck() {
 			atomicState?."motion${previousSched}LastisBtwn" = false
 		}
 
+		if(!samesched || away ) {                    // schedule change, clear out overrides
+			disableOverrideTemps()
+		}
+
 		LogAction("setTstatTempCheck: [Current Schedule: ($mySched) | Previous Schedule: (${previousSched}) | No Schedule: ($noSched)]", "trace", false)
 
 		if(noSched || away) {
@@ -8947,6 +8960,7 @@ def setTstatTempCheck() {
 				if(motionOn) {	// if motion is on use motion now
 					atomicState?."motion${mySched}UseMotionSettings" = true
 					atomicState?."motion${mySched}TurnedOnDt" = getDtNow()
+					disableOverrideTemps()
 					LogAction("setTstatTempCheck: Enabled Use of Motion Settings for schedule ${mySched}", "info", true)
 				} else {
 					atomicState."${sLbl}MotionActiveDt" = null              // this will clear isBtwn
@@ -8995,7 +9009,7 @@ def setTstatTempCheck() {
 					heatTemp = getRemSenHeatSetTemp()
 					if(oldHeat != heatTemp) {
 						needChg = true
-						LogAction("setTstatTempCheck: Setting Heat Setpoint to '${heatTemp}' on (${tstat}) | Old Heat Setpoint: '${oldHeat}'", "info", false)
+						LogAction("setTstatTempCheck: Schedule Setpoint is '${heatTemp}' on (${tstat}) | Old Heat Setpoint: '${oldHeat}'", "info", false)
 						//storeLastAction("Set ${settings?.schMotTstat} Heat Setpoint to ${heatTemp}", getDtNow())
 					} else { heatTemp = null }
 				}
@@ -9005,13 +9019,13 @@ def setTstatTempCheck() {
 					coolTemp = getRemSenCoolSetTemp()
 					if(oldCool != coolTemp) {
 						needChg = true
-						LogAction("setTstatTempCheck: Setting Cool Setpoint to '${coolTemp}' on (${tstat}) | Old Cool Setpoint: '${oldCool}'", "info", false)
+						LogAction("setTstatTempCheck: Schedule Cool Setpoint is '${coolTemp}' on (${tstat}) | Old Cool Setpoint: '${oldCool}'", "info", false)
 						//storeLastAction("Set ${settings?.schMotTstat} Cool Setpoint to ${coolTemp}", getDtNow())
 					} else { coolTemp = null }
 				}
 				if(needChg) {
 					if(setTstatAutoTemps(settings?.schMotTstat, coolTemp?.toDouble(), heatTemp?.toDouble())) {
-						LogAction("setTstatTempCheck: [Temp Change | newHvacMode: $newHvacMode | tstatHvacMode: $tstatHvacMode | heatTemp: $heatTemp | coolTemp: $coolTemp ]", "info", true)
+						//LogAction("setTstatTempCheck: [Temp Change | newHvacMode: $newHvacMode | tstatHvacMode: $tstatHvacMode | heatTemp: $heatTemp | coolTemp: $coolTemp ]", "info", true)
 						storeLastAction("Set ${tstat} Cool Setpoint to ${coolTemp} Set Heat Setpoint to ${heatTemp}", getDtNow())
 					} else {
 						LogAction("setTstatTempCheck: Thermostat Set ERROR [ newHvacMode: $newHvacMode | tstatHvacMode: $tstatHvacMode | heatTemp: $heatTemp | coolTemp: $coolTemp ]", "info", true)
@@ -11145,9 +11159,11 @@ def setTstatAutoTemps(tstat, coolSetpoint, heatSetpoint) {
 			} else { LogAction("setTstatAutoTemps() | Setting tstat: [${tstat?.displayName} | mode: (${hvacMode}) is missing cool or heat set points (${reqCool}/${reqHeat}) or is not separated by ${diff}]", "info", true) }
 
 		} else if(hvacMode in ["cool"] && reqCool) {
+			LogAction("setTstatAutoTemps() | Setting tstat [${tstat?.displayName} | mode: (${hvacMode}) | coolSetpoint: (${reqCool}°${getTemperatureScale()})]", "info", true)
 			if(reqCool != curCoolSetpoint) { tstat?.setCoolingSetpoint(reqCool); retVal = true }
 
 		} else if(hvacMode in ["heat"] && reqHeat) {
+			LogAction("setTstatAutoTemps() | Setting tstat [${tstat?.displayName} | mode: (${hvacMode}) | heatSetpoint: (${reqHeat}°${getTemperatureScale()})]", "info", true)
 			if(reqHeat != curHeatSetpoint) { tstat?.setHeatingSetpoint(reqHeat); retVal = true }
 
 		} else { LogAction("setTstatAutoTemps() | Thermostat '${tstat?.displayName}' HVAC Mode is not equal to [AUTO, COOL, or HEAT]", "info", true) }
