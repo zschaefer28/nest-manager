@@ -2072,13 +2072,15 @@ String getDataString(Integer seriesIndex) {
 	dataTable.each() {
 		myindex = seriesIndex
 		if (state?.can_heat && state?.can_cool && state?.has_fan) {
-			dataArray = [[it[0],it[1],0],null,null,null,null,null,null,null]
+			//dataArray = [[it[0],it[1],0],null,null,null,null,null,null,null]
+			dataArray = [[it[0],it[1],0],null,null,null,null,null,null]
 		} else if (state?.can_heat && state?.can_cool && !state.has_fan) {
 			dataArray = [[it[0],it[1],0],null,null,null,null,null,null]
 		} else if ( ((!state?.can_heat && state?.can_cool) || (state?.can_heat && !state?.can_cool)) && state?.has_fan) {
-			dataArray = [[it[0],it[1],0],null,null,null,null,null,null]
+			//dataArray = [[it[0],it[1],0],null,null,null,null,null,null]
+			dataArray = [[it[0],it[1],0],null,null,null,null,null]
 			if (myindex == 6) {myindex = 5}
-			if (myindex == 7) {myindex = 6}
+			//if (myindex == 7) {myindex = 6}
 		} else if ( ((!state?.can_heat && state?.can_cool) || (state?.can_heat && !state?.can_cool)) && !state?.has_fan) {
 			dataArray = [[it[0],it[1],0],null,null,null,null,null]
 			if (myindex == 6) {myindex = 5}
@@ -2091,12 +2093,13 @@ String getDataString(Integer seriesIndex) {
 			if (myval == "heating") { myval = 16 }
 			else { }
 		} else { myval = it[2] }
+/*
 		if(seriesIndex == 7) {
 			if (myval == "auto") { myval = 0 }
 			if (myval == "on") { myval = 8 }
 			//if (myval == "circulate") { myval = 8 }
 		}
-
+*/
 		dataArray[myindex] = myval
 
 		//reduce # of points to graph
