@@ -32,7 +32,7 @@ metadata {
 		capability "Smoke Detector"
 		capability "Carbon Monoxide Detector"
 		capability "Refresh"
-        capability "Health Check"
+		capability "Health Check"
 
 		command "refresh"
 		command "poll"
@@ -159,6 +159,17 @@ def initialize() {
 	poll()
 }
 
+def installed() {
+	LogAction("installed...")
+	// Notify health check about this device with timeout interval 12 hrs
+	sendEvent(name: "checkInterval", value: 12*60*60, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
+}
+
+def ping() {
+	LogAction("ping...")
+	refresh()
+}
+
 def parse(String description) {
 	log.debug "Parsing '${description}'"
 }
@@ -244,6 +255,10 @@ def generateEvent(Map eventData) {
 }
 
 def processEvent() {
+	if(state?.swVersion != devVer()) {
+		installed()
+		state.swVersion = devVer()
+	}
 	def eventData = state?.eventData
 	state.eventData = null
 	//log.trace("processEvent Parsing data ${eventData}")
