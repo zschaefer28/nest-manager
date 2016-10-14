@@ -1014,7 +1014,7 @@ def reqSchedInfoRprt(child) {
 		def chldSch = getChildApps()?.find { (!(it.getAutomationType() in ["nMode", "webDash"]) && it?.getActiveScheduleState() && it?.getTstatAutoDevId() == tstat?.deviceNetworkId) }
 		if(chldSch) {
 			def actNum = chldSch?.getCurrentSchedule()
-			def tempScaleStr = "°${getTemperatureScale()}"
+			def tempScaleStr = " degrees ${getTemperatureScale() == "C" ? "celsius" : "fahrenheit"}"
 
 			def canHeat = tstat?.currentCanHeat.toString() == "true" ? true : false
 			def canCool = tstat?.currentCanCool.toString() == "true" ? true : false
