@@ -572,25 +572,29 @@ def take() {
 
 // Local Application Logging
 def LogAction(msg, logType = "debug") {
-	 if(state?.debug) {
-		switch (logType) {
-			case "trace":
-				log.trace "${msg}"
-				break
-			case "debug":
-				log.debug "${msg}"
-				break
-			case "warn":
-				log.warn "${msg}"
-				break
-			case "error":
-				log.error "${msg}"
-				break
-			default:
-				log.debug "${msg}"
-				break
-		}
-	 }
+	def smsg = "${device.displayName}: ${msg}"
+   if(state?.debug) {
+	   switch (logType) {
+		   case "trace":
+			   log.trace "${smsg}"
+			   break
+		   case "debug":
+			   log.debug "${smsg}"
+			   break
+		   case "info":
+			   log.info "${smsg}"
+			   break
+		   case "warn":
+			   log.warn "${smsg}"
+			   break
+		   case "error":
+			   log.error "${smsg}"
+			   break
+		   default:
+			   log.debug "${smsg}"
+			   break
+	   }
+   }
  }
 
 // Print log message from parent
