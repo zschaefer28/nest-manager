@@ -33,7 +33,6 @@ def devVer() { return "3.5.0"}
 metadata {
 	definition (name: "${textDevName()}", namespace: "tonesto7", author: "Anthony S.") {
 		capability "Actuator"
-		//capability "Polling"
 		capability "Relative Humidity Measurement"
 		capability "Refresh"
 		capability "Sensor"
@@ -67,9 +66,7 @@ metadata {
 		command "coolingSetpointUp"
 		command "coolingSetpointDown"
 		command "changeMode"
-		//command "getVoiceReportTypes"
-		command "getNestMgrReport"
-		command "doSomething"
+		command "updateNestReportData"
 
 		attribute "temperatureUnit", "string"
 		attribute "targetTemp", "string"
@@ -99,6 +96,7 @@ metadata {
 		attribute "hasFan", "string"
 		attribute "nestType", "string"
 		attribute "pauseUpdates", "string"
+		attribute "nestReportData", "string"
 	}
 
 	simulator {
@@ -249,7 +247,7 @@ metadata {
 
 		main("temp2")
 		details( ["temperature", "thermostatMode", "nestPresence", "thermostatFanMode", "heatingSetpointDown", "heatingSetpoint", "heatingSetpointUp",
-				  "coolingSetpointDown", "coolingSetpoint", "coolingSetpointUp", "graphHTML", "refresh", "testBtn"])
+				  "coolingSetpointDown", "coolingSetpoint", "coolingSetpointUp", "graphHTML", "refresh"])
 				  //"coolingSetpointDown", "coolingSetpoint", "coolingSetpointUp", "graphHTML", "heatSliderControl", "coolSliderControl", "refresh"] )
 	}
 }
@@ -289,6 +287,17 @@ def initialize() {
 	LogAction("initialize")
 }
 
+def installed() {
+	LogAction("installed...")
+	// Notify health check about this device with timeout interval 30 minutes
+	sendEvent(name: "checkInterval", value: 30 * 60, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
+}
+
+def ping() {
+	LogAction("ping...")
+	refresh()
+}
+
 def parse(String description) {
 	LogAction("Parsing '${description}'")
 }
@@ -313,6 +322,10 @@ def generateEvent(Map eventData) {
 }
 
 def processEvent() {
+	if(state?.swVersion != devVer()) {
+		installed()
+		state.swVersion = devVer()
+	}
 	def pauseUpd = !device.currentValue("pauseUpdates") ? false : device.currentValue("pauseUpdates").value
 	if(pauseUpd == "true") { LogAction("pausing", "warn"); return }
 
@@ -420,6 +433,7 @@ def processEvent() {
 			}
 			getSomeData(true)
 			lastUpdatedEvent()
+			//nestReportStatusEvent()
 		}
 		//This will return all of the devices state data to the logs.
 		//LogAction("Device State Data: ${getState()}")
@@ -802,6 +816,15 @@ def apiStatusEvent(issue) {
 		LogAction("UPDATED | API Status is: (${newStat.toString().capitalize()}) | Original State: (${curStat.toString().capitalize()})")
 		sendEvent(name: "apiStatus", value: newStat, descriptionText: "API Status is: ${newStat}", displayed: true, isStateChange: true, state: newStat)
 	} else { LogAction("API Status is: (${newStat}) | Original State: (${curStat})") }
+}
+
+def nestReportStatusEvent() {
+	def val = currentNestReportData?.toString()
+	def rprtData = getNestMgrReport()?.toString()
+	if(!val || (val && rprtData && !val.equals(rprtData))) {
+		LogAction("UPDATED | Report Data has been updated", "info")
+		sendEvent(name: 'nestReportData', value: rprtData, descriptionText: "Nest Report Data has been updated...", display: false, displayed: false)
+	}
 }
 
 def canHeatCool(canHeat, canCool) {
@@ -1635,31 +1658,35 @@ def exceptionDataHandler(msg, methodName) {
 	}
 }
 
-def getVoiceReportTypes() {
-	return ["curZoneInfo":"Current Zone Info", "runtimeToday":"Today Usage", "runtimeWeek":"This Weeks Usage", "runtimeMonth":"This Month's Usage"]
+void updateNestReportData() {
+	nestReportStatusEvent()
 }
 
-private getNestMgrReport() {
-	log.trace "getNestMgrReport()..."
+def getNestMgrReport() {
+	//log.trace "getNestMgrReport()..."
 	def str = ""
-	if(state?.allowVoiceZoneRprt == false) {
-		LogAction("Usage voice reports have been disabled by Nest manager app preferences", "info")
-		return "Usage voice reports have been disabled by Nest manager app preferences"
+	if(state?.allowVoiceZoneRprt || state?.allowVoiceUsageRprt) {
+		if(state?.allowVoiceZoneRprt == false) {
+			LogAction("getNestMgrReport: Zone status voice reports have been disabled by Nest manager app preferences", "info")
+			str += " Zone status voice reports have been disabled by Nest manager app preferences"
+		}
+		else {
+			str += "This is the start of your (${device?.displayName}) zone status.  "
+			str += parent?.reqSchedInfoRprt(this).toString() + "  "
+		}
+		if(state?.allowVoiceUsageRprt == false) {
+			LogAction("getNestMgrReport: Zone status voice reports have been disabled by Nest manager app preferences", "info")
+			str += "Zone status voice reports have been disabled by Nest manager app preferences"
+		}
+		else {
+			str += " and now we will Move on to today's Usage.  "
+			str += getUsageVoiceReport("runtimeToday")
+		}
+	} else {
+		str += "All voice reports have been disabled by Nest Manager app preferences"
 	}
-	else {
-		str += "This is the start of your (${device?.displayName}) zone status.  "
-		str += parent?.reqSchedInfoRprt(this).toString() + "  "
-	}
-	if(state?.allowVoiceUsageRprt == false) {
-		LogAction("getNestMgrReport: Zone status voice reports have been disabled by Nest manager app preferences", "info")
-		return "Zone status voice reports have been disabled by Nest manager app preferences"
-	}
-	else {
-		str += " and now we will Move on to today's Usage.  "
-		str += getUsageVoiceReport("runtimeToday")
-	}
-	log.debug str
-	return str.toString()
+	//log.debug str
+	return str
 }
 
 def getUsageVoiceReport(type) {
@@ -1682,7 +1709,7 @@ def getUsageVoiceReport(type) {
 def generateUsageText(timeType, timeMap) {
 	def str = ""
 	if(timeType && timeMap) {
-		str += " Here is your ${device?.displayName} Usage report for${timeType in ["week", "month"] ? " this" : ""} ${timeType}.  Based on your usage"
+		str += " Here is your ${device?.displayName} Usage report for${timeType in ["week", "month"] ? " this" : ""} ${timeType}.  Based on it's activity "
 		def hData = null
 		def cData = null
 		def iData = null
@@ -1711,18 +1738,18 @@ def generateUsageText(timeType, timeMap) {
 				def tSec = iData?.value?.tSec.toInteger()
 				def tStr = getTimeMapString(tData)
 				if(timeType == "today") {
-					def tm = getDayTimePerc(tSec)
+					def tm = getDayTimePerc(tSec,tData)
 					if (tm>=66 && tm<=100) {
 						str += " it looks like it was a light day because your device"
 						str +=  " was idle $tm percent of the day at "
 					}
 					else if (tm>=34 && tm<66) {
 						str += " it was a pretty moderate day because your device"
-						str +=  " was only idle $tm percent of the day at"
+						str +=  " was only idle $tm percent of the day at "
 					}
 					else if (tm>0 && tm <34) {
 						str += " it was a very busy day becaue your device"
-						str +=  " was only idle $tm percent of the day at"
+						str +=  " was only idle $tm percent of the day at "
 					}
 					str += tStr
 
@@ -1739,7 +1766,7 @@ def generateUsageText(timeType, timeMap) {
 				def tSec = hData?.value?.tSec.toInteger()
 				def tStr = getTimeMapString(tData)
 				if(timeType == "today") {
-					def tm = getDayTimePerc(tSec)
+					def tm = getDayTimePerc(tSec,tData)
 					if(tm>=66 && tm<=100) {
 						str += " it must have been freezing today because your device was heating your home for "
 						str += tStr
@@ -1747,7 +1774,7 @@ def generateUsageText(timeType, timeMap) {
 					else if (tm>=34 && tm<66) {
 						str += " it's like the weather was a bit chilly today because your device spent "
 						str += tStr
-						str += " trying to keep your home cozy"
+						str += " trying to keep your home cozy "
 
 					}
 					else if (tm>0 && tm <34) {
@@ -1757,7 +1784,7 @@ def generateUsageText(timeType, timeMap) {
 				} else {
 					str += " spent "
 					str += tStr
-					str += " %{cData?.key} your home this ${timeType}"
+					str += " %{cData?.key} your home this ${timeType} "
 				}
 				str += cData ? " and" : ""
 			}
@@ -1766,7 +1793,7 @@ def generateUsageText(timeType, timeMap) {
 				def tSec = cData?.value?.tSec.toInteger()
 				def tStr = getTimeMapString(tData)
 				if(timeType == "today") {
-					def tm = getDayTimePerc(tSec)
+					def tm = getDayTimePerc(tSec,tData)
 					if(tm>=66 && tm<=100) {
 
 					}
@@ -1780,7 +1807,7 @@ def generateUsageText(timeType, timeMap) {
 				} else {
 					str += " spent "
 					str += tStr
-					str += " %{cData?.key} your home this ${timeType}"
+					str += " %{cData?.key} your home this ${timeType} "
 				}
 				str += f0Data || f1Data ? " and" : ""
 			}
@@ -1790,13 +1817,17 @@ def generateUsageText(timeType, timeMap) {
 			}*/
 		}
 	}
-	str += "  That's all for your current thermostat report"
+	str += "  That's all for your current thermostat report "
 	//log.debug "str: $str"
 	return str
 }
 
-def getDayTimePerc(val) {
-	return (int) ((val.toInteger()/86400)*100).toDouble().round(0)
+def getDayTimePerc(val,data) {
+	if(!data) { return null }
+	def h = data?.h
+	def m = data?.m
+	def hr = 60*60
+	return (int) ((val.toInteger()/(h*hr+m*60))*100).toDouble().round(0)
 }
 
 def getTimeMapString(data) {
@@ -2011,11 +2042,9 @@ String getDataString(Integer seriesIndex) {
 		case 6:
 			dataTable = state?.heatSetpointTable
 			break
-/*   We are not graphing fanModeTable
 		case 7:
 			dataTable = state?.fanModeTable
 			break
-*/
 	}
 
 	def lastVal = 200
@@ -2071,7 +2100,6 @@ String getDataString(Integer seriesIndex) {
 			//if (myval == "circulate") { myval = 8 }
 		}
 */
-
 		dataArray[myindex] = myval
 
 		//reduce # of points to graph
