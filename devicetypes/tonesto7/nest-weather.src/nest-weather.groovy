@@ -159,7 +159,7 @@ def processEvent() {
 	state.eventData = null
 	//LogAction("processEvent Parsing data ${eventData}", "trace")
 	try {
-		Logger("------------START OF API RESULTS DATA------------", "warn")
+		LogAction("------------START OF API RESULTS DATA------------", "warn")
 		if(eventData) {
 			state.tempUnit = getTemperatureScale()
 			state.clientBl = eventData?.clientBl == true ? true : false
@@ -226,7 +226,7 @@ def isCodeUpdateAvailable(newVer, curVer) {
 		}
 		result = (latestVer == newVer) ? true : false
 	}
-	Logger("newVer: $newVer | curVer: $curVer | newestVersion: ${latestVer} | result: $result")
+	LogAction("newVer: $newVer | curVer: $curVer | newestVersion: ${latestVer} | result: $result")
 	return result
 }
 
@@ -238,9 +238,9 @@ def deviceVerEvent(ver) {
 	def newData = state.updateAvailable ? "${dVer}(New: v${pubVer})" : "${dVer}" as String
 	state?.devTypeVer = newData
 	if(!curData?.equals(newData)) {
-		Logger("UPDATED | Device Type Version is: (${newData}) | Original State: (${curData})")
+		LogAction("UPDATED | Device Type Version is: (${newData}) | Original State: (${curData})")
 		sendEvent(name: 'devTypeVer', value: newData, displayed: false)
-	} else { Logger("Device Type Version is: (${newData}) | Original State: (${curData})") }
+	} else { LogAction("Device Type Version is: (${newData}) | Original State: (${curData})") }
 }
 
 def debugOnEvent(debug) {
@@ -251,7 +251,7 @@ def debugOnEvent(debug) {
 	if(!val.equals(dVal)) {
 		LogAction("UPDATED | debugOn: (${dVal}) | Original State: (${val})")
 		sendEvent(name: 'debugOn', value: dVal, displayed: false)
-	} else { Logger("debugOn: (${dVal}) | Original State: (${val})") }
+	} else { LogAction("debugOn: (${dVal}) | Original State: (${val})") }
 }
 
 def lastUpdatedEvent() {
@@ -263,7 +263,7 @@ def lastUpdatedEvent() {
 	def lastUpd = device.currentState("lastUpdatedDt")?.value
 	state?.lastUpdatedDt = lastDt?.toString()
 	if(!lastUpd.equals(lastDt?.toString())) {
-		Logger("Last Parent Refresh time: (${lastDt}) | Previous Time: (${lastUpd})")
+		LogAction("Last Parent Refresh time: (${lastDt}) | Previous Time: (${lastUpd})")
 		sendEvent(name: 'lastUpdatedDt', value: lastDt?.toString(), displayed: false, isStateChange: true)
 	}
 }
@@ -275,7 +275,7 @@ def apiStatusEvent(issue) {
 	if(!curStat.equals(newStat)) {
 		LogAction("UPDATED | API Status is: (${newStat}) | Original State: (${curStat})")
 		sendEvent(name: "apiStatus", value: newStat, descriptionText: "API Status is: ${newStat}", displayed: true, isStateChange: true, state: newStat)
-	} else { Logger("API Status is: (${newStat}) | Original State: (${curStat})") }
+	} else { LogAction("API Status is: (${newStat}) | Original State: (${curStat})") }
 }
 
 def humidityEvent(humidity) {
@@ -283,7 +283,7 @@ def humidityEvent(humidity) {
 	if(!hum.equals(humidity)) {
 		LogAction("UPDATED | Humidity is (${humidity}) | Original State: (${hum})")
 		sendEvent(name:'humidity', value: humidity, unit: "%", descriptionText: "Humidity is ${humidity}" , displayed: false, isStateChange: true)
-	} else { Logger("Humidity is (${humidity}) | Original State: (${hum})") }
+	} else { LogAction("Humidity is (${humidity}) | Original State: (${hum})") }
 }
 
 def illuminanceEvent(illum) {
@@ -291,7 +291,7 @@ def illuminanceEvent(illum) {
 	if(!cur.equals(illum.toString())) {
 		LogAction("UPDATED | Illuminance is (${illum}) | Original State: (${cur})")
 		sendEvent(name:'illuminance', value: illum, unit: "lux", descriptionText: "Illuminance is ${illum}" , displayed: false, isStateChange: true)
-	} else { Logger("Illuminance is (${illum}) | Original State: (${cur})") }
+	} else { LogAction("Illuminance is (${illum}) | Original State: (${cur})") }
 }
 
 def dewpointEvent(Double tempVal) {
@@ -300,7 +300,7 @@ def dewpointEvent(Double tempVal) {
 	if(!temp.equals(rTempVal.toString())) {
 		LogAction("UPDATED | DewPoint Temperature is (${rTempVal}) | Original Temp: (${temp})")
 		sendEvent(name:'dewpoint', value: rTempVal, unit: state?.tempUnit, descriptionText: "Dew point Temperature is ${rTempVal}" , displayed: true, isStateChange: true)
-	} else { Logger("DewPoint Temperature is (${rTempVal}) | Original Temp: (${temp})") }
+	} else { LogAction("DewPoint Temperature is (${rTempVal}) | Original Temp: (${temp})") }
 }
 
 def temperatureEvent(Double tempVal, Double feelsVal) {
@@ -311,7 +311,7 @@ def temperatureEvent(Double tempVal, Double feelsVal) {
 		LogAction("UPDATED | Temperature is (${rTempVal}) | Original Temp: (${temp})")
 		sendEvent(name:'temperature', value: rTempVal, unit: state?.tempUnit, descriptionText: "Ambient Temperature is ${rTempVal}" , displayed: true, isStateChange: true)
 		sendEvent(name:'feelsLike', value: rFeelsVal, unit: state?.tempUnit, descriptionText: "Feels Like Temperature is ${rFeelsVal}" , displayed: false)
-	} else { Logger("Temperature is (${rTempVal}) | Original Temp: (${temp})") }
+	} else { LogAction("Temperature is (${rTempVal}) | Original Temp: (${temp})") }
 }
 
 def getTemp() {
@@ -407,7 +407,7 @@ def getWeatherConditions(Map weatData) {
 
 				sendEvent(name: "uvindex", value: cur?.current_observation?.UV)
 				sendEvent(name: "ultravioletIndex", value: cur?.current_observation?.UV)
-				Logger("${state?.curWeatherLoc} Weather | humidity: ${state?.curWeatherHum} | temp_f: ${state?.curWeatherTemp_f} | temp_c: ${state?.curWeatherTemp_c} | Current Conditions: ${state?.curWeatherCond}")
+				LogAction("${state?.curWeatherLoc} Weather | humidity: ${state?.curWeatherHum} | temp_f: ${state?.curWeatherTemp_f} | temp_c: ${state?.curWeatherTemp_c} | Current Conditions: ${state?.curWeatherCond}")
 			}
 		}
 	}
@@ -718,7 +718,7 @@ def LogAction(msg, logType = "debug") {
 }
 
 // Local Device Logging
-def Logger(msg, logType = "debug") {
+def LogAction(msg, logType = "debug") {
 	if(state?.debug) {
 		LogAction(msg, logType)
 	}

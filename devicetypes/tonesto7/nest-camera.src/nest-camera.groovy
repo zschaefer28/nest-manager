@@ -204,7 +204,7 @@ def processEvent() {
 	state.eventData = null
 	//log.trace("processEvent Parsing data ${eventData}")
 	try {
-		Logger("------------START OF API RESULTS DATA------------", "warn")
+		LogAction("------------START OF API RESULTS DATA------------", "warn")
 		if(eventData) {
 			def results = eventData?.data
 			//log.debug "results: $results"
@@ -297,9 +297,9 @@ def deviceVerEvent(ver) {
 	state?.devTypeVer = newData
 	state?.updateAvailable = isCodeUpdateAvailable(pubVer, dVer)
 	if(!curData?.equals(newData)) {
-		Logger("UPDATED | Device Type Version is: (${newData}) | Original State: (${curData})")
+		LogAction("UPDATED | Device Type Version is: (${newData}) | Original State: (${curData})")
 		sendEvent(name: 'devTypeVer', value: newData, displayed: false)
-	} else { Logger("Device Type Version is: (${newData}) | Original State: (${curData})") }
+	} else { LogAction("Device Type Version is: (${newData}) | Original State: (${curData})") }
 }
 
 def lastCheckinEvent(checkin) {
@@ -310,9 +310,9 @@ def lastCheckinEvent(checkin) {
 	def lastChk = device.currentState("lastConnection")?.value
 	state?.lastConnection = lastConn?.toString()
 	if(!lastChk.equals(lastConn?.toString())) {
-		Logger("UPDATED | Last Nest Check-in was: (${lastConn}) | Original State: (${lastChk})")
+		LogAction("UPDATED | Last Nest Check-in was: (${lastConn}) | Original State: (${lastChk})")
 		sendEvent(name: 'lastConnection', value: lastConn?.toString(), displayed: state?.showProtActEvts, isStateChange: true)
-	} else { Logger("Last Nest Check-in was: (${lastConn}) | Original State: (${lastChk})") }
+	} else { LogAction("Last Nest Check-in was: (${lastConn}) | Original State: (${lastChk})") }
 }
 
 def lastOnlineEvent(dt) {
@@ -323,9 +323,9 @@ def lastOnlineEvent(dt) {
 	def lastOnl = !dt ? "Nothing To Show..." : tf?.format(Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", dt.toString()))
 	state?.lastOnl = lastOnl
 	if(!lastOnlVal.equals(lastOnl?.toString())) {
-		Logger("UPDATED | Last Online was: (${lastOnl}) | Original State: (${lastOnlVal})")
+		LogAction("UPDATED | Last Online was: (${lastOnl}) | Original State: (${lastOnlVal})")
 		sendEvent(name: 'lastOnline', value: lastOnl, displayed: false, isStateChange: true)
-	} else { Logger("Last Manual Test was: (${lastOnl}) | Original State: (${lastOnlVal})") }
+	} else { LogAction("Last Manual Test was: (${lastOnl}) | Original State: (${lastOnlVal})") }
 }
 
 def isStreamingEvent(isStreaming) {
@@ -337,7 +337,7 @@ def isStreamingEvent(isStreaming) {
 	if(!isOn.equals(val)) {
 		log.debug("UPDATED | Streaming Video is: (${val}) | Original State: (${isOn})")
 		sendEvent(name: "isStreaming", value: val, descriptionText: "Streaming Video is: ${val}", displayed: true, isStateChange: true, state: val)
-	} else { Logger("Streaming Video Status is: (${val}) | Original State: (${isOn})") }
+	} else { LogAction("Streaming Video Status is: (${val}) | Original State: (${isOn})") }
 }
 
 def audioInputEnabledEvent(on) {
@@ -347,7 +347,7 @@ def audioInputEnabledEvent(on) {
 	if(!isOn.equals(val)) {
 		log.debug("UPDATED | Audio Input Status is: (${val}) | Original State: (${isOn})")
 		sendEvent(name: "audioInputEnabled", value: val, descriptionText: "Audio Input Status is: ${val}", displayed: true, isStateChange: true, state: val)
-	} else { Logger("Audio Input Status is: (${val}) | Original State: (${isOn})") }
+	} else { LogAction("Audio Input Status is: (${val}) | Original State: (${isOn})") }
 }
 
 def videoHistEnabledEvent(on) {
@@ -357,7 +357,7 @@ def videoHistEnabledEvent(on) {
 	if(!isOn.equals(val)) {
 		log.debug("UPDATED | Video History Status is: (${val}) | Original State: (${isOn})")
 		sendEvent(name: "videoHistoryEnabled", value: val, descriptionText: "Video History Status is: ${val}", displayed: true, isStateChange: true, state: val)
-	} else { Logger("Video History Status is: (${val}) | Original State: (${isOn})") }
+	} else { LogAction("Video History Status is: (${val}) | Original State: (${isOn})") }
 }
 
 def publicShareEnabledEvent(on) {
@@ -367,7 +367,7 @@ def publicShareEnabledEvent(on) {
 	if(!isOn.equals(val)) {
 		log.debug("UPDATED | Public Sharing Status is: (${val}) | Original State: (${isOn})")
 		sendEvent(name: "publicShareEnabled", value: val, descriptionText: "Public Sharing Status is: ${val}", displayed: true, isStateChange: true, state: val)
-	} else { Logger("Public Sharing Status is: (${val}) | Original State: (${isOn})") }
+	} else { LogAction("Public Sharing Status is: (${val}) | Original State: (${isOn})") }
 }
 
 def softwareVerEvent(ver) {
@@ -376,7 +376,7 @@ def softwareVerEvent(ver) {
 	if(!verVal.equals(ver)) {
 		log.debug("UPDATED | Firmware Version: (${ver}) | Original State: (${verVal})")
 		sendEvent(name: 'softwareVer', value: ver, descriptionText: "Firmware Version is now v${ver}", displayed: false)
-	} else { Logger("Firmware Version: (${ver}) | Original State: (${verVal})") }
+	} else { LogAction("Firmware Version: (${ver}) | Original State: (${verVal})") }
 }
 
 def lastEventDataEvent(data) {
@@ -398,8 +398,8 @@ def lastEventDataEvent(data) {
 		log.debug("UPDATED | Last Event End Time: (${newEndDt}) | Original State: (${curEndDt})")
 		sendEvent(name: 'lastEventEnd', value: newEndDt, descriptionText: "Last Event End is now ${newEndDt}", displayed: false)
 	} else {
-		Logger("Last Event Start Time: (${newStartDt}) | Original State: (${curStartDt})")
-		Logger("Last Event End Time: (${newEndDt}) | Original State: (${curEndDt})")
+		LogAction("Last Event Start Time: (${newStartDt}) | Original State: (${curStartDt})")
+		LogAction("Last Event End Time: (${newEndDt}) | Original State: (${curEndDt})")
 	}
 }
 
@@ -418,7 +418,7 @@ def zoneMotionEvent(data) {
 	if(!isMotion.equals(val)) {
 		log.debug("UPDATED | Motion Sensor is: (${val}) | Original State: (${isMotion})")
 		sendEvent(name: "motion", value: val, descriptionText: "Motion Sensor is: ${val}", displayed: true, isStateChange: true, state: val)
-	} else { Logger("Motion Sensor is: (${val}) | Original State: (${isMotion})") }
+	} else { LogAction("Motion Sensor is: (${val}) | Original State: (${isMotion})") }
 }
 
 def zoneSoundEvent(data) {
@@ -436,7 +436,7 @@ def zoneSoundEvent(data) {
 	if(!isSound.equals(val)) {
 		log.debug("UPDATED | Sound Sensor is now: (${val}) | Original State: (${isSound})")
 		sendEvent(name: "sound", value: val, descriptionText: "Sound Sensor is: ${val}", displayed: true, isStateChange: true, state: val)
-	} else { Logger("Sound Sensor is: (${val}) | Original State: (${isSound})") }
+	} else { LogAction("Sound Sensor is: (${val}) | Original State: (${isSound})") }
 }
 
 def activityZoneEvent(zones) {
@@ -451,7 +451,7 @@ def debugOnEvent(debug) {
 	if(!val.equals(dVal)) {
 		log.debug("UPDATED | debugOn: (${dVal}) | Original State: (${val})")
 		sendEvent(name: 'debugOn', value: dVal, displayed: false)
-	} else { Logger("debugOn: (${dVal}) | Original State: (${val})") }
+	} else { LogAction("debugOn: (${dVal}) | Original State: (${val})") }
 }
 
 def apiStatusEvent(issue) {
@@ -461,7 +461,7 @@ def apiStatusEvent(issue) {
 	if(!curStat.equals(newStat)) {
 		log.debug("UPDATED | API Status is: (${newStat}) | Original State: (${curStat})")
 		sendEvent(name: "apiStatus", value: newStat, descriptionText: "API Status is: ${newStat}", displayed: true, isStateChange: true, state: newStat)
-	} else { Logger("API Status is: (${newStat}) | Original State: (${curStat})") }
+	} else { LogAction("API Status is: (${newStat}) | Original State: (${curStat})") }
 }
 
 def lastUpdatedEvent() {
@@ -473,7 +473,7 @@ def lastUpdatedEvent() {
 	def lastUpd = device.currentState("lastUpdatedDt")?.value
 	state?.lastUpdatedDt = lastDt?.toString()
 	if(!lastUpd.equals(lastDt?.toString())) {
-		Logger("Last Parent Refresh time: (${lastDt}) | Previous Time: (${lastUpd})")
+		LogAction("Last Parent Refresh time: (${lastDt}) | Previous Time: (${lastUpd})")
 		sendEvent(name: 'lastUpdatedDt', value: lastDt?.toString(), displayed: false, isStateChange: true)
 	}
 }
@@ -485,7 +485,7 @@ def onlineStatusEvent(online) {
 	if(!isOn.equals(val)) {
 		log.debug("UPDATED | Online Status is: (${val}) | Original State: (${isOn})")
 		sendEvent(name: "onlineStatus", value: val, descriptionText: "Online Status is: ${val}", displayed: state?.showProtActEvts, isStateChange: true, state: val)
-	} else { Logger("Online Status is: (${val}) | Original State: (${isOn})") }
+	} else { LogAction("Online Status is: (${val}) | Original State: (${isOn})") }
 }
 
 def getPublicVideoId() {
@@ -571,7 +571,7 @@ def take() {
 *************************************************************************************************/
 
 // Local Application Logging
-def Logger(msg, logType = "debug") {
+def LogAction(msg, logType = "debug") {
 	 if(state?.debug) {
 		switch (logType) {
 			case "trace":
@@ -636,7 +636,7 @@ def formatDt(dt, mdy = false) {
 	def tf = new SimpleDateFormat(formatVal)
 	if(getTimeZone()) { tf.setTimeZone(getTimeZone()) }
 	else {
-		LogAction("SmartThings TimeZone is not found or is not set... Please Try to open your ST location and Press Save...", "warn", true)
+		LogAction("SmartThings TimeZone is not found or is not set... Please Try to open your ST location and Press Save...")
 	}
 	return tf.format(dt)
 }
@@ -769,7 +769,7 @@ def getCamUUID(pubVidId) {
 				//log.debug "uuid: $uuid"
 				return uuid ?: null
 			}
-		} else { LogAction("getCamUUID PublicVideoId is missing....", "warn", true) }
+		} else { LogAction("getCamUUID PublicVideoId is missing....", "warn") }
 	} catch (ex) {
 		log.error "getCamUUID Exception:", ex
 		exceptionDataHandler(ex.message, "getCamUUID")
@@ -786,7 +786,7 @@ def getLiveStreamHost(camUUID) {
 				def stream = resp?.data?.items.live_stream_host.toString().replaceAll("\\[|\\]", "")
 				return stream ?: null
 			}
-		} else { LogAction("getLiveStreamHost camUUID is missing....", "warn", true) }
+		} else { LogAction("getLiveStreamHost camUUID is missing....", "warn") }
 	}
 	catch (ex) {
 		log.error "getLiveStreamHost Exception:", ex
@@ -805,7 +805,7 @@ def getCamApiServer(camUUID) {
 				def apiServer1 = apiServer.toString().replaceAll("\\[|\\]", "")
 				return apiServer1 ?: null
 			}
-		} else { LogAction("getCamApiServer camUUID is missing....", "warn", true) }
+		} else { LogAction("getCamApiServer camUUID is missing....", "warn") }
 	}
 	catch (ex) {
 		log.error "getCamApiServer Exception:", ex

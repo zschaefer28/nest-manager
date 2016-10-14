@@ -263,7 +263,7 @@ def processEvent() {
 	state.eventData = null
 	//log.trace("processEvent Parsing data ${eventData}")
 	try {
-		Logger("------------START OF API RESULTS DATA------------", "warn")
+		LogAction("------------START OF API RESULTS DATA------------", "warn")
 		if(eventData) {
 			def results = eventData?.data
 			state?.useMilitaryTime = eventData?.mt ? true : false
@@ -348,9 +348,9 @@ def deviceVerEvent(ver) {
 	state?.devTypeVer = newData
 	state?.updateAvailable = isCodeUpdateAvailable(pubVer, dVer)
 	if(!curData?.equals(newData)) {
-		Logger("UPDATED | Device Type Version is: (${newData}) | Original State: (${curData})")
+		LogAction("UPDATED | Device Type Version is: (${newData}) | Original State: (${curData})")
 		sendEvent(name: 'devTypeVer', value: newData, displayed: false)
-	} else { Logger("Device Type Version is: (${newData}) | Original State: (${curData})") }
+	} else { LogAction("Device Type Version is: (${newData}) | Original State: (${curData})") }
 }
 
 def lastCheckinEvent(checkin) {
@@ -361,9 +361,9 @@ def lastCheckinEvent(checkin) {
 	def lastChk = device.currentState("lastConnection")?.value
 	state?.lastConnection = lastConn?.toString()
 	if(!lastChk.equals(lastConn?.toString())) {
-		Logger("UPDATED | Last Nest Check-in was: (${lastConn}) | Original State: (${lastChk})")
+		LogAction("UPDATED | Last Nest Check-in was: (${lastConn}) | Original State: (${lastChk})")
 		sendEvent(name: 'lastConnection', value: lastConn?.toString(), displayed: state?.showProtActEvts, isStateChange: true)
-	} else { Logger("Last Nest Check-in was: (${lastConn}) | Original State: (${lastChk})") }
+	} else { LogAction("Last Nest Check-in was: (${lastConn}) | Original State: (${lastChk})") }
 }
 
 def lastTestedEvent(dt) {
@@ -374,9 +374,9 @@ def lastTestedEvent(dt) {
 	def lastTest = !dt ? "No Test Recorded" : "${tf?.format(Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", dt))}"
 	state?.lastTested = lastTest
 	if(!lastTstVal.equals(lastTest?.toString())) {
-		Logger("UPDATED | Last Manual Test was: (${lastTest}) | Original State: (${lastTstVal})")
+		LogAction("UPDATED | Last Manual Test was: (${lastTest}) | Original State: (${lastTstVal})")
 		sendEvent(name: 'lastTested', value: lastTest, displayed: true, isStateChange: true)
-	} else { Logger("Last Manual Test was: (${lastTest}) | Original State: (${lastTstVal})") }
+	} else { LogAction("Last Manual Test was: (${lastTest}) | Original State: (${lastTstVal})") }
 }
 
 def softwareVerEvent(ver) {
@@ -385,7 +385,7 @@ def softwareVerEvent(ver) {
 	if(!verVal.equals(ver)) {
 		log.debug("UPDATED | Firmware Version: (${ver}) | Original State: (${verVal})")
 		sendEvent(name: 'softwareVer', value: ver, descriptionText: "Firmware Version is now v${ver}", displayed: false)
-	} else { Logger("Firmware Version: (${ver}) | Original State: (${verVal})") }
+	} else { LogAction("Firmware Version: (${ver}) | Original State: (${verVal})") }
 }
 
 def debugOnEvent(debug) {
@@ -396,7 +396,7 @@ def debugOnEvent(debug) {
 	if(!val.equals(dVal)) {
 		log.debug("UPDATED | debugOn: (${dVal}) | Original State: (${val})")
 		sendEvent(name: 'debugOn', value: dVal, displayed: false)
-	} else { Logger("debugOn: (${dVal}) | Original State: (${val})") }
+	} else { LogAction("debugOn: (${dVal}) | Original State: (${val})") }
 }
 
 def apiStatusEvent(issue) {
@@ -406,7 +406,7 @@ def apiStatusEvent(issue) {
 	if(!curStat.equals(newStat)) {
 		log.debug("UPDATED | API Status is: (${newStat}) | Original State: (${curStat})")
 		sendEvent(name: "apiStatus", value: newStat, descriptionText: "API Status is: ${newStat}", displayed: true, isStateChange: true, state: newStat)
-	} else { Logger("API Status is: (${newStat}) | Original State: (${curStat})") }
+	} else { LogAction("API Status is: (${newStat}) | Original State: (${curStat})") }
 }
 
 def lastUpdatedEvent() {
@@ -418,7 +418,7 @@ def lastUpdatedEvent() {
 	def lastUpd = device.currentState("lastUpdatedDt")?.value
 	state?.lastUpdatedDt = lastDt?.toString()
 	if(!lastUpd.equals(lastDt?.toString())) {
-		Logger("Last Parent Refresh time: (${lastDt}) | Previous Time: (${lastUpd})")
+		LogAction("Last Parent Refresh time: (${lastDt}) | Previous Time: (${lastUpd})")
 		sendEvent(name: 'lastUpdatedDt', value: lastDt?.toString(), displayed: false, isStateChange: true)
 	}
 }
@@ -428,7 +428,7 @@ def uiColorEvent(color) {
 	if(!colorVal.equals(color)) {
 		log.debug("UI Color is: (${color}) | Original State: (${colorVal})")
 		sendEvent(name:'uiColor', value: color.toString(), displayed: false, isStateChange: true)
-	} else { Logger("UI Color: (${color}) | Original State: (${colorVal})") }
+	} else { LogAction("UI Color: (${color}) | Original State: (${colorVal})") }
 }
 
 def onlineStatusEvent(online) {
@@ -438,7 +438,7 @@ def onlineStatusEvent(online) {
 	if(!isOn.equals(val)) {
 		log.debug("UPDATED | Online Status is: (${val}) | Original State: (${isOn})")
 		sendEvent(name: "onlineStatus", value: val, descriptionText: "Online Status is: ${val}", displayed: state?.showProtActEvts, isStateChange: true, state: val)
-	} else { Logger("Online Status is: (${val}) | Original State: (${isOn})") }
+	} else { LogAction("Online Status is: (${val}) | Original State: (${isOn})") }
 }
 
 def batteryStateEvent(batt) {
@@ -450,7 +450,7 @@ def batteryStateEvent(batt) {
 		log.debug("Battery is: ${batt} | Original State: (${battVal})")
 		sendEvent(name:'batteryState', value: batt, descriptionText: "Nest Battery status is: ${batt}", displayed: true, isStateChange: true)
 		sendEvent(name:'battery', value: stbattery, descriptionText: "Battery is: ${stbattery}", displayed: true, isStateChange: true)
-	} else { Logger("Battery State: (${batt}) | Original State: (${battVal})") }
+	} else { LogAction("Battery State: (${batt}) | Original State: (${battVal})") }
 }
 
 def testingStateEvent(test) {
@@ -459,7 +459,7 @@ def testingStateEvent(test) {
 		log.debug("Testing State: (${test}) | Original State: (${testVal})")
 		//Not displaying the results of this, not sure if it is truly needed
 		sendEvent(name:'isTesting', value: test, descriptionText: "Manual test: ${test}", displayed: true, isStateChange: true)
-	} else { Logger("Testing State: (${test}) | Original State: (${testVal})") }
+	} else { LogAction("Testing State: (${test}) | Original State: (${testVal})") }
 }
 
  def carbonSmokeStateEvent(coState, smokeState) {
@@ -485,11 +485,11 @@ def testingStateEvent(test) {
 		log.debug("Nest Smoke State is: (${smokeState.toString().toUpperCase()}) | Original State: (${smokeVal.toString().toUpperCase()})")
 		sendEvent( name: 'nestSmoke', value: smokeState, descriptionText: "Nest Smoke Alarm: ${smokeState}", type: "physical", displayed: true, isStateChange: true )
 		sendEvent( name: 'smoke', value: smokeValStr, descriptionText: "Smoke Alarm: ${smokeState} Testing: ${testVal}", type: "physical", displayed: true, isStateChange: true )
-	} else { Logger("Smoke State: (${smokeState.toString().toUpperCase()}) | Original State: (${smokeVal.toString().toUpperCase()})") }
+	} else { LogAction("Smoke State: (${smokeState.toString().toUpperCase()}) | Original State: (${smokeVal.toString().toUpperCase()})") }
 	if(!carbonVal.equals(coState)) {
 		sendEvent( name: 'nestCarbonMonoxide', value: coState, descriptionText: "Nest CO Alarm: ${coState}", type: "physical", displayed: true, isStateChange: true )
 		sendEvent( name: 'carbonMonoxide', value: carbonValStr, descriptionText: "CO Alarm: ${coState} Testing: ${testVal}", type: "physical", displayed: true, isStateChange: true )
-	} else { Logger("CO State: (${coState.toString().toUpperCase()}) | Original State: (${carbonVal.toString().toUpperCase()})") }
+	} else { LogAction("CO State: (${coState.toString().toUpperCase()}) | Original State: (${carbonVal.toString().toUpperCase()})") }
 
 	//log.info "alarmState: ${alarmStateST} (Nest Smoke: ${smokeState.toString().capitalize()} | Nest CarbonMonoxide: ${coState.toString().capitalize()})"
 	sendEvent( name: 'alarmState', value: alarmStateST, descriptionText: "Alarm: ${alarmStateST} (Smoke/CO: ${smokeState}/${coState}) ( ${stvalStr} )", type: "physical", displayed: state?.showProtActEvts )
@@ -499,7 +499,7 @@ def testingStateEvent(test) {
 |										LOGGING FUNCTIONS										|
 *************************************************************************************************/
 // Local Application Logging
-def Logger(msg, logType = "debug") {
+def LogAction(msg, logType = "debug") {
 	 if(state?.debug) {
 		switch (logType) {
 			case "trace":
