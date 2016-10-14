@@ -419,7 +419,7 @@ def processEvent() {
 			}
 			getSomeData(true)
 			lastUpdatedEvent()
-			nestReportStatusEvent()
+			//nestReportStatusEvent()
 		}
 		//This will return all of the devices state data to the logs.
 		//LogAction("Device State Data: ${getState()}")
