@@ -25,7 +25,7 @@ import java.text.SimpleDateFormat
 
 preferences {  }
 
-def devVer() { return "3.5.0" }
+def devVer() { return "4.0.0" }
 
 metadata {
 	definition (name: "${textDevName()}", namespace: "tonesto7", author: "Anthony S.") {
@@ -100,7 +100,7 @@ mappings {
 }
 
 def initialize() {
-	LogAction("initialize")
+	Logger("initialize")
 }
 
 def parse(String description) {
@@ -137,7 +137,7 @@ def getTempColors() {
 }
 
 def poll() {
-	LogAction("Polling parent...")
+	Logger("Polling parent...")
 	parent.refresh(this)
 }
 
@@ -203,7 +203,7 @@ def getTimeZone() {
 	def tz = null
 	if (!state?.nestTimeZone) { tz = location?.timeZone }
 	else { tz = TimeZone.getTimeZone(state?.nestTimeZone) }
-	if(!tz) { LogAction("getTimeZone: Hub or Nest TimeZone is not found ...", "warn", true) }
+	if(!tz) { Logger("getTimeZone: Hub or Nest TimeZone is not found ...", "warn", true) }
 	return tz
 }
 
@@ -238,7 +238,7 @@ def deviceVerEvent(ver) {
 	def newData = state.updateAvailable ? "${dVer}(New: v${pubVer})" : "${dVer}" as String
 	state?.devTypeVer = newData
 	if(!curData?.equals(newData)) {
-		LogAction("UPDATED | Device Type Version is: (${newData}) | Original State: (${curData})")
+		Logger("UPDATED | Device Type Version is: (${newData}) | Original State: (${curData})")
 		sendEvent(name: 'devTypeVer', value: newData, displayed: false)
 	} else { LogAction("Device Type Version is: (${newData}) | Original State: (${curData})") }
 }
@@ -249,7 +249,7 @@ def debugOnEvent(debug) {
 	state?.debugStatus = dVal
 	state?.debug = debug.toBoolean() ? true : false
 	if(!val.equals(dVal)) {
-		LogAction("UPDATED | debugOn: (${dVal}) | Original State: (${val})")
+		Logger("UPDATED | debugOn: (${dVal}) | Original State: (${val})")
 		sendEvent(name: 'debugOn', value: dVal, displayed: false)
 	} else { LogAction("debugOn: (${dVal}) | Original State: (${val})") }
 }
@@ -273,7 +273,7 @@ def apiStatusEvent(issue) {
 	def newStat = issue ? "issue" : "ok"
 	state?.apiStatus = newStat
 	if(!curStat.equals(newStat)) {
-		LogAction("UPDATED | API Status is: (${newStat}) | Original State: (${curStat})")
+		Logger("UPDATED | API Status is: (${newStat}) | Original State: (${curStat})")
 		sendEvent(name: "apiStatus", value: newStat, descriptionText: "API Status is: ${newStat}", displayed: true, isStateChange: true, state: newStat)
 	} else { LogAction("API Status is: (${newStat}) | Original State: (${curStat})") }
 }
@@ -281,7 +281,7 @@ def apiStatusEvent(issue) {
 def humidityEvent(humidity) {
 	def hum = device.currentState("humidity")?.value
 	if(!hum.equals(humidity)) {
-		LogAction("UPDATED | Humidity is (${humidity}) | Original State: (${hum})")
+		Logger("UPDATED | Humidity is (${humidity}) | Original State: (${hum})")
 		sendEvent(name:'humidity', value: humidity, unit: "%", descriptionText: "Humidity is ${humidity}" , displayed: false, isStateChange: true)
 	} else { LogAction("Humidity is (${humidity}) | Original State: (${hum})") }
 }
@@ -289,7 +289,7 @@ def humidityEvent(humidity) {
 def illuminanceEvent(illum) {
 	def cur = device.currentState("illuminance")?.value.toString()
 	if(!cur.equals(illum.toString())) {
-		LogAction("UPDATED | Illuminance is (${illum}) | Original State: (${cur})")
+		Logger("UPDATED | Illuminance is (${illum}) | Original State: (${cur})")
 		sendEvent(name:'illuminance', value: illum, unit: "lux", descriptionText: "Illuminance is ${illum}" , displayed: false, isStateChange: true)
 	} else { LogAction("Illuminance is (${illum}) | Original State: (${cur})") }
 }
@@ -298,7 +298,7 @@ def dewpointEvent(Double tempVal) {
 	def temp = device.currentState("dewpoint")?.value.toString()
 	def rTempVal = wantMetric() ? tempVal.round(1) : tempVal.round(0).toInteger()
 	if(!temp.equals(rTempVal.toString())) {
-		LogAction("UPDATED | DewPoint Temperature is (${rTempVal}) | Original Temp: (${temp})")
+		Logger("UPDATED | DewPoint Temperature is (${rTempVal}) | Original Temp: (${temp})")
 		sendEvent(name:'dewpoint', value: rTempVal, unit: state?.tempUnit, descriptionText: "Dew point Temperature is ${rTempVal}" , displayed: true, isStateChange: true)
 	} else { LogAction("DewPoint Temperature is (${rTempVal}) | Original Temp: (${temp})") }
 }
@@ -308,7 +308,7 @@ def temperatureEvent(Double tempVal, Double feelsVal) {
 	def rTempVal = wantMetric() ? tempVal.round(1) : tempVal.round(0).toInteger()
 	def rFeelsVal = wantMetric() ? feelsVal.round(1) : feelsVal.round(0).toInteger()
 	if(!temp.equals(rTempVal.toString())) {
-		LogAction("UPDATED | Temperature is (${rTempVal}) | Original Temp: (${temp})")
+		Logger("UPDATED | Temperature is (${rTempVal}) | Original Temp: (${temp})")
 		sendEvent(name:'temperature', value: rTempVal, unit: state?.tempUnit, descriptionText: "Ambient Temperature is ${rTempVal}" , displayed: true, isStateChange: true)
 		sendEvent(name:'feelsLike', value: rFeelsVal, unit: state?.tempUnit, descriptionText: "Feels Like Temperature is ${rFeelsVal}" , displayed: false)
 	} else { LogAction("Temperature is (${rTempVal}) | Original Temp: (${temp})") }
@@ -348,7 +348,7 @@ def wantMetric() { return (state?.tempUnit == "C") }
 def getWeatherConditions(Map weatData) {
 	try {
 		if(!weatData.current_observation) {
-			LogAction("There is an Issue getting the weather condition data", "warn")
+			Logger("There is an Issue getting the weather condition data", "warn")
 			return
 		} else {
 			def cur = weatData
@@ -420,7 +420,7 @@ def getWeatherConditions(Map weatData) {
 def getWeatherForecast(Map weatData) {
 	try {
 		if(!weatData) {
-			LogAction("There is an Issue getting the weather forecast", "warn")
+			Logger("There is an Issue getting the weather forecast", "warn")
 			return
 		} else {
 			def cur = weatData
@@ -446,7 +446,7 @@ def getWeatherForecast(Map weatData) {
 def getWeatherAstronomy(weatData) {
 	try {
 		if(!weatData) {
-			LogAction("There is an Issue getting the weather astronomy data", "warn")
+			Logger("There is an Issue getting the weather astronomy data", "warn")
 			return
 		} else {
 			def cur = weatData
@@ -468,7 +468,7 @@ def getWeatherAstronomy(weatData) {
 def getWeatherAlerts(weatData) {
 	try {
 		if(!weatData) {
-			LogAction("There is an Issue getting the weather alert data", "warn")
+			Logger("There is an Issue getting the weather alert data", "warn")
 			return
 		} else {
 			def cur = weatData
@@ -676,7 +676,7 @@ def formatDt(dt) {
 	def tf = new SimpleDateFormat("E MMM dd HH:mm:ss z yyyy")
 	if(getTimeZone()) { tf.setTimeZone(getTimeZone()) }
 	else {
-		LogAction("SmartThings TimeZone is not found or is not set... Please Try to open your ST location and Press Save...", "warn", true)
+		Logger("SmartThings TimeZone is not found or is not set... Please Try to open your ST location and Press Save...", "warn", true)
 	}
 	return tf.format(dt)
 }
@@ -693,29 +693,34 @@ def convertRfc822toDt(dt) {
 /************************************************************************************************
 |										LOGGING FUNCTIONS										|
 *************************************************************************************************/
-def LogAction(msg, logType = "debug") {
+void Logger(msg, logType = "debug") {
 	def smsg = "${device.displayName}: ${msg}"
+	switch (logType) {
+		case "trace":
+			log.trace "${smsg}"
+			break
+		case "debug":
+			log.debug "${smsg}"
+			break
+		case "info":
+			log.info "${smsg}"
+			break
+		case "warn":
+			log.warn "${smsg}"
+			break
+		case "error":
+			log.error "${smsg}"
+			break
+		default:
+			log.debug "${smsg}"
+			break
+	}
+}
+
+// Local Application Logging
+void LogAction(msg, logType = "debug") {
 	if(state?.debug) {
-		switch (logType) {
-			case "trace":
-				log.trace "${smsg}"
-				break
-			case "debug":
-				log.debug "${smsg}"
-				break
-			case "info":
-				log.info "${smsg}"
-				break
-			case "warn":
-				log.warn "${smsg}"
-				break
-			case "error":
-				log.error "${smsg}"
-				break
-			default:
-				log.debug "${smsg}"
-				break
-		}
+		Logger(msg, logType)
 	}
 }
 
@@ -829,19 +834,19 @@ def getCssData() {
 				//LogAction("getCssData: CSS Data is Current | Loading Data from State...")
 				cssData = state?.cssData
 			} else if (state?.cssVer?.toInteger() < htmlInfo?.cssVer?.toInteger()) {
-				LogAction("getCssData: CSS Data is Outdated | Loading Data from Source...")
+				//LogAction("getCssData: CSS Data is Outdated | Loading Data from Source...")
 				cssData = getFileBase64(htmlInfo.cssUrl, "text", "css")
 				state.cssData = cssData
 				state?.cssVer = htmlInfo?.cssVer
 			}
 		} else {
-			LogAction("getCssData: CSS Data is Missing | Loading Data from Source...")
+			//LogAction("getCssData: CSS Data is Missing | Loading Data from Source...")
 			cssData = getFileBase64(htmlInfo.cssUrl, "text", "css")
 			state?.cssData = cssData
 			state?.cssVer = htmlInfo?.cssVer
 		}
 	} else {
-		LogAction("getCssData: No Stored CSS Info Data Found for Device... Loading for Static URL...")
+		//LogAction("getCssData: No Stored CSS Data Found for Device... Loading for Static URL...")
 		cssData = getFileBase64(cssUrl(), "text", "css")
 	}
 	return cssData
