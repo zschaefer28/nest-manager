@@ -993,7 +993,7 @@ def subscriber() {
 }
 
 def reqSchedInfoRprt(child) {
-	log.trace "reqSchedInfoRprt: (${child.device.label})"
+	//log.trace "reqSchedInfoRprt: (${child.device.label})"
 	def result = null
 	def tstat = getChildDevice(child.device.deviceNetworkId)
 	if (tstat) {
@@ -1001,35 +1001,45 @@ def reqSchedInfoRprt(child) {
 		def chldSch = getChildApps()?.find { (!(it.getAutomationType() in ["nMode", "webDash"]) && it?.getActiveScheduleState() && it?.getTstatAutoDevId() == tstat?.deviceNetworkId) }
 		if(chldSch) {
 			def actNum = chldSch?.getCurrentSchedule()
-			def tempScaleStr = " degrees ${getTemperatureScale() == "C" ? "celsius" : "fahrenheit"}"
+			def tempScaleStr = " degrees"
 
 			def canHeat = tstat?.currentCanHeat.toString() == "true" ? true : false
 			def canCool = tstat?.currentCanCool.toString() == "true" ? true : false
 			def curMode = tstat?.currentThermostatMode.toString()
 			def curOper = tstat?.currentThermostatOperatingState.toString()
+			def curHum = tstat?.currentHumidity.toString()
 			def reqSenHeatSetPoint = chldSch?.getRemSenHeatSetTemp() ?: null
 			def reqSenCoolSetPoint = chldSch?.getRemSenCoolSetTemp() ?: null
 			def curZoneTemp = chldSch?.getRemoteSenTemp() ?: null
 
-			def schedName = chldSch?.getSchedLbl(actNum)
+			def schedData = chldSch?.getSchedData(actNum) ?: null
 			def tempSrc = chldSch?.getRemSenTempSrc() ?: null
 			def tempSrcStr = (actNum && tempSrc == "Schedule") ? "Schedule ${actNum}" : tempSrc
+			def schedDesc = schedVoiceDesc(actNum, schedData) ?: null
 
-			str += schedName  ? " the name of the zone schedule currently active is ${schedName}" : "No Schedule is currently Active"
+			str += schedDesc ?: " There are No Schedules currently Active. "
+
 			if(tempSrcStr && curZoneTemp) {
 				def zTmp = curZoneTemp.toDouble()
-				str += " while the current temp source is ${tempSrcStr} with "
+				str += "The ${tempSrcStr} has an ambient temperature of "
 				if(zTmp > 78.0 && zTmp <= 85.0) { str += "a scorching " }
-				else if(zTmp > 72.0 && zTmp <= 77.0) { str += "a balmy " }
-				else if(zTmp >= 67.0 && zTmp <= 72.0) { str += "a comfortable " }
-				else if(zTmp >= 60.0 && zTmp < 67.0) { str += "a chilly " }
-
-				str += "ambient temperature of ${curZoneTemp}${tempScaleStr}"
+				else if(zTmp > 76.0 && zTmp <= 80.0) { str += "a roasting " }
+				else if(zTmp > 74.0 && zTmp <= 76.0) { str += "a balmy " }
+				else if(zTmp >= 68.0 && zTmp <= 74.0) { str += "a comfortable " }
+				else if(zTmp >= 64.0 && zTmp <= 68.0) { str += "a breezy " }
+				else if(zTmp >= 60.0 && zTmp < 64.0) { str += "a chilly " }
+				else if(zTmp < 60.0) { str += "a freezing " }
+				str += "${curZoneTemp}${tempScaleStr}"
+				str += curHum ? " with a humidity of ${curHum}%. " : ". "
+				if(zTmp < 64.0) { str += " (Make sure to dress warmly.  " }
 			}
 
-			str += " with "
+			str += " The HVAC is currently "
+			str += curOper == "idle" ? " sitting idle " : " ${curOper} "
+			str += " in ${curMode} mode"
+			str += curMode != "off" ? " with " : ". "
 			str += canHeat && curMode in ["auto", "heat"] ? "the Heat set to ${reqSenHeatSetPoint}${tempScaleStr}" : ""
-			str += canHeat && canCool && curMode == "auto" ? " and " : "."
+			str += canHeat && canCool && curMode == "auto" ? " and " : ". "
 			str += canCool && curMode in ["auto", "cooling"] ? "the cool set to ${reqSenCoolSetPoint}${tempScaleStr}.  " : ""
 
 			if (str != "") {
@@ -1047,6 +1057,44 @@ def reqSchedInfoRprt(child) {
 	return result
 }
 
+/*
+lbl: settings["${sLbl}name"],
+m: settings["${sLbl}restrictionMode"],
+tf: settings["${sLbl}restrictionTimeFrom"],
+tfc: settings["${sLbl}restrictionTimeFromCustom"],
+tfo: settings["${sLbl}restrictionTimeFromOffset"],
+tt: settings["${sLbl}restrictionTimeTo"],
+ttc: settings["${sLbl}restrictionTimeToCustom"],
+tto: settings["${sLbl}restrictionTimeToOffset"],
+w: settings["${sLbl}restrictionDOW"],
+s1: deviceInputToList(settings["${sLbl}restrictionSwitchOn"]),
+s0: deviceInputToList(settings["${sLbl}restrictionSwitchOff"]),
+ctemp: roundTemp(settings["${sLbl}CoolTemp"]),
+htemp: roundTemp(settings["${sLbl}HeatTemp"]),
+hvacm: settings["${sLbl}HvacMode"],
+sen0: settings["schMotRemoteSensor"] ? deviceInputToList(settings["${sLbl}remSensor"]) : null,
+m0: deviceInputToList(settings["${sLbl}Motion"]),
+mctemp: settings["${sLbl}Motion"] ? roundTemp(settings["${sLbl}MCoolTemp"]) : null,
+mhtemp: settings["${sLbl}Motion"] ? roundTemp(settings["${sLbl}MHeatTemp"]) : null,
+mhvacm: settings["${sLbl}Motion"] ? settings["${sLbl}MHvacMode"] : null,
+mdelayOn: settings["${sLbl}Motion"] ? settings["${sLbl}MDelayValOn"] : null,
+mdelayOff: settings["${sLbl}Motion"] ? settings["${sLbl}MDelayValOff"] : null
+
+*/
+
+
+def schedVoiceDesc(num, data) {
+	def str = ""
+	str += data?.lbl  ? " The active automation schedule is named ${data?.lbl}. " : ""
+	str += data?.ctemp || data?.htemp ? "The schedules desired temps" : ""
+	str += data?.ctemp ? " are a cool temp of ${data?.ctemp} degrees " : ""
+	str += data?.ctemp &&  data?.htemp ? " and " : ". "
+	str += data?.htemp ? " ${data?.ctemp ? "and" : "are"} a heat temp of ${data?.ctemp} degrees. " : ""
+
+
+
+	return str != "" ? str : null
+}
 
 def setPollingState() {
 	if(!atomicState?.thermostats && !atomicState?.protects && !atomicState?.weatherDevice && !atomicState?.cameras) {
@@ -9280,6 +9328,20 @@ def getSchedLbl(num) {
 		}
 	}
 	return result
+}
+
+def getSchedData(num) {
+	if(!num) { return null }
+	def resData = [:]
+	def schData = atomicState?.activeSchedData
+	schData?.each { sch ->
+		//log.debug "sch: $sch"
+		if(num?.toInteger() == sch?.key.toInteger()) {
+			//log.debug "Data:(${sch?.value})"
+			resData = sch?.value
+		}
+	}
+	return resData != [:] ? resData : null
 }
 
 /* NOTE
