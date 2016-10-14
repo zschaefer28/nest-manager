@@ -89,17 +89,17 @@ mappings {
 }
 
 def initialize() {
-	log.debug "initialize"
+	LogAction("initialize")
 }
 
 def parse(String description) {
-	log.debug "Parsing '${description}'"
+	LogAction("Parsing '${description}'")
 }
 
 def configure() { }
 
 def poll() {
-	log.debug "Polling parent..."
+	Logger("Polling parent...")
 	parent.refresh(this)
 }
 
@@ -121,7 +121,7 @@ def processEvent() {
 	state.eventData = null
 	//log.trace("processEvent Parsing data ${eventData}")
 	try {
-		Logger("------------START OF API RESULTS DATA------------", "warn")
+		LogAction("------------START OF API RESULTS DATA------------", "warn")
 		if(eventData) {
 			state.nestTimeZone = !location?.timeZone ? eventData?.tz : null
 			state?.useMilitaryTime = !eventData?.mt ? false : true
@@ -154,7 +154,7 @@ def getTimeZone() {
 	def tz = null
 	if (location?.timeZone) { tz = location?.timeZone }
 	else { tz = state?.nestTimeZone ? TimeZone.getTimeZone(state?.nestTimeZone) : null }
-	if(!tz) { log.warn "getTimeZone: Hub or Nest TimeZone is not found ..." }
+	if(!tz) { Logger("getTimeZone: Hub or Nest TimeZone is not found...", "warn") }
 	return tz
 }
 
@@ -191,7 +191,7 @@ def deviceVerEvent(ver) {
 	if(!curData?.equals(newData)) {
 		Logger("UPDATED | Device Type Version is: (${newData}) | Original State: (${curData})")
 		sendEvent(name: 'devTypeVer', value: newData, displayed: false)
-	} else { Logger("Device Type Version is: (${newData}) | Original State: (${curData})") }
+	} else { LogAction("Device Type Version is: (${newData}) | Original State: (${curData})") }
 }
 
 def debugOnEvent(debug) {
@@ -201,7 +201,7 @@ def debugOnEvent(debug) {
 	if(!val.equals(stateVal)) {
 		log.debug("UPDATED | debugOn: (${stateVal}) | Original State: (${val})")
 		sendEvent(name: 'debugOn', value: stateVal, displayed: false)
-	} else { Logger("debugOn: (${stateVal}) | Original State: (${val})") }
+	} else { LogAction("debugOn: (${stateVal}) | Original State: (${val})") }
 }
 
 def lastUpdatedEvent() {
@@ -227,10 +227,10 @@ def presenceEvent(presence) {
 	state?.present = (pres == "present") ? true : false
 	state?.nestPresence = newNestPres
 	if(!val.equals(pres) || !nestPres.equals(newNestPres) || !nestPres) {
-		log.debug("UPDATED | Presence: ${pres} | Original State: ${val} | State Variable: ${statePres}")
+		Logger("UPDATED | Presence: ${pres} | Original State: ${val} | State Variable: ${statePres}")
 		sendEvent(name: 'nestPresence', value: newNestPres, descriptionText: "Nest Presence is: ${newNestPres}", displayed: true, isStateChange: true )
 		sendEvent(name: 'presence', value: pres, descriptionText: "Device is: ${pres}", displayed: true, isStateChange: true )
-	} else { Logger("Presence - Present: (${pres}) | Original State: (${val}) | State Variable: ${state?.present}") }
+	} else { LogAction("Presence - Present: (${pres}) | Original State: (${val}) | State Variable: ${state?.present}") }
 }
 
 def apiStatusEvent(issue) {
@@ -238,9 +238,9 @@ def apiStatusEvent(issue) {
 	def newStat = issue ? "issue" : "ok"
 	state?.apiStatus = newStat
 	if(!curStat.equals(newStat)) {
-		log.debug("UPDATED | API Status is: (${newStat}) | Original State: (${curStat})")
+		Logger("UPDATED | API Status is: (${newStat}) | Original State: (${curStat})")
 		sendEvent(name: "apiStatus", value: newStat, descriptionText: "API Status is: ${newStat}", displayed: true, isStateChange: true, state: newStat)
-	} else { Logger("API Status is: (${newStat}) | Original State: (${curStat})") }
+	} else { LogAction("API Status is: (${newStat}) | Original State: (${curStat})") }
 }
 
 def getNestPresence() {
@@ -394,22 +394,22 @@ def getCssData() {
 	if(htmlInfo?.cssUrl && htmlInfo?.cssVer) {
 		if(state?.cssData) {
 			if (state?.cssVer?.toInteger() == htmlInfo?.cssVer?.toInteger()) {
-				log.debug "getCssData: CSS Data is Current | Loading Data from State..."
+				//LogAction("getCssData: CSS Data is Current | Loading Data from State...")
 				cssData = state?.cssData
 			} else if (state?.cssVer?.toInteger() < htmlInfo?.cssVer?.toInteger()) {
-				log.debug "getCssData: CSS Data is Outdated | Loading Data from Source..."
+				//LogAction("getCssData: CSS Data is Outdated | Loading Data from Source...")
 				cssData = getFileBase64(htmlInfo.cssUrl, "text", "css")
 				state.cssData = cssData
 				state?.cssVer = htmlInfo?.cssVer
 			}
 		} else {
-			log.debug "getCssData: CSS Data is Missing | Loading Data from Source..."
+			//LogAction("getCssData: CSS Data is Missing | Loading Data from Source...")
 			cssData = getFileBase64(htmlInfo.cssUrl, "text", "css")
 			state?.cssData = cssData
 			state?.cssVer = htmlInfo?.cssVer
 		}
 	} else {
-		log.debug "getCssData: No Stored CSS Data Found for Device... Loading for Static URL..."
+		//LogAction("getCssData: No Stored CSS Data Found for Device... Loading for Static URL...")
 		cssData = getFileBase64(cssUrl(), "text", "css")
 	}
 	return cssData
