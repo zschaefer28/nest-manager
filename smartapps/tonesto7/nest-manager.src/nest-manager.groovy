@@ -34,7 +34,6 @@ definition(
 {
 	appSetting "clientId"
 	appSetting "clientSecret"
-	appSetting "dashActKey"
 }
 
 include 'asynchttp_v1'
@@ -203,13 +202,9 @@ def authPage() {
 def mainPage() {
 	//log.trace "mainPage"
 	def setupComplete = (!atomicState?.newSetupComplete || !atomicState.isInstalled) ? false : true
-	def rfrshDash = atomicState?.dashSetup == true ? 5 : null
-	return dynamicPage(name: "mainPage", title: "", nextPage: (!setupComplete ? "reviewSetupPage" : null), refreshInterval: rfrshDash, install: setupComplete, uninstall: false) {
+	return dynamicPage(name: "mainPage", title: "", nextPage: (!setupComplete ? "reviewSetupPage" : null), install: setupComplete, uninstall: false) {
 		section("") {
 			href "changeLogPage", title: "", description: "${appInfoDesc()}", image: getAppImg("nest_manager%402x.png", true)
-			if (settings?.enableDashboard && atomicState?.dashboardInstalled && atomicState?.dashboardUrl) {
-				href "", title: "Nest Manager Dashboard", style: "external", url: "${atomicState?.dashboardUrl}dashboard", image: getAppImg("dashboard_icon.png"), required: false
-			}
 			if(atomicState?.appData && !appDevType() && isAppUpdateAvail()) {
 				href url: stIdeLink(), style:"external", required: false, title:"An Update is Available for ${appName()}!!!",
 						description:"Current: v${appVersion()} | New: ${atomicState?.appData?.updater?.versions?.app?.ver}\n\nTap to Open the IDE in your Mobile Browser...", state: "complete", image: getAppImg("update_icon.png")
@@ -254,7 +249,6 @@ def mainPage() {
 					href "nestInfoPage", title: "API | Diagnostics | Testing...", description: "", image: getAppImg("api_diag_icon.png")
 				}
 			}
-			webDashConfig()
 			section("Remove All Apps, Automations, and Devices:") {
 				href "uninstallPage", title: "Uninstall this App", description: "", image: getAppImg("uninstall_icon.png")
 			}
@@ -436,7 +430,7 @@ def automationsPage() {
 		}
 		if(autoAppInst) {
 			section("View Details:") {
-				def schEn = getChildApps()?.findAll { (!(it.getAutomationType() in ["nMode", "webDash"]) && it?.getActiveScheduleState()) }
+				def schEn = getChildApps()?.findAll { (!(it.getAutomationType() in ["nMode", "watchDog"]) && it?.getActiveScheduleState()) }
 				if(schEn?.size()) {
 					href "automationSchedulePage", title: "View Automation Schedule(s)", description: "", image: getAppImg("schedule_icon.png")
 				}
@@ -657,27 +651,6 @@ def getSafetyValuesDesc() {
 	return (str != "") ? "${str}" : null
 }
 
-def webDashConfig() {
-	if(appSettings?.dashActKeya) {
-		// Todo add some sort of encrypted code for activation
-		section("Web Dashboard Preferences:") {
-			def dashAct = (settings?.enableDashboard && atomicState?.dashboardInstalled && atomicState?.dashboardUrl) ? true : false
-			def dashDesc = dashAct ? "Dashboard is (Active)\nTurn off to Remove" : "Toggle to Install.."
-			input "enableDashboard", "bool", title: "Enable Web Dashboard", submitOnChange: true, defaultValue: false, required: false, description: dashDesc, state: dashAct ? "complete" : null,
-					image: getAppImg("dashboard_icon.png")
-			if(settings?.enableDashboard) {
-				if(!dashAct) {
-					atomicState?.dashSetup = true
-					initDashboardApp()
-				}
-			} else {
-				removeDashboardApp()
-				atomicState?.dashSetup = false
-			}
-		}
-	}
-}
-
 def setMyLockId(val) {
 	if(atomicState?.myID == null && parent && val) {
 		atomicState.myID = val
@@ -794,22 +767,6 @@ def initialize() {
 	}
 }
 
-def isDashAppInstalled() {
-	def dashApp = getChildApps().findAll { it?.getSettingVal("webDashFlag") }
-	return (dashApp.size() > 0) ? true : false
-}
-
-def dashboardInstalled(val) {
-	log.trace "dashboardInstalled($val)"
-	atomicState.dashboardInstalled = (val == true) ? true : false
-}
-
-def setDashboardUrl(val) {
-	log.trace "setDashboardUrl($val)"
-	atomicState?.dashboardUrl = val
-	atomicState?.dashSetup = false
-}
-
 def initManagerApp() {
 	setStateVar()
 	unschedule()
@@ -874,25 +831,6 @@ def initWatchdogApp() {
 	}
 }
 
-def initDashboardApp() {
-	//log.trace "initDashboardApp"
-	def dashApp = getChildApps().findAll { it?.getSettingVal("webDashFlag") }
-	if(!dashApp) {
-		LogAction("Installing Web Dashboard App...", "info", true)
-		addChildApp("tonesto7", getWebDashAppChildName(), getWebDashAppChildName(), [settings:[webDashFlag: true]])
-	}
-}
-
-def removeDashboardApp() {
-	def dashApp = getChildApps().findAll { it?.getSettingVal("webDashFlag") }
-	if(dashApp) {
-		LogAction("Removing Web Dashboard App...", "warn", true)
-		deleteChildApp(dashApp)
-		atomicState?.dashboardUrl = null
-		atomicState?.dashSetup = false
-	}
-}
-
 def getChildAppVer(appName) { return appName?.appVersion() ? "v${appName?.appVersion()}" : "" }
 
 def appBtnDesc(val) {
@@ -916,7 +854,6 @@ def getInstAutoTypesDesc() {
 	def nModeCnt = 0
 	def schMotCnt = 0
 	def watchDogCnt = 0
-	def webDashCnt = 0
 	def disCnt = 0
 	def schedAutoInst
 	def remSenCnt = 0
@@ -958,9 +895,6 @@ def getInstAutoTypesDesc() {
 				case "watchDog":
 					watchDogCnt = watchDogCnt+1
 					break
-				case "webDash":
-					webDashCnt = webDashCnt+1
-					break
 			}
 		}
 	}
@@ -970,7 +904,6 @@ def getInstAutoTypesDesc() {
 	def inAutoList = []
 	inAutoList?.push("nestMode":nModeCnt)
 	inAutoList?.push("watchDog":watchDogCnt)
-	inAutoList?.push("webDash":webDashCnt)
 	if(schMotCnt > 0) {
 		inAutoList?.push("schMot":["tSched":tSchedCnt, "remSen":remSenCnt, "fanCtrl":fanCtrlCnt, "fanCirc":fanCircCnt, "conWat":conWatCnt, "extTmp":extTmpCnt, "leakWat":leakWatCnt])
 	} else {
@@ -998,7 +931,7 @@ def reqSchedInfoRprt(child) {
 	def tstat = getChildDevice(child.device.deviceNetworkId)
 	if (tstat) {
 		def str = ""
-		def chldSch = getChildApps()?.find { (!(it.getAutomationType() in ["nMode", "webDash"]) && it?.getActiveScheduleState() && it?.getTstatAutoDevId() == tstat?.deviceNetworkId) }
+		def chldSch = getChildApps()?.find { (!(it.getAutomationType() in ["nMode", "watchDog"]) && it?.getActiveScheduleState() && it?.getTstatAutoDevId() == tstat?.deviceNetworkId) }
 		if(chldSch) {
 			def actNum = chldSch?.getCurrentSchedule()
 			def tempScaleStr = " degrees"
@@ -1057,32 +990,6 @@ def reqSchedInfoRprt(child) {
 	return result
 }
 
-/*
-lbl: settings["${sLbl}name"],
-m: settings["${sLbl}restrictionMode"],
-tf: settings["${sLbl}restrictionTimeFrom"],
-tfc: settings["${sLbl}restrictionTimeFromCustom"],
-tfo: settings["${sLbl}restrictionTimeFromOffset"],
-tt: settings["${sLbl}restrictionTimeTo"],
-ttc: settings["${sLbl}restrictionTimeToCustom"],
-tto: settings["${sLbl}restrictionTimeToOffset"],
-w: settings["${sLbl}restrictionDOW"],
-s1: deviceInputToList(settings["${sLbl}restrictionSwitchOn"]),
-s0: deviceInputToList(settings["${sLbl}restrictionSwitchOff"]),
-ctemp: roundTemp(settings["${sLbl}CoolTemp"]),
-htemp: roundTemp(settings["${sLbl}HeatTemp"]),
-hvacm: settings["${sLbl}HvacMode"],
-sen0: settings["schMotRemoteSensor"] ? deviceInputToList(settings["${sLbl}remSensor"]) : null,
-m0: deviceInputToList(settings["${sLbl}Motion"]),
-mctemp: settings["${sLbl}Motion"] ? roundTemp(settings["${sLbl}MCoolTemp"]) : null,
-mhtemp: settings["${sLbl}Motion"] ? roundTemp(settings["${sLbl}MHeatTemp"]) : null,
-mhvacm: settings["${sLbl}Motion"] ? settings["${sLbl}MHvacMode"] : null,
-mdelayOn: settings["${sLbl}Motion"] ? settings["${sLbl}MDelayValOn"] : null,
-mdelayOff: settings["${sLbl}Motion"] ? settings["${sLbl}MDelayValOff"] : null
-
-*/
-
-
 def schedVoiceDesc(num, data) {
 	def str = ""
 	str += data?.lbl  ? " The active automation schedule is named ${data?.lbl}. " : ""
@@ -1090,8 +997,6 @@ def schedVoiceDesc(num, data) {
 	str += data?.ctemp ? " are a cool temp of ${data?.ctemp} degrees " : ""
 	str += data?.ctemp &&  data?.htemp ? " and " : ". "
 	str += data?.htemp ? " ${data?.ctemp ? "and" : "are"} a heat temp of ${data?.ctemp} degrees. " : ""
-
-
 
 	return str != "" ? str : null
 }
@@ -2815,11 +2720,6 @@ def isAppUpdateAvail() {
 	return false
 }
 
-def isDashUpdateAvail() {
-	if(isCodeUpdateAvailable(atomicState?.appData?.updater?.versions?.webDash?.ver, atomicState?.webDashVer, "webDash")) { return true }
-	return false
-}
-
 def isPresUpdateAvail() {
 	if(isCodeUpdateAvailable(atomicState?.appData?.updater?.versions?.presence?.ver, atomicState?.presDevVer, "presence")) { return true }
 	return false
@@ -3969,7 +3869,6 @@ def getvThermostatChildName() { return getChildName("Nest Virtual Thermostat") }
 
 def getAutoAppChildName()    { return getChildName("Nest Automations") }
 def getWatchdogAppChildName(){ return getChildName("Nest Location ${location.name} Watchdog") }
-def getWebDashAppChildName() { return getChildName("Nest Web Dashboard") }
 
 def getChildName(str)     { return "${str}${appDevName()}" }
 
@@ -3992,7 +3891,6 @@ def latestPresVer()     { return atomicState?.appData?.updater?.versions?.presen
 def latestWeathVer()    { return atomicState?.appData?.updater?.versions?.weather ?: "unknown" }
 def latestCamVer()      { return atomicState?.appData?.updater?.versions?.camera ?: "unknown" }
 def latestvStatVer()    { return atomicState?.appData?.updater?.versions?.vthermostat ?: "unknown" }
-def latestWebDashVer()  { return atomicState?.appData?.updater?.versions?.webDashApp ?: "unknown" }
 def getUse24Time()      { return useMilitaryTime ? true : false }
 
 //Returns app State Info
@@ -4927,217 +4825,6 @@ def childDevDataPage() {
 	}
 }
 
-// This is part of the dashboard and needs to remain
-def getDevIdsByType(type) {
-	def results = []
-	def devs
-	if(type) {
-		switch (type) {
-			case "camera":
-				devs = state?.cameras
-				break
-			case "thermostat":
-				devs = state?.thermostats
-				break
-			case "protect":
-				devs = state?.protects
-				break
-			case "presence":
-				devs = getNestPresId()
-				break
-			case "weather":
-				devs = getNestWeatherId()
-				break
-		}
-		if(devs instanceof Map) {
-			devs.each { results.push(it?.key) }
-		} else {
-			results.push(devs)
-		}
-	}
-	return results
-}
-
-def apiDevNoShow() {
-	return [
-		"cssData", "coolSetpointTable", "heatSetpointTable", "heatSetpointTableYesterday", "coolSetpointTableYesterday", "humidityTable", "humidityTableYesterday",
-		"curForecast", "curWeather", "operatingStateTable", "operatingStateTableYesterday", "temperatureTable", "temperatureTableYesterday", "dewpointTable",
-		"dewpointTableYesterday", "lastWeatherAlertNotif", "walertMessage"
-	]
-}
-
-def api_deviceData(params) {
-	log.trace "api_deviceData..."
-	try {
-		def noShow = apiDevNoShow()
-		def devices = []
-		def data = [:]
-		if(params?.deviceType) {
-			if(params?.deviceType in ["camera", "thermostat", "protect", "presence", "weather"]) {
-				getDevIdsByType(params?.deviceType).each { devices.push(getChildDevice(it)) }
-			}
-		} else { devices = getAllChildDevices()}
-		if(devices.size() > 0) {
-			devices?.each { dev ->
-				def devId = dev.deviceNetworkId
-				data."${devId}" = [:]
-				data."${devId}".label = dev?.displayName
-				data."${devId}".devVersion = dev?.devVer()
-				data."${devId}".state = [:]
-				data."${devId}".state = dev?.getDeviceStateData()?.sort().findAll { !(it.key in noShow) }
-				data."${devId}".attr = []
-				def attr = dev?.supportedAttributes.collect { it as String }
-				attr?.sort().each { data."${devId}".attr.push("${it as String}":dev.currentValue(it)) }
-				data."${devId}".cmds = []
-				def cmds = dev?.supportedCommands?.findAll { }
-				cmds?.sort().each { cmd ->
-					data."${devId}".cmds.push ("${cmd.name}":"${!cmd?.arguments ? "" : cmd?.arguments.toString().toLowerCase().replaceAll("\\[|\\]", "")}")
-				}
-				data."${devId}".capabilities = []
-				def caps = dev?.capabilities?.sort().findAll { }
-				caps?.each() { cap ->
-					data."${devId}".capabilities.push(cap.toString())
-				}
-			}
-		}
-		def result = ["devData":data.toString()]
-		return result
-	} catch (ex) {
-		log.error "api_deviceData: Exception:", ex
-		sendExceptionData(ex, "api_deviceData")
-		return null
-	}
-}
-
-def api_singleDeviceData(params) {
-	try {
-		def noShow = apiDevNoShow()
-		def dTypes = ["attrs", "cmds", "state", "capabilities", "label", "devVer"]
-		def dev = []
-		def data = [:]
-		if(params?.deviceId) {
-			dev = getChildDevice(params.deviceId)
-			if(dev) {
-				def devId = params?.deviceId
-				data."${devId}" = [:]
-				data."${devId}".label = dev?.displayName
-				data."${devId}".devVersion = dev?.devVersion()
-				if(!params?.dataType || params?.dataType == "state") {
-					data."${devId}".state = [:]
-					if(!params?.variable) {
-						data."${devId}".state = dev?.getDeviceStateData()?.sort().findAll { !(it.key in noShow) }
-					} else {
-						data."${devId}".state = dev?.getDeviceStateData()?.sort().find { (it.key == params?.variable) }
-					}
-				}
-				if(!params?.dataType || params?.dataType == "attrs") {
-					data."${devId}".attrs = []
-					def attrs = dev?.supportedAttributes.collect { it as String }
-					attr?.sort().each { data."${devId}".attrs.push("${it as String}":dev.currentValue(it)) }
-				}
-				if(!params?.dataType || params?.dataType == "cmds") {
-					data."${devId}".cmds = []
-					def cmds = dev?.supportedCommands?.findAll { }
-					cmds?.sort().each { data."${devId}".cmds.push ("${it.name}":"${!it?.arguments ? "" : it?.arguments.toString().toLowerCase().replaceAll("\\[|\\]", "")}") }
-				}
-				if(!params?.dataType || params?.dataType == "capabilities") {
-					data."${devId}".capabilities = []
-					def caps = dev?.capabilities?.sort().findAll { }
-					data."${devId}".capabilities = caps
-				}
-			}
-		} else {
-			data = ["Error":"No Device ID Received..."]
-		}
-		def result = ["devData":data.toString()]
-		return result
-	} catch (ex) {
-		log.error "api_singleDeviceData: Exception:", ex
-		sendExceptionData(ex, "api_singleDeviceData")
-		return null
-	}
-}
-
-def api_managerData(params) {
-	try {
-		def noShow = ["accessToken", "authToken", "cmdQlist", "curAlerts", "curAstronomy", "curForecast", "curWeather"]
-		def settingData
-		def stateData
-		def data = [:]
-		data.managerVer = appVersion()
-		//log.debug "data: $data"
-		if(!params.dataType || params.dataType == "state") {
-			data.states = [:]
-			if(!params.variable || (!params.dataType && !params.variable)) {
-				stateData = state?.findAll { !(it.key in noShow) }
-				data.states = stateData
-			} else {
-				data.states = ["${params?.variable}":state["${params?.variable}"]]
-			}
-		}
-		if(!params.dataType || params.dataType == "settings") {
-			data.settings = [:]
-			if(!params.variable || (!params.dataType && !params.variable)) {
-				settingData = settings?.findAll { !(it.key in noShow) }
-				data.settings = settingData
-			} else {
-				data.settings = ["${params?.variable}":settings["${params?.variable}"]]
-			}
-		}
-		def result = ["appData":data.toString()]
-		return result
-	} catch (ex) {
-		log.error "api_managerData: Exception:", ex
-		sendExceptionData(ex, "api_managerData")
-		return null
-	}
-}
-
-def api_childAppData(params) {
-	try {
-		def noShow = ["accessToken", "authToken", "cmdQlist", "curAlerts", "curAstronomy", "curForecast", "curWeather"]
-		def settingData
-		def stateData
-		def data = [:]
-		def chldApp
-		if(params.autoType) {
-			chldApp = getChildApps().sort().findAll { it.getAutomationType() == params?.autoType }
-		} else {
-			chldApp = getChildApps()
-		}
-		if(chldApp) {
-			chldApp?.each { ca ->
-				data."${ca?.id}" = [:]
-				data."${ca?.id}".childLabel = ca.label.toString()
-				if(!params.dataType || params.dataType == "state") {
-					data."${ca?.id}".states = [:]
-					if(!params.variable || (!params.dataType && !params.variable)) {
-						stateData = ca.getAppStateData()?.findAll { !(it.key in noShow) }
-						data."${ca?.id}".states = stateData
-					} else {
-						data."${ca?.id}".states = ["${params?.variable}":ca?.getStateVal("${params?.variable}")]
-					}
-				}
-				if(!params.dataType || params.dataType == "settings") {
-					data."${ca?.id}".settings = [:]
-					if(!params.variable || (!params.dataType && !params.variable)) {
-						settingData = ca.getSettingsData()?.findAll { !(it.key in noShow) }
-						data."${ca?.id}".settings = settingData
-					} else {
-						data."${ca?.id}".settings = ["${params?.variable}":ca?.getSettingVal("${params?.variable}")]
-					}
-				}
-			}
-		}
-		def result = ["childData":data.toString()]
-		return result
-	} catch (ex) {
-		log.error "api_childAppData: Exception:", ex
-		sendExceptionData(ex, "api_childAppData")
-		return null
-	}
-}
-
 def feedbackPage() {
 	def fbData = atomicState?.lastFeedbackData
 	def fbNoDup = (settings?.feedbackMsg && fbData?.lastMsg == settings?.feedbackMsg) ? false : true
@@ -5211,8 +4898,7 @@ def createInstallDataJson() {
 		def pdVer = atomicState?.presDevVer ?: "Not Installed"
 		def wdVer = atomicState?.weatDevVer ?: "Not Installed"
 		def vtsVer = atomicState?.vtDevVer ?: "Not Installed"
-		def dashVer = atomicState?.dashVer ?: "Not Installed"
-		def versions = ["apps":["manager":appVersion()?.toString(), "dash":dashVer], "devices":["thermostat":tsVer, "vthermostat":vtsVer, "protect":ptVer, "camera":cdVer, "presence":pdVer, "weather":wdVer]]
+		def versions = ["apps":["manager":appVersion()?.toString()], "devices":["thermostat":tsVer, "vthermostat":vtsVer, "protect":ptVer, "camera":cdVer, "presence":pdVer, "weather":wdVer]]
 
 		def tstatCnt = atomicState?.thermostats?.size() ?: 0
 		def protCnt = atomicState?.protects?.size() ?: 0
@@ -5531,104 +5217,91 @@ LogAction("automationNestModeEnabled: val: $val", "info", true)
 }
 
 def initAutoApp() {
-	if(settings["webDashFlag"]) {
-		atomicState?.automationType = "webDash"
-		LogAction("initAutoApp: We are running webDash in wrong code base","error", true)
-	} else {
-		if(settings["watchDogFlag"]) {
-			atomicState?.automationType = "watchDog"
-		}
-		def autoType = getAutoType()
-		if(autoType == "nMode") {
-			parent.automationNestModeEnabled(true)
-		}
-		unschedule()
-		unsubscribe()
-		automationsInst()
-
-		if(autoType == "schMot" && isSchMotConfigured()) {
-			atomicState.scheduleList = [ 1,2,3,4 ]
-			def schedList = atomicState.scheduleList
-			def timersActive = false
-			def sLbl
-			def cnt = 1
-			def numact = 0
-			schedList?.each { scd ->
-				sLbl = "schMot_${scd}_"
-				atomicState."schedule${cnt}SwEnabled" = null
-				atomicState."schedule${cnt}MotionEnabled" = null
-				atomicState."schedule${cnt}SensorEnabled" = null
-				//atomicState."schedule${cnt}FanCtrlEnabled" = null
-
-				def newscd = []
-				def act = settings["${sLbl}SchedActive"]
-				if(act) {
-					newscd = cleanUpMap([
-						m: settings["${sLbl}restrictionMode"],
-						tf: settings["${sLbl}restrictionTimeFrom"],
-						tfc: settings["${sLbl}restrictionTimeFromCustom"],
-						tfo: settings["${sLbl}restrictionTimeFromOffset"],
-						tt: settings["${sLbl}restrictionTimeTo"],
-						ttc: settings["${sLbl}restrictionTimeToCustom"],
-						tto: settings["${sLbl}restrictionTimeToOffset"],
-						w: settings["${sLbl}restrictionDOW"],
-						s1: buildDeviceNameList(settings["${sLbl}restrictionSwitchOn"], "and"),
-						s0: buildDeviceNameList(settings["${sLbl}restrictionSwitchOff"], "and"),
-						ctemp: roundTemp(settings["${sLbl}CoolTemp"]),
-						htemp: roundTemp(settings["${sLbl}HeatTemp"]),
-						hvacm: settings["${sLbl}HvacMode"],
-						sen0: settings["schMotRemoteSensor"] ? buildDeviceNameList(settings["${sLbl}remSensor"], "and") : null,
-						m0: buildDeviceNameList(settings["${sLbl}Motion"], "and"),
-						mctemp: settings["${sLbl}Motion"] ? roundTemp(settings["${sLbl}MCoolTemp"]) : null,
-						mhtemp: settings["${sLbl}Motion"] ? roundTemp(settings["${sLbl}MHeatTemp"]) : null,
-						mhvacm: settings["${sLbl}Motion"] ? settings["${sLbl}MHvacMode"] : null,
-						mdelayOn: settings["${sLbl}Motion"] ? settings["${sLbl}MDelayValOn"] : null,
-						mdelayOff: settings["${sLbl}Motion"] ? settings["${sLbl}MDelayValOff"] : null
-					])
-
-					/*fan0: buildDeviceNameList(settings["${sLbl}Fans"], "and"),
-					ftemp: settings["${sLbl}FansUseTemp"],
-					ftempl: settings["${sLbl}FansLowTemp"],
-					ftemph: settings["${sLbl}FansHighTemp"],
-					fmot: settings["${sLbl}FansMotion"],
-					fmoton: settings["${sLbl}FansMDelayValOn"],
-					fmotoff: settings["${sLbl}FansMDelayValOff"]*/
-					numact += 1
-				}
-				LogAction("initAutoApp: [Schedule: $scd | sLbl: $sLbl | act: $act | newscd: $newscd]", "info", true)
-				atomicState."sched${cnt}restrictions" = newscd
-				atomicState."schedule${cnt}SwEnabled" = (newscd?.s1 || newscd?.s0)  ? true : false
-				atomicState."schedule${cnt}MotionEnabled" = (newscd?.m0) ? true : false
-				atomicState."schedule${cnt}SensorEnabled" = (newscd?.sen0) ? true : false
-				//atomicState."schedule${cnt}FanCtrlEnabled" = (newscd?.fan0) ? true : false
-				atomicState."schedule${cnt}TimeActive" = (newscd?.tf || newscd?.tfc || newscd?.tfo || newscd?.tt || newscd?.ttc || newscd?.tto || newscd?.w) ? true : false
-
-				atomicState."${sLbl}MotionActiveDt" = null
-				atomicState."${sLbl}MotionInActiveDt" = null
-
-				def newact = isMotionActive(settings["${sLbl}Motion"])
-				if(newact) { atomicState."${sLbl}MotionActiveDt" = getDtNow() }
-				else { atomicState."${sLbl}MotionInActiveDt" = getDtNow() }
-
-				atomicState."${sLbl}oldMotionActive" = newact
-				atomicState?."motion${cnt}UseMotionSettings" = null 		// clear automation state of schedule in use motion state
-				atomicState?."motion${mySched}LastisBtwn" = false
-
-				timersActive = (timersActive || atomicState."schedule${cnt}TimeActive") ? true : false
-
-				cnt += 1
-			}
-			atomicState.scheduleTimersActive = timersActive
-			atomicState.lastSched = null  // clear automation state of schedule in use
-			atomicState.scheduleSchedActiveCount = numact
-		}
-
-		subscribeToEvents()
-		scheduler()
-		app.updateLabel(getAutoTypeLabel())
-		atomicState?.lastAutomationSchedDt = null
-		watchDogAutomation()
+	if(settings["watchDogFlag"]) {
+		atomicState?.automationType = "watchDog"
 	}
+	def autoType = getAutoType()
+	if(autoType == "nMode") {
+		parent.automationNestModeEnabled(true)
+	}
+	unschedule()
+	unsubscribe()
+	automationsInst()
+
+	if(autoType == "schMot" && isSchMotConfigured()) {
+		atomicState.scheduleList = [ 1,2,3,4 ]
+		def schedList = atomicState.scheduleList
+		def timersActive = false
+		def sLbl
+		def cnt = 1
+		def numact = 0
+		schedList?.each { scd ->
+			sLbl = "schMot_${scd}_"
+			atomicState."schedule${cnt}SwEnabled" = null
+			atomicState."schedule${cnt}MotionEnabled" = null
+			atomicState."schedule${cnt}SensorEnabled" = null
+
+			def newscd = []
+			def act = settings["${sLbl}SchedActive"]
+			if(act) {
+				newscd = cleanUpMap([
+					m: settings["${sLbl}restrictionMode"],
+					tf: settings["${sLbl}restrictionTimeFrom"],
+					tfc: settings["${sLbl}restrictionTimeFromCustom"],
+					tfo: settings["${sLbl}restrictionTimeFromOffset"],
+					tt: settings["${sLbl}restrictionTimeTo"],
+					ttc: settings["${sLbl}restrictionTimeToCustom"],
+					tto: settings["${sLbl}restrictionTimeToOffset"],
+					w: settings["${sLbl}restrictionDOW"],
+					s1: buildDeviceNameList(settings["${sLbl}restrictionSwitchOn"], "and"),
+					s0: buildDeviceNameList(settings["${sLbl}restrictionSwitchOff"], "and"),
+					ctemp: roundTemp(settings["${sLbl}CoolTemp"]),
+					htemp: roundTemp(settings["${sLbl}HeatTemp"]),
+					hvacm: settings["${sLbl}HvacMode"],
+					sen0: settings["schMotRemoteSensor"] ? buildDeviceNameList(settings["${sLbl}remSensor"], "and") : null,
+					m0: buildDeviceNameList(settings["${sLbl}Motion"], "and"),
+					mctemp: settings["${sLbl}Motion"] ? roundTemp(settings["${sLbl}MCoolTemp"]) : null,
+					mhtemp: settings["${sLbl}Motion"] ? roundTemp(settings["${sLbl}MHeatTemp"]) : null,
+					mhvacm: settings["${sLbl}Motion"] ? settings["${sLbl}MHvacMode"] : null,
+					mdelayOn: settings["${sLbl}Motion"] ? settings["${sLbl}MDelayValOn"] : null,
+					mdelayOff: settings["${sLbl}Motion"] ? settings["${sLbl}MDelayValOff"] : null
+				])
+
+				numact += 1
+			}
+			LogAction("initAutoApp: [Schedule: $scd | sLbl: $sLbl | act: $act | newscd: $newscd]", "info", true)
+			atomicState."sched${cnt}restrictions" = newscd
+			atomicState."schedule${cnt}SwEnabled" = (newscd?.s1 || newscd?.s0)  ? true : false
+			atomicState."schedule${cnt}MotionEnabled" = (newscd?.m0) ? true : false
+			atomicState."schedule${cnt}SensorEnabled" = (newscd?.sen0) ? true : false
+			//atomicState."schedule${cnt}FanCtrlEnabled" = (newscd?.fan0) ? true : false
+			atomicState."schedule${cnt}TimeActive" = (newscd?.tf || newscd?.tfc || newscd?.tfo || newscd?.tt || newscd?.ttc || newscd?.tto || newscd?.w) ? true : false
+
+			atomicState."${sLbl}MotionActiveDt" = null
+			atomicState."${sLbl}MotionInActiveDt" = null
+
+			def newact = isMotionActive(settings["${sLbl}Motion"])
+			if(newact) { atomicState."${sLbl}MotionActiveDt" = getDtNow() }
+			else { atomicState."${sLbl}MotionInActiveDt" = getDtNow() }
+
+			atomicState."${sLbl}oldMotionActive" = newact
+			atomicState?."motion${cnt}UseMotionSettings" = null 		// clear automation state of schedule in use motion state
+			atomicState?."motion${mySched}LastisBtwn" = false
+
+			timersActive = (timersActive || atomicState."schedule${cnt}TimeActive") ? true : false
+
+			cnt += 1
+		}
+		atomicState.scheduleTimersActive = timersActive
+		atomicState.lastSched = null  // clear automation state of schedule in use
+		atomicState.scheduleSchedActiveCount = numact
+	}
+
+	subscribeToEvents()
+	scheduler()
+	app.updateLabel(getAutoTypeLabel())
+	atomicState?.lastAutomationSchedDt = null
+	watchDogAutomation()
 }
 
 def uninstAutomationApp() {
@@ -5722,9 +5395,6 @@ def getAutoIcon(type) {
 				break
 			case "tMode":
 				return getAppImg("mode_setpoints_icon.png")
-				break
-			case "webDash":
-				return getAppImg("dashboard_icon.png")
 				break
 			case "watchDog":
 				return getAppImg("watchdog_icon.png")
