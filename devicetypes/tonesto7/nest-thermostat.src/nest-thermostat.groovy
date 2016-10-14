@@ -1682,7 +1682,6 @@ def getNestMgrReport() {
 			str += " Zone status voice reports have been disabled by Nest manager app preferences"
 		}
 		else {
-			//str += "This is the start of your (${device?.displayName}) zone status.  "
 			str += parent?.reqSchedInfoRprt(this).toString() + "  "
 		}
 		if(state?.allowVoiceUsageRprt == false) {
@@ -1697,8 +1696,7 @@ def getNestMgrReport() {
 		str += "All voice reports have been disabled by Nest Manager app preferences"
 		return str
 	}
-
-	log.debug str
+	//log.debug str
 	return str
 }
 
@@ -1714,7 +1712,7 @@ def getUsageVoiceReport(type) {
 			return generateUsageText("month" ,getMonthsUsage())
  			break
 		default:
-			return "I'm sorry but the report received was not valid"
+			return "I'm sorry but the report type received was not valid"
 			break
 	}
 }
