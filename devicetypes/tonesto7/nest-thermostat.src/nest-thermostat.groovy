@@ -1743,7 +1743,7 @@ def generateUsageText(timeType, timeMap) {
 				def tSec = iData?.value?.tSec.toInteger()
 				def tStr = getTimeMapString(tData)
 				if(timeType == "today") {
-					def tm = getDayTimePerc(tSec)
+					def tm = getDayTimePerc(tSec,tData)
 					if (tm>=66 && tm<=100) {
 						str += " it looks like it was a light day because your device"
 						str +=  " was idle $tm percent of the day at "
@@ -1771,7 +1771,7 @@ def generateUsageText(timeType, timeMap) {
 				def tSec = hData?.value?.tSec.toInteger()
 				def tStr = getTimeMapString(tData)
 				if(timeType == "today") {
-					def tm = getDayTimePerc(tSec)
+					def tm = getDayTimePerc(tSec,tData)
 					if(tm>=66 && tm<=100) {
 						str += " it must have been freezing today because your device was heating your home for "
 						str += tStr
@@ -1798,7 +1798,7 @@ def generateUsageText(timeType, timeMap) {
 				def tSec = cData?.value?.tSec.toInteger()
 				def tStr = getTimeMapString(tData)
 				if(timeType == "today") {
-					def tm = getDayTimePerc(tSec)
+					def tm = getDayTimePerc(tSec,tData)
 					if(tm>=66 && tm<=100) {
 
 					}
@@ -1827,8 +1827,12 @@ def generateUsageText(timeType, timeMap) {
 	return str
 }
 
-def getDayTimePerc(val) {
-	return (int) ((val.toInteger()/86400)*100).toDouble().round(0)
+def getDayTimePerc(val,data) {
+	if(!data) { return null }
+	def h = data?.h
+	def m = data?.m
+	def hr = 60*60
+	return (int) ((val.toInteger()/(h*hr+m*60))*100).toDouble().round(0)
 }
 
 def getTimeMapString(data) {
