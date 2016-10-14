@@ -39,27 +39,14 @@ definition(
 
 include 'asynchttp_v1'
 
-def appVersion() { "3.8.3" }
-def appVerDate() { "10-12-2016" }
+def appVersion() { "4.0.0" }
+def appVerDate() { "10-14-2016" }
 def appVerInfo() {
 	def str = ""
 
-	str += "V3.8.1 (October 12th, 2016):"
+	str += "V4.0.0 (October 14th, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
-	str += "\n • NEW: Full support from experimental async HTTP requests..."
-	str += "\n • UPDATED: More tweaks to the certain UI Elements..."
-	str += "\n • NEW: Allow Voice Report via Ask Alexa app for schedules and a future report..."
-	str += "\n • UPDATED: Lot's more UI polish automations..."
-	str += "\n • UPDATED: Lot's of little bugfixes...."
-	str += "\n • ADDED: Beta Test of async http polling...."
-	str += "\n • ADDED: User Feedback Page to send directly to developer...."
-	str += "\n • UPDATED: Lot's of UI reworks for automations..."
-	str += "\n • UPDATED: Lot's of little bugfixes...."
-	str += "\n • UPDATED: Merged in eric's latest patch..."
-	str += "\n • UPDATED: Lot's of modifications to the thermostat UI design..."
-	str += "\n • UPDATED: Cleanup of Old Code and bugfixes..."
-	str += "\n • UPDATED: More bug fixes and cleanups..."
-	str += "\n • UPDATED: Automation Refactor with Schedules (ALPHA)..."
+	str += "\n • V4.0.0 Release"
 
 	return str
 }
@@ -4085,12 +4072,12 @@ def isInMode(modeList) {
 
 def minDevVersions() {
 	return [
-		"thermostat":["val":350, "desc":"3.5.0"],
-		"protect":["val":350, "desc":"3.5.0"],
-		"presence":["val":350, "desc":"3.5.0"],
-		"weather":["val":350, "desc":"3.5.0"],
-		"camera":["val":150 , "desc":"1.5.0"],
-		"vthermostat":["val":350, "desc":"3.5.0"]
+		"thermostat":["val":400, "desc":"4.0.0"],
+		"protect":["val":400, "desc":"4.0.0"],
+		"presence":["val":400, "desc":"4.0.0"],
+		"weather":["val":400, "desc":"4.0.0"],
+		"camera":["val":200 , "desc":"2.0.0"],
+		"vthermostat":["val":400, "desc":"4.0.0"]
 	]
 }
 

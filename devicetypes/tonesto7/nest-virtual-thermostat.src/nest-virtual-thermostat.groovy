@@ -290,7 +290,7 @@ def initialize() {
 def installed() {
 	Logger("installed...")
 	// Notify health check about this device with timeout interval 30 minutes
-	sendEvent(name: "checkInterval", value: 30 * 60, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
+	//sendEvent(name: "checkInterval", value: 30 * 60, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
 }
 
 def ping() {
