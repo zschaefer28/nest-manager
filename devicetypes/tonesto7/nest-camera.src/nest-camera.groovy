@@ -161,6 +161,17 @@ def initialize() {
 	poll()
 }
 
+def installed() {
+	LogAction("installed...")
+	// Notify health check about this device with timeout interval 30 minutes
+	sendEvent(name: "checkInterval", value: 3*60*60, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
+}
+
+def ping() {
+	LogAction("ping...")
+	refresh()
+}
+
 def parse(String description) {
 	log.debug "Parsing '${description}'"
 }
@@ -185,6 +196,10 @@ def generateEvent(Map eventData) {
 }
 
 def processEvent() {
+	if(state?.swVersion != devVer()) {
+		installed()
+		state.swVersion = devVer()
+	}
 	def eventData = state?.eventData
 	state.eventData = null
 	//log.trace("processEvent Parsing data ${eventData}")
