@@ -33,7 +33,6 @@ def devVer() { return "3.5.0"}
 metadata {
 	definition (name: "${textDevName()}", namespace: "tonesto7", author: "Anthony S.") {
 		capability "Actuator"
-		//capability "Polling"
 		capability "Relative Humidity Measurement"
 		capability "Refresh"
 		capability "Sensor"
@@ -288,6 +287,17 @@ def initialize() {
 	LogAction("initialize")
 }
 
+def installed() {
+	LogAction("installed...")
+	// Notify health check about this device with timeout interval 22 minutes
+	sendEvent(name: "checkInterval", value: 22 * 60, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
+}
+
+def ping() {
+	LogAction("ping...")
+	refresh()
+}
+
 def parse(String description) {
 	LogAction("Parsing '${description}'")
 }
@@ -299,6 +309,8 @@ def poll() {
 
 def refresh() {
 	pauseEvent("false")
+	// Notify health check about this device with timeout interval 22 minutes
+	sendEvent(name: "checkInterval", value: 22 * 60, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
 	parent.refresh(this)
 }
 
