@@ -289,8 +289,8 @@ def initialize() {
 
 def installed() {
 	LogAction("installed...")
-	// Notify health check about this device with timeout interval 22 minutes
-	sendEvent(name: "checkInterval", value: 22 * 60, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
+	// Notify health check about this device with timeout interval 30 minutes
+	sendEvent(name: "checkInterval", value: 30 * 60, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
 }
 
 def ping() {
@@ -309,8 +309,6 @@ def poll() {
 
 def refresh() {
 	pauseEvent("false")
-	// Notify health check about this device with timeout interval 22 minutes
-	sendEvent(name: "checkInterval", value: 22 * 60, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID], displayed: false)
 	parent.refresh(this)
 }
 
@@ -324,6 +322,10 @@ def generateEvent(Map eventData) {
 }
 
 def processEvent() {
+	if(state?.swVersion != devVer()) {
+		installed()
+		state.swVersion = devVer()
+	}
 	def pauseUpd = !device.currentValue("pauseUpdates") ? false : device.currentValue("pauseUpdates").value
 	if(pauseUpd == "true") { LogAction("pausing", "warn"); return }
 
