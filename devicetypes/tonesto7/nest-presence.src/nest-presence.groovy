@@ -27,7 +27,7 @@ import java.text.SimpleDateFormat
 
 preferences {  }
 
-def devVer() { return "3.5.0" }
+def devVer() { return "4.0.0" }
 
 // for the UI
 metadata {
@@ -295,48 +295,41 @@ def setHome() {
 /************************************************************************************************
 |										LOGGING FUNCTIONS										|
 *************************************************************************************************/
-// Local Device Logging
-def Logger(msg, logType = "debug") {
-	 if(state?.debug) {
-		switch (logType) {
-			case "trace":
-				log.trace "${msg}"
-				break
-			case "debug":
-				log.debug "${msg}"
-				break
-			case "warn":
-				log.warn "${msg}"
-				break
-			case "error":
-				log.error "${msg}"
-				break
-			default:
-				log.debug "${msg}"
-				break
-		}
+void Logger(msg, logType = "debug") {
+	def smsg = "${device.displayName}: ${msg}"
+	switch (logType) {
+		case "trace":
+			log.trace "${smsg}"
+			break
+		case "debug":
+			log.debug "${smsg}"
+			break
+		case "info":
+			log.info "${smsg}"
+			break
+		case "warn":
+			log.warn "${smsg}"
+			break
+		case "error":
+			log.error "${smsg}"
+			break
+		default:
+			log.debug "${smsg}"
+			break
 	}
 }
 
-//This will Print logs from the parent app when added to parent method that the child calls
-def log(message, level = "trace") {
-	switch (level) {
-		case "trace":
-			log.trace "PARENT_Log>> " + message
-			break
-		case "debug":
-			log.debug "PARENT_Log>> " + message
-			break
-		case "warn":
-			log.warn "PARENT_Log>> " + message
-			break
-		case "error":
-			log.error "PARENT_Log>> " + message
-			break
-		default:
-			log.error "PARENT_Log>> " + message
-			break
+// Local Application Logging
+void LogAction(msg, logType = "debug") {
+	if(state?.debug) {
+		Logger(msg, logType)
 	}
+}
+
+ //This will Print logs from the parent app when added to parent method that the child calls
+def log(message, level = "trace") {
+	def smsg = "PARENT_Log>> " + message
+	LogAction(smsg, level)
 	return null // always child interface call with a return value
 }
 
