@@ -39,12 +39,15 @@ definition(
 
 include 'asynchttp_v1'
 
-def appVersion() { "4.0.2" }
-def appVerDate() { "10-16-2016" }
+def appVersion() { "4.0.3" }
+def appVerDate() { "10-24-2016" }
 def appVerInfo() {
 	def str = ""
+	str += "V4.0.3 (October 24th, 2016):"
+	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
+	str += "\n • Automation Bug fixes and manager analytic tweaks"
 
-	str += "V4.0.0 (October 14th, 2016):"
+	str += "\n\nV4.0.0 (October 14th, 2016):"
 	str += "\n▔▔▔▔▔▔▔▔▔▔▔"
 	str += "\n • V4.0.0 Release"
 
@@ -899,19 +902,8 @@ def getInstAutoTypesDesc() {
 			}
 		}
 	}
-/*
-	TODO I need to add the individual thermostat automation types installed to the analytics
-*/
-	def inAutoList = []
-	inAutoList?.push("nestMode":nModeCnt)
-	inAutoList?.push("watchDog":watchDogCnt)
-	if(schMotCnt > 0) {
-		inAutoList?.push("schMot":["tSched":tSchedCnt, "remSen":remSenCnt, "fanCtrl":fanCtrlCnt, "fanCirc":fanCircCnt, "conWat":conWatCnt, "extTmp":extTmpCnt, "leakWat":leakWatCnt])
-	} else {
-		inAutoList?.push("schMot":schMotCnt)
-	}
-	//log.debug "inAutoList: $inAutoList"
-	atomicState?.installedAutomations = inAutoList
+
+	atomicState?.installedAutomations = ["nestMode":nModeCnt,"watchDog":watchDogCnt, "schMot":["tSched":tSchedCnt, "remSen":remSenCnt, "fanCtrl":fanCtrlCnt, "fanCirc":fanCircCnt, "conWat":conWatCnt, "extTmp":extTmpCnt, "leakWat":leakWatCnt]]
 
 	def str = ""
 	str += (watchDogCnt > 0 || nModeCnt > 0 || schMotCnt > 0 || disCnt > 0) ? "Installed Automations:" : ""
